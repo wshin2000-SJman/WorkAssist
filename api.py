@@ -307,6 +307,10 @@ class API:
         department = data.get('department')
         text_content = data.get('text_content', '')
         image_path = data.get('image_path', '')
+        title = data.get('title', '')
+        manager = data.get('manager', '')
+        start_date = data.get('start_date', '')
+        due_date = data.get('due_date', '')
         
         # Generate tag: L-YY/MM/DD-###
         import datetime
@@ -315,23 +319,39 @@ class API:
         serial = db.get_next_tag_serial(date_str)
         tag = f"L-{date_str}-{serial:03d}"
         
-        new_id = db.add_status_log(project_id, department, text_content, image_path, tag)
+        new_id = db.add_status_log(project_id, department, text_content, image_path, tag, title, manager, start_date, due_date)
         return {'status': 'success', 'id': new_id, 'tag': tag}
+
+    def update_status_log(self, data):
+        log_id = data.get('id')
+        title = data.get('title', '')
+        text_content = data.get('text_content', '')
+        manager = data.get('manager', '')
+        start_date = data.get('start_date', '')
+        due_date = data.get('due_date', '')
+        image_path = data.get('image_path', '')
+        
+        db.update_status_log_full(log_id, title, text_content, manager, start_date, due_date, image_path)
+        return {'status': 'success'}
 
     def delete_status_log(self, log_id):
         db.delete_status_log(log_id)
+        return {'status': 'success'}
+
+    def delete_status_log_permanent(self, log_id):
+        db.delete_status_log_permanent(log_id)
         return {'status': 'success'}
 
     def mark_status_log_done(self, log_id):
         db.update_status_log_state(log_id, 'done')
         return {'status': 'success'}
 
-    def mark_status_log_deleted(self, log_id):
-        db.update_status_log_state(log_id, 'deleted')
-        return {'status': 'success'}
-
     def restore_status_log(self, log_id):
         db.update_status_log_state(log_id, 'active')
+        return {'status': 'success'}
+
+    def mark_status_log_deleted(self, log_id):
+        db.update_status_log_state(log_id, 'deleted')
         return {'status': 'success'}
 
     def upload_project_image(self, project_id):

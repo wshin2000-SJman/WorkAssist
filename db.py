@@ -115,6 +115,14 @@ def init_db():
         cursor.execute("ALTER TABLE status_logs ADD COLUMN status TEXT DEFAULT 'active'")
     if 'tag' not in columns:
         cursor.execute("ALTER TABLE status_logs ADD COLUMN tag TEXT")
+    if 'title' not in columns:
+        cursor.execute("ALTER TABLE status_logs ADD COLUMN title TEXT")
+    if 'manager' not in columns:
+        cursor.execute("ALTER TABLE status_logs ADD COLUMN manager TEXT")
+    if 'start_date' not in columns:
+        cursor.execute("ALTER TABLE status_logs ADD COLUMN start_date TEXT")
+    if 'due_date' not in columns:
+        cursor.execute("ALTER TABLE status_logs ADD COLUMN due_date TEXT")
 
     conn.commit()
     conn.close()
@@ -388,7 +396,7 @@ def update_project_status(project_id, status):
 def get_status_logs(project_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, department, text_content, image_path, timestamp, status, tag FROM status_logs WHERE project_id = ? ORDER BY timestamp ASC", (project_id,))
+    cursor.execute("SELECT id, department, text_content, image_path, timestamp, status, tag, title, manager, start_date, due_date FROM status_logs WHERE project_id = ? ORDER BY timestamp ASC", (project_id,))
     rows = cursor.fetchall()
     conn.close()
     
@@ -401,7 +409,11 @@ def get_status_logs(project_id):
             'image_path': row[3] or '',
             'timestamp': row[4],
             'status': row[5] or 'active',
-            'tag': row[6] or ''
+            'tag': row[6] or '',
+            'title': row[7] or '',
+            'manager': row[8] or '',
+            'start_date': row[9] or '',
+            'due_date': row[10] or ''
         })
     return logs
 
@@ -428,20 +440,27 @@ def get_next_tag_serial(date_str):
                     continue
     return max_serial + 1
 
-def add_status_log(project_id, department, text_content, image_path, tag=None):
+def add_status_log(project_id, department, text_content, image_path, tag=None, title='', manager='', start_date='', due_date=''):
     conn = get_connection()
     cursor = conn.cursor()
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cursor.execute('''
-        INSERT INTO status_logs (project_id, department, text_content, image_path, timestamp, tag)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (project_id, department, text_content, image_path, now, tag))
+        INSERT INTO status_logs (project_id, department, text_content, image_path, timestamp, tag, title, manager, start_date, due_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (project_id, department, text_content, image_path, now, tag, title, manager, start_date, due_date))
     new_id = cursor.lastrowid
     conn.commit()
     conn.close()
     return new_id
 
 def delete_status_log(log_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE status_logs SET status = 'deleted' WHERE id = ?", (log_id,))
+    conn.commit()
+    conn.close()
+
+def delete_status_log_permanent(log_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM status_logs WHERE id = ?", (log_id,))
@@ -452,6 +471,17 @@ def update_status_log_state(log_id, status):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("UPDATE status_logs SET status = ? WHERE id = ?", (status, log_id))
+    conn.commit()
+    conn.close()
+
+def update_status_log_full(log_id, title, content, manager, start, due, image):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE status_logs 
+        SET title = ?, text_content = ?, manager = ?, start_date = ?, due_date = ?, image_path = ?
+        WHERE id = ?
+    ''', (title, content, manager, start, due, image, log_id))
     conn.commit()
     conn.close()
 

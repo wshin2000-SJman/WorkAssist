@@ -3,6 +3,7 @@ let i18nData = {};
 let currentLang = 'en';
 let allTasks = [];
 let currentMonth = new Date();
+let timetableBaseDate = new Date();
 
 // Elements
 const tabBtns = document.querySelectorAll('.tab-btn');
@@ -1151,6 +1152,15 @@ function applyLanguage(lang) {
             el.placeholder = i18nData[lang][key];
         }
     });
+    // Re-render project components
+    if(currentProjectId) {
+        ensurePMLogButtons();
+        const pmTimetableTab = document.getElementById('pm-timetable-tab');
+        if(pmTimetableTab && pmTimetableTab.style.display !== 'none') {
+            renderTimeTable();
+        }
+        refreshStatusLogs();
+    }
 }
 
 // --- Project Manager Logic ---
@@ -1188,7 +1198,7 @@ function renderProjectList() {
         
         const doneBtn = document.createElement('button');
         doneBtn.className = 'btn-done-project';
-        doneBtn.innerText = '[Done]';
+        doneBtn.innerText = '[DONE]';
         doneBtn.onclick = async (e) => {
             e.stopPropagation();
             if(confirm('Mark this project as DONE?')) {
@@ -1219,6 +1229,7 @@ function renderProjectList() {
 
 async function loadProject(id) {
     currentProjectId = id;
+    ensurePMLogButtons();
     document.getElementById('project-done-view').style.display = 'none';
     document.getElementById('project-deleted-view').style.display = 'none';
     renderProjectList();
@@ -1232,7 +1243,12 @@ async function loadProject(id) {
     document.getElementById('project-client').value = p.client;
     document.getElementById('project-desc').value = p.description;
     
-    await refreshStatusLogs();
+    const activeTab = document.querySelector('.pm-tab.active');
+    if(activeTab && activeTab.dataset.target === 'pm-timetable-tab') {
+        await renderTimeTable();
+    } else {
+        await refreshStatusLogs();
+    }
 }
 
 async function showDoneProjects() {
@@ -1402,12 +1418,22 @@ async function refreshStatusLogs() {
             const item = document.createElement('div');
             item.className = 'log-item';
             
-            let html = `<span class="log-time">[${log.timestamp}]</span>`;
-            if(log.tag) {
-                html += ` <span style="color: #7AA2F7; font-weight: bold; margin-left: 5px;">[${log.tag}]</span>`;
+            let html = `<div class="log-item-header">
+                <span class="log-time">[${log.timestamp}]</span>
+                <span style="color: #7AA2F7; font-weight: bold; margin-left: 5px;">[${log.tag}]</span>
+            </div>`;
+            
+            if(log.title) {
+                html += `<div style="color: var(--accent-color); font-weight: bold; margin: 5px 0;">${log.title}</div>`;
+            }
+            if(log.manager) {
+                html += `<div style="font-size: 0.85em; color: #aaa;">Manager: ${log.manager}</div>`;
+            }
+            if(log.start_date || log.due_date) {
+                html += `<div style="font-size: 0.85em; color: #888;">${log.start_date || '?'} ~ ${log.due_date || '?'}</div>`;
             }
             if(log.text_content) {
-                html += `<div class="log-text">${log.text_content}</div>`;
+                html += `<div class="log-text" style="margin-top: 5px; white-space: pre-wrap;">${log.text_content}</div>`;
             }
             item.innerHTML = html;
             
@@ -1434,11 +1460,19 @@ async function refreshStatusLogs() {
             };
             item.appendChild(delBtn);
             
+            const editBtn = document.createElement('button');
+            editBtn.className = 'log-delete-btn';
+            editBtn.style.right = '95px';
+            editBtn.style.color = 'var(--col-doing)';
+            editBtn.innerText = i18nData[currentLang]?.btn_edit || '[ EDIT ]';
+            editBtn.onclick = () => openPMModal(log.department, log);
+            item.appendChild(editBtn);
+
             const doneBtn = document.createElement('button');
             doneBtn.className = 'log-delete-btn';
             doneBtn.style.right = '35px';
             doneBtn.style.color = 'var(--accent-color)';
-            doneBtn.innerText = i18nData[currentLang]?.pm_btn_done || '[ 완료 ]';
+            doneBtn.innerText = i18nData[currentLang]?.pm_btn_done || '[ DONE ]';
             doneBtn.onclick = async () => {
                 if(confirm('Mark this log as done?')) {
                     await window.pywebview.api.mark_status_log_done(log.id);
@@ -1520,7 +1554,9 @@ async function renderStatusTable(tbodyId, logs, searchId, isDeleted) {
             await window.pywebview.api.restore_status_log(log.id);
             refreshStatusLogs();
         };
-        actionTd.appendChild(restoreBtn);
+        if(isDeleted || log.status === 'done') {
+            actionTd.appendChild(restoreBtn);
+        }
 
         // Delete Button
         const delBtn = document.createElement('button');
@@ -1533,7 +1569,7 @@ async function renderStatusTable(tbodyId, logs, searchId, isDeleted) {
             delBtn.onclick = async () => {
                 const msg = i18nData[currentLang].msg_perm_delete || "This action is irreversible. Delete permanently?";
                 if(confirm(msg)) {
-                    await window.pywebview.api.delete_status_log(log.id);
+                    await window.pywebview.api.delete_status_log_permanent(log.id); // New API for perm delete
                     refreshStatusLogs();
                 }
             };
@@ -1562,53 +1598,174 @@ async function renderStatusTable(tbodyId, logs, searchId, isDeleted) {
     }
 }
 
-// Log Inputs
-document.querySelectorAll('.status-col').forEach(col => {
-    const dept = col.dataset.dept;
-    const btnUpload = col.querySelector('.btn-upload-img');
-    const pathInput = col.querySelector('.log-img-path');
-    const previewName = col.querySelector('.img-preview-name');
-    const btnAdd = col.querySelector('.btn-add-log');
-    const textInput = col.querySelector('.log-text-input');
-    
-    if(btnUpload) {
-        btnUpload.addEventListener('click', async () => {
-            if(!currentProjectId) return;
-            const res = await window.pywebview.api.upload_project_image(currentProjectId);
-            if(res.status === 'success') {
-                pathInput.value = res.path;
-                previewName.innerText = "Attached: " + res.path.split('\\').pop().split('/').pop();
-            }
-        });
-    }
-    
-    if(btnAdd) {
-        btnAdd.addEventListener('click', async () => {
-            if(!currentProjectId) return;
-            const text = textInput.value.trim();
-            const imgPath = pathInput.value;
-            if(!text && !imgPath) return;
+function ensurePMLogButtons() {
+    ['Mech', 'Control', 'Elec', 'Sales'].forEach(dept => {
+        const col = document.querySelector(`.status-col.${dept.toLowerCase()}`);
+        if(col && !col.querySelector('.pm-add-log-btn')) {
+            // Remove old input area if it exists
+            const oldArea = col.querySelector('.log-input-area');
+            if(oldArea) oldArea.remove();
             
-            await window.pywebview.api.save_status_log({
-                project_id: currentProjectId,
-                department: dept,
-                text_content: text,
-                image_path: imgPath
-            });
-            
-            textInput.value = '';
-            pathInput.value = '';
-            previewName.innerText = '';
-            refreshStatusLogs();
-        });
+            const btn = document.createElement('button');
+            btn.className = 'pm-add-log-btn';
+            btn.dataset.dept = dept;
+            btn.dataset.i18n = 'pm_btn_add_log';
+            btn.style.width = '100%';
+            btn.style.border = '1px dotted #333';
+            btn.style.background = 'transparent';
+            btn.style.color = '#888';
+            btn.style.padding = '10px';
+            btn.style.cursor = 'pointer';
+            btn.style.fontFamily = "'Cascadia Code', monospace";
+            btn.innerText = i18nData[currentLang]?.pm_btn_add_log || '[ ADD LOG ]';
+            btn.onclick = () => openPMModal(dept);
+            col.appendChild(btn);
+        }
+    });
+}
+
+// Log Modal Logic
+let currentPMDept = null;
+let currentEditingLogId = null;
+
+function openPMModal(dept, log = null) {
+    currentPMDept = dept;
+    currentEditingLogId = log ? log.id : null;
+    
+    const deptKey = 'dept_' + dept.toLowerCase();
+    const deptName = i18nData[currentLang][deptKey] || dept;
+    
+    if(log) {
+        document.getElementById('pm-log-modal-header').innerText = `[ ${i18nData[currentLang].btn_edit || 'EDIT LOG'} - ${deptName.toUpperCase()} ]`;
+        document.getElementById('pm-log-title').value = log.title || '';
+        document.getElementById('pm-log-content').value = log.text_content || '';
+        document.getElementById('pm-log-manager').value = log.manager || '';
+        document.getElementById('pm-log-start').value = log.start_date || '';
+        document.getElementById('pm-log-due').value = log.due_date || '';
+        document.getElementById('pm-log-img-path').value = log.image_path || '';
+        document.getElementById('pm-log-img-preview').innerText = log.image_path ? "Attached: " + log.image_path.split('\\').pop().split('/').pop() : '';
+    } else {
+        document.getElementById('pm-log-modal-header').innerText = `[ ${i18nData[currentLang].modal_new_task || 'NEW LOG'} - ${deptName.toUpperCase()} ]`;
+        document.getElementById('pm-log-title').value = '';
+        document.getElementById('pm-log-content').value = '';
+        document.getElementById('pm-log-manager').value = '';
+        document.getElementById('pm-log-start').value = new Date().toISOString().split('T')[0];
+        document.getElementById('pm-log-due').value = new Date().toISOString().split('T')[0];
+        document.getElementById('pm-log-img-path').value = '';
+        document.getElementById('pm-log-img-preview').innerText = '';
     }
+    document.getElementById('pm-log-modal').style.display = 'flex';
+}
+
+document.querySelectorAll('.pm-add-log-btn').forEach(btn => {
+    btn.onclick = () => openPMModal(btn.dataset.dept);
 });
+
+document.getElementById('pm-log-cancel').onclick = () => {
+    document.getElementById('pm-log-modal').style.display = 'none';
+};
+
+document.getElementById('pm-log-due').onchange = () => {
+    const start = document.getElementById('pm-log-start').value;
+    const due = document.getElementById('pm-log-due').value;
+    if(start && due && due < start) {
+        alert(i18nData[currentLang].msg_invalid_due_date || "Due Date cannot be earlier than Start Date.");
+        document.getElementById('pm-log-due').value = start;
+    }
+};
+
+document.getElementById('pm-log-start').onchange = () => {
+    const start = document.getElementById('pm-log-start').value;
+    const due = document.getElementById('pm-log-due').value;
+    if(start && due && due < start) {
+        document.getElementById('pm-log-due').value = start;
+    }
+};
+
+document.getElementById('pm-log-upload-img').onclick = async () => {
+    if(!currentProjectId) return;
+    const res = await window.pywebview.api.upload_project_image(currentProjectId);
+    if(res.status === 'success') {
+        document.getElementById('pm-log-img-path').value = res.path;
+        document.getElementById('pm-log-img-preview').innerText = "Attached: " + res.path.split('\\').pop().split('/').pop();
+    }
+};
+
+document.getElementById('pm-log-save').onclick = async () => {
+    if(!currentProjectId || !currentPMDept) return;
+    
+    const start = document.getElementById('pm-log-start').value;
+    const due = document.getElementById('pm-log-due').value;
+    if(start && due && due < start) {
+        alert(i18nData[currentLang].msg_invalid_due_date || "Due Date cannot be earlier than Start Date.");
+        return;
+    }
+
+    const data = {
+        project_id: currentProjectId,
+        department: currentPMDept,
+        title: document.getElementById('pm-log-title').value.trim(),
+        text_content: document.getElementById('pm-log-content').value.trim(),
+        manager: document.getElementById('pm-log-manager').value.trim(),
+        start_date: start,
+        due_date: due,
+        image_path: document.getElementById('pm-log-img-path').value
+    };
+    
+    if(!data.title && !data.text_content && !data.image_path) {
+        alert("Please enter at least a title or content.");
+        return;
+    }
+
+    if(data.start_date && data.due_date && data.due_date < data.start_date) {
+        alert(i18nData[currentLang].msg_invalid_due_date || "Due Date cannot be earlier than Start Date.");
+        return;
+    }
+    
+    if(currentEditingLogId) {
+        data.id = currentEditingLogId;
+        await window.pywebview.api.update_status_log(data);
+    } else {
+        await window.pywebview.api.save_status_log(data);
+    }
+    
+    document.getElementById('pm-log-modal').style.display = 'none';
+    refreshStatusLogs();
+    renderTimeTable();
+    
+    // Refresh detail area if it was open for the edited log
+    if(currentEditingLogId && currentEditingLogId === currentDetailLogId) {
+        refreshPMTimetableLogDetail(currentDetailLogId);
+    }
+};
 
 // PM Done/Deleted Search Listeners
 const pmDoneSearch = document.getElementById('pm_done_search_localized');
 if(pmDoneSearch) pmDoneSearch.addEventListener('input', refreshStatusLogs);
 const pmDeletedSearch = document.getElementById('pm_deleted_search_localized');
 if(pmDeletedSearch) pmDeletedSearch.addEventListener('input', refreshStatusLogs);
+
+// PM Timetable Scale & Filter Listeners
+const pmTimetableScale = document.getElementById('pm-timetable-scale');
+if(pmTimetableScale) pmTimetableScale.addEventListener('change', renderTimeTable);
+const pmTimetableShowDeleted = document.getElementById('pm-timetable-show-deleted');
+if(pmTimetableShowDeleted) pmTimetableShowDeleted.addEventListener('change', renderTimeTable);
+
+// PM Timetable Nav
+const pmTimetablePrev = document.getElementById('pm-timetable-prev');
+if(pmTimetablePrev) pmTimetablePrev.onclick = () => {
+    const scale = document.getElementById('pm-timetable-scale').value;
+    if(scale === 'weekly') timetableBaseDate.setDate(timetableBaseDate.getDate() - 1);
+    else timetableBaseDate.setMonth(timetableBaseDate.getMonth() - 1);
+    renderTimeTable();
+};
+const pmTimetableNext = document.getElementById('pm-timetable-next');
+if(pmTimetableNext) pmTimetableNext.onclick = () => {
+    const scale = document.getElementById('pm-timetable-scale').value;
+    if(scale === 'weekly') timetableBaseDate.setDate(timetableBaseDate.getDate() + 1);
+    else timetableBaseDate.setMonth(timetableBaseDate.getMonth() + 1);
+    renderTimeTable();
+};
 
 // Project Search Listener
 const projectSearch = document.getElementById('project-search');
@@ -1633,8 +1790,243 @@ document.querySelectorAll('.pm-tab').forEach(tab => {
         tab.style.color = 'var(--text-color)';
         const target = document.getElementById(tab.dataset.target);
         if(target) target.style.display = 'flex';
+        
+        const controls = document.getElementById('pm-timetable-controls');
+        if(tab.dataset.target === 'pm-timetable-tab') {
+            if(controls) controls.style.display = 'flex';
+            renderTimeTable();
+        } else {
+            if(controls) controls.style.display = 'none';
+            refreshStatusLogs();
+        }
     });
 });
+
+async function renderTimeTable() {
+    if(!currentProjectId) return;
+    const logs = await window.pywebview.api.get_status_logs(currentProjectId);
+    const container = document.getElementById('pm-timetable-container');
+    const scaleSelect = document.getElementById('pm-timetable-scale');
+    if(!scaleSelect || !container) return;
+    const scale = scaleSelect.value;
+    
+    container.innerHTML = '';
+    
+    // Determine date range and scale
+    const now = new Date();
+    let startDate, days;
+    
+    if(scale === 'weekly') {
+        startDate = new Date(timetableBaseDate);
+        startDate.setDate(startDate.getDate() - 3); // Center around base
+        startDate.setHours(0,0,0,0);
+        days = 7;
+    } else {
+        // Monthly view = 12 months range
+        startDate = new Date(timetableBaseDate.getFullYear(), timetableBaseDate.getMonth() - 5, 1);
+        days = 12; // Show 12 months
+    }
+    
+    const header = document.createElement('div');
+    header.className = 'timetable-header';
+    
+    const yHeader = document.createElement('div');
+    yHeader.className = 'timetable-y-axis-header';
+    header.appendChild(yHeader);
+    
+    const xAxis = document.createElement('div');
+    xAxis.className = 'timetable-x-axis';
+    
+    const dayNames = currentLang === 'kr' ? ['일', '월', '화', '수', '목', '금', '토'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const monthNames = currentLang === 'kr' ? 
+        ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'] : 
+        ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    for(let i=0; i<days; i++) {
+        const dayCol = document.createElement('div');
+        dayCol.className = 'timetable-day-col';
+        
+        if(scale === 'weekly') {
+            const d = new Date(startDate);
+            d.setDate(startDate.getDate() + i);
+            if(d.toDateString() === now.toDateString()) dayCol.classList.add('today');
+            const m = d.getMonth() + 1;
+            const day = d.getDate();
+            const dayName = dayNames[d.getDay()];
+            dayCol.innerText = `${m}/${day} (${dayName})`;
+        } else {
+            // Monthly view labels with Year
+            const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+            const y = d.getFullYear();
+            const m = d.getMonth();
+            dayCol.innerText = `${y} ${monthNames[m]}`;
+            if(y === now.getFullYear() && m === now.getMonth()) dayCol.classList.add('today');
+        }
+        xAxis.appendChild(dayCol);
+    }
+    header.appendChild(xAxis);
+    container.appendChild(header);
+    
+    const body = document.createElement('div');
+    body.className = 'timetable-body';
+    
+    const depts = ['Mech', 'Control', 'Elec', 'Sales'];
+    const deptColors = {
+        'Mech': 'var(--col-doing)',
+        'Control': 'var(--col-review)',
+        'Elec': 'var(--col-todo)',
+        'Sales': 'var(--urgent-color)'
+    };
+    const deptI18nKeys = {
+        'Mech': 'dept_mech',
+        'Control': 'dept_control',
+        'Elec': 'dept_elec',
+        'Sales': 'dept_sales'
+    };
+
+    depts.forEach(dept => {
+        const track = document.createElement('div');
+        track.className = 'timetable-track';
+        
+        const label = document.createElement('div');
+        label.className = 'timetable-track-label';
+        const deptName = i18nData[currentLang][deptI18nKeys[dept]] || dept;
+        label.innerText = `[ ${deptName.toUpperCase()} ]`;
+        label.style.color = deptColors[dept] || '#aaa';
+        track.appendChild(label);
+        
+        const content = document.createElement('div');
+        content.className = 'timetable-track-content';
+        content.style.backgroundSize = `${(100/days)}% 100%`;
+        
+        const showDeleted = document.getElementById('pm-timetable-show-deleted')?.checked;
+        
+        let deptLogs = logs.filter(l => l.department === dept);
+        if(!showDeleted) {
+            deptLogs = deptLogs.filter(l => l.status !== 'deleted');
+        }
+        
+        // Sort by time
+        deptLogs.sort((a, b) => new Date(a.timestamp.replace(' ', 'T')) - new Date(b.timestamp.replace(' ', 'T')));
+        
+        const placedMarkers = [];
+
+        deptLogs.forEach(log => {
+            let leftPct = -1;
+            let widthPct = -1;
+
+            const sDateStr = log.start_date;
+            const dDateStr = log.due_date;
+            const logDate = new Date(log.timestamp.replace(' ', 'T'));
+
+            function calculatePct(date) {
+                if(scale === 'weekly') {
+                    const diffTime = date.getTime() - startDate.getTime();
+                    const diffDays = diffTime / (1000 * 3600 * 24);
+                    if(diffDays >= -1 && diffDays <= 8) { // buffer
+                        return (diffDays / 7) * 100;
+                    }
+                } else {
+                    const monthDiff = (date.getFullYear() - startDate.getFullYear()) * 12 + (date.getMonth() - startDate.getMonth());
+                    if(monthDiff >= -1 && monthDiff <= 13) {
+                        const day = date.getDate();
+                        const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+                        return ((monthDiff + (day / daysInMonth)) / 12) * 100;
+                    }
+                }
+                return -1;
+            }
+
+            if(sDateStr && dDateStr && sDateStr !== dDateStr) {
+                // Range display
+                const s = new Date(sDateStr);
+                const d = new Date(dDateStr);
+                d.setHours(23,59,59,999); // End of day
+
+                leftPct = calculatePct(s);
+                const rightPct = calculatePct(d);
+                if(leftPct !== -1 && rightPct !== -1) {
+                    widthPct = rightPct - leftPct;
+                    if(widthPct < 0.5) widthPct = 0.5; // Minimum visibility
+                } else if(leftPct !== -1) {
+                    widthPct = 100 - leftPct; // overflow right
+                } else if(rightPct !== -1) {
+                    widthPct = rightPct; // overflow left
+                    leftPct = 0;
+                }
+            } else {
+                // Point display
+                const targetDate = sDateStr ? new Date(sDateStr) : logDate;
+                leftPct = calculatePct(targetDate);
+            }
+            
+            if(leftPct !== -1) {
+                // Overlap prevention (vertical stacking)
+                let lane = 0;
+                const minDistance = 2; // % distance
+                while(placedMarkers.some(m => Math.abs(m.left - leftPct) < minDistance && m.lane === lane)) {
+                    lane++;
+                }
+                placedMarkers.push({left: leftPct, lane: lane});
+                
+                const laneOffsets = [0, -16, 16, -24, 24];
+                const finalOffset = laneOffsets[lane % laneOffsets.length];
+
+                const marker = document.createElement('div');
+                marker.className = widthPct !== -1 ? 'timetable-log-range' : 'timetable-log-marker';
+                marker.dataset.dept = dept;
+                
+                marker.style.left = leftPct + '%';
+                if(widthPct !== -1) {
+                    marker.style.width = widthPct + '%';
+                }
+                marker.style.top = (30 + finalOffset) + 'px'; // Base at 50% (30px)
+                marker.style.backgroundColor = deptColors[dept] || 'var(--accent-color)';
+                
+                const tooltipEl = document.getElementById('global-timetable-tooltip');
+                const imgText = i18nData[currentLang].pm_status_log_image_attached || 'Image attached';
+                let logText = log.text_content || `[ ${imgText} ]`;
+                let tooltipContent = `[${log.timestamp}]<br>${logText.replace(/\n/g, '<br>')}`;
+                
+                if(log.status === 'deleted') {
+                    marker.classList.add('deleted');
+                    tooltipContent = `<span style="text-decoration: line-through; opacity: 0.6;">[${log.timestamp}]<br>${logText.replace(/\n/g, '<br>')}</span>`;
+                } else if(log.status === 'done') {
+                    marker.classList.add('done');
+                    const doneTag = i18nData[currentLang].pm_status_done || 'DONE';
+                    tooltipContent = `<span style="color: #7AA2F7; font-weight:bold;">[${doneTag}]</span><br>[${log.timestamp}]<br>${logText.replace(/\n/g, '<br>')}`;
+                }
+                
+                marker.onmouseenter = (e) => {
+                    tooltipEl.innerHTML = tooltipContent;
+                    tooltipEl.style.display = 'block';
+                    tooltipEl.style.left = (e.clientX + 15) + 'px';
+                    tooltipEl.style.top = (e.clientY + 15) + 'px';
+                };
+                
+                marker.onmousemove = (e) => {
+                    tooltipEl.style.left = (e.clientX + 15) + 'px';
+                    tooltipEl.style.top = (e.clientY + 15) + 'px';
+                };
+                
+                marker.onmouseleave = () => {
+                    tooltipEl.style.display = 'none';
+                };
+                
+                marker.onclick = () => {
+                    refreshPMTimetableLogDetail(log.id);
+                };
+                
+                content.appendChild(marker);
+            }
+        });
+        
+        track.appendChild(content);
+        body.appendChild(track);
+    });
+    
+    container.appendChild(body);
+}
 
 // Image Viewer Close
 const imgViewerClose = document.getElementById('image-viewer-close');
@@ -1642,4 +2034,96 @@ if(imgViewerClose) {
     imgViewerClose.addEventListener('click', () => {
         document.getElementById('image-viewer-modal').style.display = 'none';
     });
+}
+
+let currentDetailLogId = null;
+async function refreshPMTimetableLogDetail(logId) {
+    if(!logId) return;
+    currentDetailLogId = logId;
+    
+    // Fetch latest logs to get updated data
+    const logs = await window.pywebview.api.get_status_logs(currentProjectId);
+    const log = logs.find(l => l.id === logId);
+    if(!log) {
+        document.getElementById('pm-timetable-log-detail').style.display = 'none';
+        currentDetailLogId = null;
+        return;
+    }
+
+    const detailArea = document.getElementById('pm-timetable-log-detail');
+    const header = document.getElementById('pm-timetable-detail-header');
+    const contentArea = document.getElementById('pm-timetable-detail-content');
+    const imgContainer = document.getElementById('pm-timetable-detail-image');
+    
+    detailArea.style.display = 'flex';
+    let statusTag = '';
+    if(log.status === 'done') statusTag = ` [${i18nData[currentLang].pm_status_done || 'DONE'}]`;
+    else if(log.status === 'deleted') statusTag = ` [${i18nData[currentLang].pm_status_deleted || 'DELETED'}]`;
+    
+    const deptKey = 'dept_' + log.department.toLowerCase();
+    const deptName = i18nData[currentLang][deptKey] || log.department;
+    header.innerText = `[${deptName.toUpperCase()}] ${log.tag || ''} - ${log.timestamp}${statusTag}`;
+    
+    let html = '';
+    if(log.title) html += `<div style="font-weight: bold; color: var(--accent-color); font-size: 1.1em; margin-bottom: 5px;">${log.title}</div>`;
+    if(log.manager) html += `<div style="font-size: 0.9em; color: #aaa;">Manager: ${log.manager}</div>`;
+    if(log.start_date || log.due_date) html += `<div style="font-size: 0.9em; color: #888;">Schedule: ${log.start_date || '?'} ~ ${log.due_date || '?'}</div>`;
+    if(log.text_content) html += `<div style="margin-top: 8px; white-space: pre-wrap; color: #ddd;">${log.text_content}</div>`;
+    
+    contentArea.innerHTML = html;
+    
+    imgContainer.innerHTML = '';
+    if(log.image_path) {
+        const img = document.createElement('img');
+        img.style.height = '80px';
+        img.style.border = '1px solid #333';
+        img.style.cursor = 'pointer';
+        img.src = await window.pywebview.api.get_local_image_base64(log.image_path);
+        img.onclick = () => {
+            document.getElementById('image-viewer-img').src = img.src;
+            document.getElementById('image-viewer-modal').style.display = 'flex';
+        };
+        imgContainer.appendChild(img);
+    }
+
+    const editBtn = document.getElementById('pm-timetable-detail-edit');
+    const doneBtn = document.getElementById('pm-timetable-detail-done');
+    const restoreBtn = document.getElementById('pm-timetable-detail-restore');
+    const delBtn = document.getElementById('pm-timetable-detail-delete');
+    
+    editBtn.style.display = (log.status === 'done' || log.status === 'deleted') ? 'none' : 'block';
+    doneBtn.style.display = (log.status === 'done' || log.status === 'deleted') ? 'none' : 'block';
+    restoreBtn.style.display = (log.status === 'done' || log.status === 'deleted') ? 'block' : 'none';
+    delBtn.style.display = (log.status === 'deleted') ? 'none' : 'block';
+    
+    editBtn.onclick = () => {
+        openPMModal(log.department, log);
+    };
+    
+    doneBtn.onclick = async () => {
+        if(confirm(i18nData[currentLang].msg_confirm_done || "Mark as DONE?")) {
+            await window.pywebview.api.mark_status_log_done(log.id);
+            refreshStatusLogs();
+            renderTimeTable();
+            refreshPMTimetableLogDetail(log.id);
+        }
+    };
+
+    restoreBtn.onclick = async () => {
+        if(confirm(i18nData[currentLang].msg_confirm_restore || "Restore this log?")) {
+            await window.pywebview.api.restore_status_log(log.id);
+            refreshStatusLogs();
+            renderTimeTable();
+            refreshPMTimetableLogDetail(log.id);
+        }
+    };
+    
+    delBtn.onclick = async () => {
+        if(confirm(i18nData[currentLang].msg_confirm_delete || "Delete this log?")) {
+            await window.pywebview.api.delete_status_log(log.id);
+            refreshStatusLogs();
+            renderTimeTable();
+            refreshPMTimetableLogDetail(log.id);
+        }
+    };
 }

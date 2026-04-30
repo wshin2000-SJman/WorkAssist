@@ -65,6 +65,10 @@
         "msg_initialize_warn": "초기화 하면 모든 기록이 삭제되고 되돌릴 수 없습니다.",
         "msg_tag_limit_exceeded": "일일 Task 생성 한도는 99까지입니다.",
         "msg_invalid_due_date": "[기한]은 [시작일]과 동일하거나, [시작일] 이후여야 합니다.",
+        "msg_confirm_done": "이 로그를 완료 처리 하시겠습니까?",
+        "msg_confirm_restore": "이 로그를 다시 활성 상태로 되돌리시겠습니까?",
+        "msg_confirm_delete": "이 로그를 삭제하시겠습니까?",
+        "pm_btn_done": "[ 완료 ]",
         "btn_logout": "[ 로그아웃 ]",
         "btn_edit": "[ 수정 ]",
         "btn_save_changes": "[ 변경사항 저장 ]",
@@ -125,7 +129,15 @@
         "pm_ph_search_logs": "> 부서 또는 내용으로 검색 ...",
         "pm_ph_search_projects": "> 프로젝트 검색 ...",
         "pm_done_projects_list": "[ 완료 프로젝트 목록 ]",
-        "pm_deleted_projects_list": "[ 삭제 프로젝트 목록 ]"
+        "pm_deleted_projects_list": "[ 삭제 프로젝트 목록 ]",
+        "pm_timetable_tab": "[ 일정표 ]",
+        "pm_timetable_weekly": "주간",
+        "pm_timetable_monthly": "월간",
+        "pm_timetable_show_deleted": "삭제된 LOG 보기",
+        "pm_status_log_image_attached": "이미지 첨부됨",
+        "pm_status_done": "완료",
+        "pm_status_deleted": "삭제됨",
+        "pm_btn_close": "닫기"
     },
     "en": {
         "app_title": "WorkAssist",
@@ -193,6 +205,10 @@
         "msg_initialize_warn": "Initializing will delete all records and cannot be undone.",
         "msg_tag_limit_exceeded": "Daily task creation limit is 99.",
         "msg_invalid_due_date": "Due date must be the same as or after the Start Date.",
+        "msg_confirm_done": "Mark this log as DONE?",
+        "msg_confirm_restore": "Restore this log to active state?",
+        "msg_confirm_delete": "Delete this log?",
+        "pm_btn_done": "[ DONE ]",
         "btn_logout": "[ LOGOUT ]",
         "btn_edit": "[ EDIT ]",
         "btn_save_changes": "[ SAVE CHANGES ]",
@@ -239,7 +255,7 @@
         "pm_ph_log": "Enter new status...",
         "pm_btn_delete": "[ DELETE ]",
         "pm_done_list": "[ DONE ]",
-        "pm_btn_done": "[ Done ]",
+        "pm_btn_done": "[ DONE ]",
         "pm_deleted_list": "[ DELETED ]",
         "pm_th_tag": "Tag",
         "pm_th_dept": "Dept",
@@ -253,6 +269,14 @@
         "pm_ph_search_logs": "> Search dept or content ...",
         "pm_ph_search_projects": "> Search project ...",
         "pm_done_projects_list": "[ DONE PROJECTS ]",
-        "pm_deleted_projects_list": "[ DELETED PROJECTS ]"
+        "pm_deleted_projects_list": "[ DELETED PROJECTS ]",
+        "pm_timetable_tab": "[ TIME TABLE ]",
+        "pm_timetable_weekly": "Weekly",
+        "pm_timetable_monthly": "Monthly",
+        "pm_timetable_show_deleted": "Show Deleted LOGs",
+        "pm_status_log_image_attached": "Image Attached",
+        "pm_status_done": "DONE",
+        "pm_status_deleted": "DELETED",
+        "pm_btn_close": "CLOSE"
     }
 }
