@@ -22,8 +22,8 @@ window.addEventListener('pywebviewready', async function() {
     
     // Display version
     const version = await window.pywebview.api.get_app_version();
-    document.getElementById('app-version-login').innerText = version;
-    document.getElementById('app-version-main').innerText = version;
+    const versionSettingsEl = document.getElementById('app-version-settings');
+    if(versionSettingsEl) versionSettingsEl.innerText = 'Version: ' + version;
 });
 
 // Setup Event Listeners
