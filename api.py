@@ -4,6 +4,8 @@ import os
 import io
 import hashlib
 
+from version import VERSION
+
 def hash_password(password):
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
 
@@ -11,7 +13,7 @@ class API:
     def __init__(self):
         db.init_db()
         self.current_user_id = None
-        self.APP_VERSION = 'v1.0.1'
+        self.APP_VERSION = VERSION
         self.window = None
 
     def set_window(self, window):
@@ -78,10 +80,10 @@ class API:
         date_prefix = today.strftime('%y/%m/%d')
         seq = db.get_next_tag_sequence(self.current_user_id, date_prefix)
         
-        if seq > 99:
+        if seq > 999:
             return {'status': 'error', 'message': 'tag_limit_exceeded'}
             
-        task_tag = f"{date_prefix}-{seq:02d}"
+        task_tag = f"T-{date_prefix}-{seq:03d}"
         
         title = data.get('title', 'Untitled')
         content = data.get('content', '')
@@ -257,3 +259,123 @@ class API:
             count += 1
             
         return {'status': 'success', 'count': count}
+
+    # Project Manager API
+    def get_projects(self, status='active'):
+        if self.current_user_id is None:
+            return []
+        return db.get_all_projects(self.current_user_id, status)
+
+    def save_project(self, data):
+        if self.current_user_id is None:
+            return {'status': 'error', 'message': 'Not logged in'}
+        
+        project_id = data.get('id')
+        name = data.get('name', 'Untitled Project')
+        description = data.get('description', '')
+        manager = data.get('manager', '')
+        client = data.get('client', '')
+        
+        if project_id:
+            db.update_project(project_id, name, description, manager, client)
+            return {'status': 'success', 'id': project_id}
+        else:
+            new_id = db.add_project(self.current_user_id, name, description, manager, client)
+            return {'status': 'success', 'id': new_id}
+
+    def delete_project(self, project_id):
+        db.delete_project(project_id)
+        return {'status': 'success'}
+
+    def delete_project_permanent(self, project_id):
+        db.delete_project_permanent(project_id)
+        return {'status': 'success'}
+
+    def mark_project_done(self, project_id):
+        db.update_project_status(project_id, 'done')
+        return {'status': 'success'}
+
+    def restore_project(self, project_id):
+        db.update_project_status(project_id, 'active')
+        return {'status': 'success'}
+
+    def get_status_logs(self, project_id):
+        return db.get_status_logs(project_id)
+
+    def save_status_log(self, data):
+        project_id = data.get('project_id')
+        department = data.get('department')
+        text_content = data.get('text_content', '')
+        image_path = data.get('image_path', '')
+        
+        # Generate tag: L-YY/MM/DD-###
+        import datetime
+        now = datetime.datetime.now()
+        date_str = now.strftime('%y/%m/%d')
+        serial = db.get_next_tag_serial(date_str)
+        tag = f"L-{date_str}-{serial:03d}"
+        
+        new_id = db.add_status_log(project_id, department, text_content, image_path, tag)
+        return {'status': 'success', 'id': new_id, 'tag': tag}
+
+    def delete_status_log(self, log_id):
+        db.delete_status_log(log_id)
+        return {'status': 'success'}
+
+    def mark_status_log_done(self, log_id):
+        db.update_status_log_state(log_id, 'done')
+        return {'status': 'success'}
+
+    def mark_status_log_deleted(self, log_id):
+        db.update_status_log_state(log_id, 'deleted')
+        return {'status': 'success'}
+
+    def restore_status_log(self, log_id):
+        db.update_status_log_state(log_id, 'active')
+        return {'status': 'success'}
+
+    def upload_project_image(self, project_id):
+        if not self.window:
+            return {'status': 'error', 'message': 'No window context'}
+        
+        import webview
+        import shutil
+        import uuid
+        
+        file_types = ('Image files (*.png;*.jpg;*.jpeg;*.gif)', 'All files (*.*)')
+        result = self.window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False, file_types=file_types)
+        
+        if result and len(result) > 0:
+            source_path = result[0]
+            
+            # Destination path: %LOCALAPPDATA%/SJ_Kanban/projects/{project_id}/
+            base = db.get_data_dir()
+            proj_dir = os.path.join(base, 'projects', str(project_id))
+            os.makedirs(proj_dir, exist_ok=True)
+            
+            ext = os.path.splitext(source_path)[1]
+            filename = f"{uuid.uuid4().hex}{ext}"
+            dest_path = os.path.join(proj_dir, filename)
+            
+            shutil.copy2(source_path, dest_path)
+            
+            return {'status': 'success', 'path': dest_path}
+            
+        return {'status': 'cancelled'}
+
+    def get_local_image_base64(self, path):
+        if not path or not os.path.exists(path):
+            return ""
+        try:
+            import base64
+            with open(path, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                ext = os.path.splitext(path)[1].lower()
+                mime = "image/jpeg"
+                if ext == ".png":
+                    mime = "image/png"
+                elif ext == ".gif":
+                    mime = "image/gif"
+                return f"data:{mime};base64,{encoded_string}"
+        except Exception as e:
+            return ""

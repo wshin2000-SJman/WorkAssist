@@ -24,7 +24,25 @@ window.addEventListener('pywebviewready', async function() {
     const version = await window.pywebview.api.get_app_version();
     const versionSettingsEl = document.getElementById('app-version-settings');
     if(versionSettingsEl) versionSettingsEl.innerText = 'Version: ' + version;
+    const loginVersionEl = document.getElementById('login-version');
+    if(loginVersionEl) loginVersionEl.innerText = 'ver' + version;
+
+    // Set Seasonal Login Image
+    setLoginImage();
 });
+
+function setLoginImage() {
+    const month = new Date().getMonth() + 1; // 1-12
+    const imgEl = document.getElementById('login-logo');
+    if(!imgEl) return;
+    
+    let imgSrc = 'Title IMG_2.webp'; // default 1-7
+    if (month === 12) imgSrc = 'Title IMG_DEC.webp';
+    else if (month === 8) imgSrc = 'Title IMG_AUG.webp';
+    else if (month >= 9 && month <= 11) imgSrc = 'Title IMG_1.webp';
+    
+    imgEl.src = imgSrc;
+}
 
 // Setup Event Listeners
 function setupAuthListeners() {
@@ -142,6 +160,7 @@ function setupEventListeners() {
             // If switching to Kanban, refresh it
             if(item.dataset.page === 'kanban-page') refreshTasks();
             if(item.dataset.page === 'meeting-page') refreshMeetings();
+            if(item.dataset.page === 'project-page') refreshProjects();
         });
     });
 
@@ -1131,5 +1150,496 @@ function applyLanguage(lang) {
         if(i18nData[lang][key]) {
             el.placeholder = i18nData[lang][key];
         }
+    });
+}
+
+// --- Project Manager Logic ---
+let allProjects = [];
+let currentProjectId = null;
+
+async function refreshProjects() {
+    allProjects = await window.pywebview.api.get_projects();
+    renderProjectList();
+    if(currentProjectId) {
+        loadProject(currentProjectId);
+    } else if(allProjects.length > 0) {
+        loadProject(allProjects[0].id);
+    } else {
+        document.getElementById('project-dashboard').style.display = 'none';
+    }
+}
+
+function renderProjectList() {
+    const list = document.getElementById('project-list');
+    if(!list) return;
+    list.innerHTML = '';
+    
+    const searchVal = document.getElementById('project-search')?.value.toLowerCase() || '';
+    const filtered = allProjects.filter(p => (p.name || '').toLowerCase().includes(searchVal));
+
+    filtered.forEach(p => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'project-item-wrapper' + (p.id === currentProjectId ? ' active' : '');
+        
+        const item = document.createElement('div');
+        item.className = 'project-item';
+        item.innerText = p.name || 'Untitled';
+        item.onclick = () => loadProject(p.id);
+        
+        const doneBtn = document.createElement('button');
+        doneBtn.className = 'btn-done-project';
+        doneBtn.innerText = '[Done]';
+        doneBtn.onclick = async (e) => {
+            e.stopPropagation();
+            if(confirm('Mark this project as DONE?')) {
+                await window.pywebview.api.mark_project_done(p.id);
+                if(currentProjectId === p.id) currentProjectId = null;
+                refreshProjects();
+            }
+        };
+        
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-delete-project';
+        delBtn.innerText = '[X]';
+        delBtn.onclick = async (e) => {
+            e.stopPropagation();
+            if(confirm('Delete this project? All logs will be deleted.')) {
+                await window.pywebview.api.delete_project(p.id);
+                if(currentProjectId === p.id) currentProjectId = null;
+                refreshProjects();
+            }
+        };
+        
+        wrapper.appendChild(item);
+        wrapper.appendChild(doneBtn);
+        wrapper.appendChild(delBtn);
+        list.appendChild(wrapper);
+    });
+}
+
+async function loadProject(id) {
+    currentProjectId = id;
+    document.getElementById('project-done-view').style.display = 'none';
+    document.getElementById('project-deleted-view').style.display = 'none';
+    renderProjectList();
+    
+    const p = allProjects.find(x => x.id === id);
+    if(!p) return;
+    
+    document.getElementById('project-dashboard').style.display = 'flex';
+    document.getElementById('project-name').value = p.name;
+    document.getElementById('project-manager').value = p.manager;
+    document.getElementById('project-client').value = p.client;
+    document.getElementById('project-desc').value = p.description;
+    
+    await refreshStatusLogs();
+}
+
+async function showDoneProjects() {
+    currentProjectId = null;
+    renderProjectList();
+    
+    document.getElementById('project-dashboard').style.display = 'none';
+    document.getElementById('project-deleted-view').style.display = 'none';
+    document.getElementById('project-done-view').style.display = 'flex';
+    
+    const doneProjects = await window.pywebview.api.get_projects('done');
+    const tbody = document.getElementById('pm-done-projects-table-body');
+    tbody.innerHTML = '';
+    
+    doneProjects.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight:bold;">${p.name}</td>
+            <td>${p.manager}</td>
+            <td>${p.client}</td>
+            <td style="font-size:0.8em; color:#565f89;">${p.created_at}</td>
+            <td></td>
+        `;
+        const actionTd = tr.querySelector('td:last-child');
+        
+        const restoreBtn = document.createElement('button');
+        restoreBtn.className = 'action-btn';
+        restoreBtn.innerText = '[RESTORE]';
+        restoreBtn.style.color = 'var(--col-review)';
+        restoreBtn.onclick = async () => {
+            await window.pywebview.api.restore_project(p.id);
+            showDoneProjects();
+            refreshProjects();
+        };
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'action-btn';
+        delBtn.innerText = '[PERM. DELETE]';
+        delBtn.style.color = 'var(--urgent-color)';
+        delBtn.onclick = async () => {
+            if(confirm('Are you sure you want to PERMANENTLY delete this project and all its logs?')) {
+                await window.pywebview.api.delete_project_permanent(p.id);
+                showDoneProjects();
+            }
+        };
+        
+        actionTd.appendChild(restoreBtn);
+        actionTd.appendChild(delBtn);
+        tbody.appendChild(tr);
+    });
+}
+
+async function showDeletedProjects() {
+    currentProjectId = null;
+    renderProjectList();
+    
+    document.getElementById('project-dashboard').style.display = 'none';
+    document.getElementById('project-done-view').style.display = 'none';
+    document.getElementById('project-deleted-view').style.display = 'flex';
+    
+    const deletedProjects = await window.pywebview.api.get_projects('deleted');
+    const tbody = document.getElementById('pm-deleted-projects-table-body');
+    tbody.innerHTML = '';
+    
+    deletedProjects.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight:bold;">${p.name}</td>
+            <td>${p.manager}</td>
+            <td>${p.client}</td>
+            <td style="font-size:0.8em; color:#565f89;">${p.created_at}</td>
+            <td></td>
+        `;
+        const actionTd = tr.querySelector('td:last-child');
+        
+        const restoreBtn = document.createElement('button');
+        restoreBtn.className = 'action-btn';
+        restoreBtn.innerText = '[RESTORE]';
+        restoreBtn.style.color = 'var(--col-review)';
+        restoreBtn.onclick = async () => {
+            await window.pywebview.api.restore_project(p.id);
+            showDeletedProjects();
+            refreshProjects();
+        };
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'action-btn';
+        delBtn.innerText = '[PERM. DELETE]';
+        delBtn.style.color = 'var(--urgent-color)';
+        delBtn.onclick = async () => {
+            if(confirm('Are you sure you want to PERMANENTLY delete this project and all its logs?')) {
+                await window.pywebview.api.delete_project_permanent(p.id);
+                showDeletedProjects();
+            }
+        };
+        
+        actionTd.appendChild(restoreBtn);
+        actionTd.appendChild(delBtn);
+        tbody.appendChild(tr);
+    });
+}
+
+const btnNewProject = document.getElementById('btn-new-project');
+if(btnNewProject) {
+    btnNewProject.addEventListener('click', async () => {
+        const res = await window.pywebview.api.save_project({name: 'New Project'});
+        if(res.status === 'success') {
+            await refreshProjects();
+            loadProject(res.id);
+        }
+    });
+}
+
+const btnDeleteProject = document.getElementById('btn-delete-project');
+if(btnDeleteProject) {
+    btnDeleteProject.addEventListener('click', async () => {
+        if(!currentProjectId) return;
+        if(confirm(i18nData[currentLang].pm_btn_delete + '?')) {
+            await window.pywebview.api.delete_project(currentProjectId);
+            currentProjectId = null;
+            await refreshProjects();
+        }
+    });
+}
+
+// Auto-save Project Info (Debounce)
+let projectSaveTimeout = null;
+['project-name', 'project-manager', 'project-client', 'project-desc'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) {
+        el.addEventListener('input', () => {
+            if(projectSaveTimeout) clearTimeout(projectSaveTimeout);
+            projectSaveTimeout = setTimeout(async () => {
+                if(!currentProjectId) return;
+                const data = {
+                    id: currentProjectId,
+                    name: document.getElementById('project-name').value,
+                    manager: document.getElementById('project-manager').value,
+                    client: document.getElementById('project-client').value,
+                    description: document.getElementById('project-desc').value
+                };
+                await window.pywebview.api.save_project(data);
+                allProjects = await window.pywebview.api.get_projects();
+                renderProjectList();
+            }, 1000);
+        });
+    }
+});
+
+// Status Logs
+async function refreshStatusLogs() {
+    if(!currentProjectId) return;
+    const logs = await window.pywebview.api.get_status_logs(currentProjectId);
+    
+    const activeLogs = logs.filter(l => l.status === 'active' || !l.status);
+    const doneLogs = logs.filter(l => l.status === 'done');
+    const deletedLogs = logs.filter(l => l.status === 'deleted');
+    
+    const depts = ['Mech', 'Control', 'Elec', 'Sales'];
+    for(const dept of depts) {
+        const list = document.getElementById(`log-list-${dept}`);
+        if(!list) continue;
+        list.innerHTML = '';
+        const deptLogs = activeLogs.filter(l => l.department === dept);
+        
+        for(const log of deptLogs) {
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            
+            let html = `<span class="log-time">[${log.timestamp}]</span>`;
+            if(log.tag) {
+                html += ` <span style="color: #7AA2F7; font-weight: bold; margin-left: 5px;">[${log.tag}]</span>`;
+            }
+            if(log.text_content) {
+                html += `<div class="log-text">${log.text_content}</div>`;
+            }
+            item.innerHTML = html;
+            
+            if(log.image_path) {
+                const img = document.createElement('img');
+                img.className = 'log-image-thumb';
+                img.src = await window.pywebview.api.get_local_image_base64(log.image_path);
+                img.onclick = () => {
+                    document.getElementById('image-viewer-img').src = img.src;
+                    document.getElementById('image-viewer-modal').style.display = 'flex';
+                };
+                item.appendChild(img);
+            }
+            
+            const delBtn = document.createElement('button');
+            delBtn.className = 'log-delete-btn';
+            delBtn.innerText = '[X]';
+            delBtn.title = "Move to Deleted";
+            delBtn.onclick = async () => {
+                if(confirm('Move this log to Deleted?')) {
+                    await window.pywebview.api.mark_status_log_deleted(log.id);
+                    refreshStatusLogs();
+                }
+            };
+            item.appendChild(delBtn);
+            
+            const doneBtn = document.createElement('button');
+            doneBtn.className = 'log-delete-btn';
+            doneBtn.style.right = '35px';
+            doneBtn.style.color = 'var(--accent-color)';
+            doneBtn.innerText = i18nData[currentLang]?.pm_btn_done || '[ 완료 ]';
+            doneBtn.onclick = async () => {
+                if(confirm('Mark this log as done?')) {
+                    await window.pywebview.api.mark_status_log_done(log.id);
+                    refreshStatusLogs();
+                }
+            };
+            item.appendChild(doneBtn);
+            
+            list.appendChild(item);
+        }
+        // scroll to bottom
+        list.scrollTop = list.scrollHeight;
+    }
+    
+    // Render Done Table
+    await renderStatusTable('pm-done-table-body', doneLogs, 'pm_done_search_localized', false);
+    
+    // Render Deleted Table
+    await renderStatusTable('pm-deleted-table-body', deletedLogs, 'pm_deleted_search_localized', true);
+}
+
+async function renderStatusTable(tbodyId, logs, searchId, isDeleted) {
+    const tbody = document.getElementById(tbodyId);
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    
+    const searchEl = document.getElementById(searchId);
+    const term = searchEl ? searchEl.value.toLowerCase() : '';
+    
+    const filteredLogs = logs.filter(l => {
+        const tagMatch = (l.tag || '').toLowerCase().includes(term);
+        const contentMatch = (l.text_content || '').toLowerCase().includes(term);
+        
+        // Localized Dept search
+        const deptKey = 'dept_' + (l.department || '').toLowerCase();
+        const localizedDept = (i18nData[currentLang][deptKey] || l.department || '').toLowerCase();
+        const deptMatch = localizedDept.includes(term) || (l.department || '').toLowerCase().includes(term);
+        
+        return tagMatch || contentMatch || deptMatch;
+    });
+    
+    const sorted = [...filteredLogs].reverse(); // newest first
+    for(const log of sorted) {
+        const tr = document.createElement('tr');
+        
+        let contentHtml = log.text_content;
+        if(log.image_path) {
+            contentHtml += `<br><span class="img-preview-link" style="color:var(--col-doing); cursor:pointer; font-size:0.8em; text-decoration: underline;">[ View Image ]</span>`;
+        }
+        
+        const deptKey = 'dept_' + log.department.toLowerCase();
+        const deptName = i18nData[currentLang][deptKey] || log.department;
+        
+        let deptColor = 'var(--text-color)';
+        if (log.department === 'Mech') deptColor = 'var(--col-doing)';
+        else if (log.department === 'Control') deptColor = 'var(--col-review)';
+        else if (log.department === 'Elec') deptColor = 'var(--col-todo)';
+        else if (log.department === 'Sales') deptColor = 'var(--urgent-color)';
+
+        tr.innerHTML = `
+            <td style="font-size:0.9em; font-weight:bold; color:var(--col-doing);">${log.tag || ''}</td>
+            <td style="font-size:0.9em; font-weight:bold; color:${deptColor};">${deptName}</td>
+            <td style="font-size:0.8em; color:#565f89;">${log.timestamp}</td>
+            <td style="white-space: pre-wrap;">${contentHtml}</td>
+            <td></td>
+        `;
+        
+        const actionTd = tr.querySelector('td:last-child');
+        
+        // Restore Button
+        const restoreBtn = document.createElement('button');
+        restoreBtn.className = 'action-btn';
+        restoreBtn.style.color = 'var(--col-review)';
+        restoreBtn.style.borderColor = 'var(--col-review)';
+        restoreBtn.style.fontSize = '0.75em';
+        restoreBtn.style.marginRight = '5px';
+        restoreBtn.innerText = i18nData[currentLang].btn_restore || '[ RESTORE ]';
+        restoreBtn.onclick = async () => {
+            await window.pywebview.api.restore_status_log(log.id);
+            refreshStatusLogs();
+        };
+        actionTd.appendChild(restoreBtn);
+
+        // Delete Button
+        const delBtn = document.createElement('button');
+        delBtn.className = 'action-btn';
+        delBtn.style.color = 'var(--urgent-color)';
+        delBtn.style.borderColor = 'var(--urgent-color)';
+        delBtn.style.fontSize = '0.75em';
+        if(isDeleted) {
+            delBtn.innerText = i18nData[currentLang].btn_perm_delete || '[ PERM. DELETE ]';
+            delBtn.onclick = async () => {
+                const msg = i18nData[currentLang].msg_perm_delete || "This action is irreversible. Delete permanently?";
+                if(confirm(msg)) {
+                    await window.pywebview.api.delete_status_log(log.id);
+                    refreshStatusLogs();
+                }
+            };
+        } else {
+            delBtn.innerText = '[X]';
+            delBtn.title = "Move to Deleted";
+            delBtn.onclick = async () => {
+                if(confirm('Move this log to Deleted?')) {
+                    await window.pywebview.api.mark_status_log_deleted(log.id);
+                    refreshStatusLogs();
+                }
+            };
+        }
+        actionTd.appendChild(delBtn);
+        
+        // Image View Listener
+        if(log.image_path) {
+            tr.querySelector('.img-preview-link').onclick = async () => {
+                const b64 = await window.pywebview.api.get_local_image_base64(log.image_path);
+                document.getElementById('image-viewer-img').src = b64;
+                document.getElementById('image-viewer-modal').style.display = 'flex';
+            };
+        }
+        
+        tbody.appendChild(tr);
+    }
+}
+
+// Log Inputs
+document.querySelectorAll('.status-col').forEach(col => {
+    const dept = col.dataset.dept;
+    const btnUpload = col.querySelector('.btn-upload-img');
+    const pathInput = col.querySelector('.log-img-path');
+    const previewName = col.querySelector('.img-preview-name');
+    const btnAdd = col.querySelector('.btn-add-log');
+    const textInput = col.querySelector('.log-text-input');
+    
+    if(btnUpload) {
+        btnUpload.addEventListener('click', async () => {
+            if(!currentProjectId) return;
+            const res = await window.pywebview.api.upload_project_image(currentProjectId);
+            if(res.status === 'success') {
+                pathInput.value = res.path;
+                previewName.innerText = "Attached: " + res.path.split('\\').pop().split('/').pop();
+            }
+        });
+    }
+    
+    if(btnAdd) {
+        btnAdd.addEventListener('click', async () => {
+            if(!currentProjectId) return;
+            const text = textInput.value.trim();
+            const imgPath = pathInput.value;
+            if(!text && !imgPath) return;
+            
+            await window.pywebview.api.save_status_log({
+                project_id: currentProjectId,
+                department: dept,
+                text_content: text,
+                image_path: imgPath
+            });
+            
+            textInput.value = '';
+            pathInput.value = '';
+            previewName.innerText = '';
+            refreshStatusLogs();
+        });
+    }
+});
+
+// PM Done/Deleted Search Listeners
+const pmDoneSearch = document.getElementById('pm_done_search_localized');
+if(pmDoneSearch) pmDoneSearch.addEventListener('input', refreshStatusLogs);
+const pmDeletedSearch = document.getElementById('pm_deleted_search_localized');
+if(pmDeletedSearch) pmDeletedSearch.addEventListener('input', refreshStatusLogs);
+
+// Project Search Listener
+const projectSearch = document.getElementById('project-search');
+if(projectSearch) projectSearch.addEventListener('input', renderProjectList);
+
+const btnShowDoneProjects = document.getElementById('btn-show-done-projects');
+if(btnShowDoneProjects) btnShowDoneProjects.onclick = showDoneProjects;
+
+const btnShowDeletedProjects = document.getElementById('btn-show-deleted-projects');
+if(btnShowDeletedProjects) btnShowDeletedProjects.onclick = showDeletedProjects;
+
+// PM Tabs Switching
+document.querySelectorAll('.pm-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.pm-tab').forEach(t => {
+            t.classList.remove('active');
+            t.style.color = '#555';
+        });
+        document.querySelectorAll('.pm-tab-content').forEach(c => c.style.display = 'none');
+        
+        tab.classList.add('active');
+        tab.style.color = 'var(--text-color)';
+        const target = document.getElementById(tab.dataset.target);
+        if(target) target.style.display = 'flex';
+    });
+});
+
+// Image Viewer Close
+const imgViewerClose = document.getElementById('image-viewer-close');
+if(imgViewerClose) {
+    imgViewerClose.addEventListener('click', () => {
+        document.getElementById('image-viewer-modal').style.display = 'none';
     });
 }

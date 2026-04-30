@@ -1,7 +1,11 @@
 import webview
 import os
 import sys
+import logging
 from api import API
+
+# Mute pywebview logging to prevent AccessibilityObject recursion crash
+logging.getLogger('pywebview').setLevel(logging.CRITICAL)
 
 def get_asset_path(filename):
     if getattr(sys, 'frozen', False):
@@ -37,7 +41,7 @@ def create_desktop_shortcut():
         
     exe_path = os.path.abspath(sys.executable)
     desktop = get_desktop_path()
-    shortcut_path = os.path.join(desktop, 'SJ Kanban.lnk')
+    shortcut_path = os.path.join(desktop, 'WorkAssist.lnk')
     
     if not os.path.exists(shortcut_path):
         icon_path = get_asset_path('logo.ico')
@@ -56,7 +60,7 @@ if __name__ == '__main__':
     
     # Create the window
     window = webview.create_window(
-        'SJ WorkAssist',
+        'WorkAssist',
         url=html_file,
         js_api=api,
         width=1200,
@@ -68,4 +72,4 @@ if __name__ == '__main__':
     api.set_window(window)
     
     # Start the application
-    webview.start(debug=False)
+    webview.start(debug=False, gui='edgechromium')

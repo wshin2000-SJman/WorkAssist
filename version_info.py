@@ -1,12 +1,20 @@
 # -*- coding: utf-8 -*-
 # Version info script - run this to generate file_version_info.txt
 # Usage: python version_info.py
+from version import VERSION
 
-version_info = """
+# Convert "1.0.0" to (1, 0, 0, 0)
+v_parts = [int(p) for p in VERSION.split('.')]
+while len(v_parts) < 4:
+    v_parts.append(0)
+v_tuple = tuple(v_parts)
+v_str = ".".join(map(str, v_parts))
+
+version_info_template = """
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 0, 1, 0),
-    prodvers=(1, 0, 1, 0),
+    filevers={v_tuple},
+    prodvers={v_tuple},
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -21,13 +29,13 @@ VSVersionInfo(
           u'040904B0',
           [
             StringStruct(u'CompanyName', u'Samjeong Automation'),
-            StringStruct(u'FileDescription', u'SJ Kanban - Task Management'),
-            StringStruct(u'FileVersion', u'1.0.1.0'),
-            StringStruct(u'InternalName', u'SJ_Kanban'),
+            StringStruct(u'FileDescription', u'WorkAssist - Task Management'),
+            StringStruct(u'FileVersion', u'{v_str}'),
+            StringStruct(u'InternalName', u'WorkAssist'),
             StringStruct(u'LegalCopyright', u'Copyright (c) 2026 Samjeong Automation. All rights reserved.'),
-            StringStruct(u'OriginalFilename', u'SJ_Kanban.exe'),
-            StringStruct(u'ProductName', u'SJ Kanban'),
-            StringStruct(u'ProductVersion', u'1.0.1.0'),
+            StringStruct(u'OriginalFilename', u'WorkAssist.exe'),
+            StringStruct(u'ProductName', u'WorkAssist'),
+            StringStruct(u'ProductVersion', u'{v_str}'),
           ]
         )
       ]
@@ -37,7 +45,9 @@ VSVersionInfo(
 )
 """
 
+version_info = version_info_template.format(v_tuple=v_tuple, v_str=v_str)
+
 with open('file_version_info.txt', 'w', encoding='utf-8') as f:
     f.write(version_info.strip())
 
-print("file_version_info.txt generated successfully!")
+print(f"file_version_info.txt generated successfully with version {v_str}!")

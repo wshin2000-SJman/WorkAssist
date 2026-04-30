@@ -8,41 +8,43 @@
 </head>
 <body>
     <div id="login-view" style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
-        <h1 style="color: var(--urgent-color); margin-bottom: 30px; font-size: 2em; letter-spacing: 2px; display: flex; align-items: center; gap: 15px;">
-            <img src="logo_pixel.png" style="width: 48px; height: 48px; image-rendering: pixelated;">
-            <span data-i18n="app_title">SJ WorkAssist</span>
-        </h1>
-        <div class="modal" style="position: static; transform: none; display: block; width: 600px; padding: 30px;">
-            <div class="form-group">
+        <div style="width: 600px; max-width: 90%; display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px;">
+            <h1 style="color: var(--urgent-color); font-size: 2.2em; letter-spacing: 2px; margin: 0;">
+                <span data-i18n="app_title">WorkAssist</span>
+            </h1>
+            <span id="login-version" style="font-size: 0.9em; color: #666; font-weight: normal; letter-spacing: normal;">v1.0.0</span>
+        </div>
+        <img id="login-logo" src="Title IMG_2.webp" style="width: 600px; max-width: 90%; margin-bottom: 20px; border: 1px solid var(--border-color); padding: 5px; background: rgba(0,0,0,0.5); border-radius: 4px; box-sizing: border-box;">
+        <div class="modal" style="position: static; transform: none; display: block; width: 600px; max-width: 90%; padding: 30px; box-sizing: border-box;">
+            <div class="form-group" style="margin-bottom: 20px;">
                 <label data-i18n="login_id">ID:</label>
-                <input type="text" id="login-id-input" style="font-size: 1.2em; padding: 10px;">
+                <input type="text" id="login-id-input" style="font-size: 1.2em; padding: 10px; width: 100%; box-sizing: border-box;">
             </div>
             <div class="form-group">
                 <label data-i18n="login_password">PASSWORD:</label>
-                <input type="password" id="login-pw-input" style="font-size: 1.2em; padding: 10px;">
+                <input type="password" id="login-pw-input" style="font-size: 1.2em; padding: 10px; width: 100%; box-sizing: border-box;">
             </div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="action-btn" id="btn-do-login" data-i18n="btn_login" style="flex:1; border-color:var(--urgent-color); color:var(--urgent-color); font-size: 1.1em; padding: 10px;">[ LOGIN ]</button>
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: space-between;">
+            <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: space-between; flex-wrap: wrap;">
                 <button class="action-btn" id="btn-show-create" data-i18n="btn_create_id" style="font-size: 0.8em; color: #888; border: none; background: transparent;">[ CREATE ID ]</button>
                 <button class="action-btn" id="btn-show-hint" data-i18n="btn_hint" style="font-size: 0.8em; color: #888; border: none; background: transparent;">[ PASSWORD HINT ]</button>
                 <button class="action-btn" id="btn-show-change-pw" data-i18n="btn_change_pw" style="font-size: 0.8em; color: #888; border: none; background: transparent;">[ CHANGE PASSWORD ]</button>
             </div>
         </div>
-        <footer class="copyright">© 2026. [Wonseup Shin / Samjeong] All rights reserved.</footer>
+        <footer class="copyright" style="position: absolute; bottom: 20px; text-align: center; width: 100%;">© 2026. [Wonseup Shin / Samjeong] All rights reserved.</footer>
     </div>
 
     <div id="app-content" style="display: none; height: 100vh;">
         <nav id="main-sidebar">
-            <div class="sidebar-brand">
-                <img src="logo_pixel.png" style="width: 32px; height: 32px; image-rendering: pixelated;">
-                <span data-i18n="app_title">SJ WorkAssist</span>
+            <div class="sidebar-brand" style="justify-content: center; padding: 20px 0;">
+                <span data-i18n="app_title" style="font-size: 1.5em; letter-spacing: 1px;">WorkAssist</span>
             </div>
             <div class="sidebar-nav">
                 <button class="nav-item active" data-page="kanban-page" data-i18n="menu_kanban">[ Task Manager ]</button>
                 <button class="nav-item" data-page="meeting-page" data-i18n="menu_meetings">[ Meeting minutes ]</button>
-                <button class="nav-item" data-page="namebook-page" data-i18n="menu_namebook">[ Namebook ]</button>
+                <button class="nav-item" data-page="project-page" data-i18n="menu_namebook">[ Project Manager ]</button>
             </div>
             <div class="sidebar-footer">
                 <button class="action-btn" id="btn-settings-side" data-i18n="tab_settings" style="width: 100%; text-align: left; margin-bottom: 10px;">[ SETTINGS ]</button>
@@ -257,9 +259,206 @@
                     </div>
                 </div>
             </div>
-            <div id="namebook-page" class="page-view">
-                <div style="display: flex; justify-content: center; align-items: center; height: 100%; color: #555; font-size: 1.5rem;">
-                    [ Namebook ]
+            <div id="project-page" class="page-view">
+                <div class="project-container">
+                    <div class="project-sidebar">
+                        <div class="project-sidebar-header">
+                            <span data-i18n="pm_project_list">[ Project List ]</span>
+                            <button id="btn-new-project" class="retro-btn-small" title="New Project" data-i18n="pm_new_project">[ NEW PROJECT ]</button>
+                        </div>
+                        <div class="project-search-container">
+                            <input type="text" id="project-search" data-i18n-ph="pm_ph_search_projects" placeholder="> Search project ..." class="search-box-small">
+                        </div>
+                        <div id="project-list" class="project-list">
+                            <!-- Items populated via JS -->
+                        </div>
+                        <div class="project-sidebar-footer" style="padding: 20px 10px 0 10px; border-top: 1px solid var(--border-color); display:flex; flex-direction:column; gap:10px;">
+                            <button id="btn-show-done-projects" class="action-btn" data-i18n="pm_done_projects_list" style="width:100%; text-align:left;">[ DONE PROJECTS ]</button>
+                            <button id="btn-show-deleted-projects" class="action-btn" data-i18n="pm_deleted_projects_list" style="width:100%; text-align:left;">[ DELETED PROJECTS ]</button>
+                        </div>
+                    </div>
+                    <div class="project-main" id="project-dashboard" style="display:none;">
+                        <!-- General Info -->
+                        <div class="project-editor-header">
+                            <div class="section-header">
+                                <h3 data-i18n="pm_general_info">General Info</h3>
+                            </div>
+                            <div class="editor-row">
+                                <input type="text" id="project-name" data-i18n-ph="pm_label_name" placeholder="Project Name" class="retro-input-large">
+                            </div>
+                            <div class="editor-row-multi">
+                                <div class="editor-group">
+                                    <label data-i18n="pm_label_manager">Manager:</label>
+                                    <input type="text" id="project-manager">
+                                </div>
+                                <div class="editor-group">
+                                    <label data-i18n="pm_label_client">Client:</label>
+                                    <input type="text" id="project-client">
+                                </div>
+                            </div>
+                            <div class="editor-row">
+                                <label data-i18n="pm_label_desc">Description:</label>
+                                <textarea id="project-desc" style="min-height: 50px;"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Status Monitoring (Tabs) -->
+                        <div class="project-status-section">
+                            <div class="section-header project-tabs-container" style="display:flex; gap:15px; justify-content: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-bottom: 15px;">
+                                <button class="pm-tab active" data-target="pm-active-tab" data-i18n="pm_status_monitoring" style="background:transparent; border:none; color:var(--text-color); cursor:pointer; font-family: 'Cascadia Code', monospace; font-weight: bold; font-size: 1.1em; padding: 5px 0;">[ STATUS ]</button>
+                                <button class="pm-tab" data-target="pm-done-tab" data-i18n="pm_done_list" style="background:transparent; border:none; color:#555; cursor:pointer; font-family: 'Cascadia Code', monospace; font-weight: bold; font-size: 1.1em; padding: 5px 0;">[ DONE ]</button>
+                                <button class="pm-tab" data-target="pm-deleted-tab" data-i18n="pm_deleted_list" style="background:transparent; border:none; color:#555; cursor:pointer; font-family: 'Cascadia Code', monospace; font-weight: bold; font-size: 1.1em; padding: 5px 0;">[ DELETED ]</button>
+                            </div>
+                            
+                            <!-- Active Logs -->
+                            <div id="pm-active-tab" class="pm-tab-content active">
+                                <div class="status-grid">
+                                <!-- Mech -->
+                                <div class="status-col mech" data-dept="Mech">
+                                    <div class="col-header" data-i18n="pm_dept_mech">[ MECH ]</div>
+                                    <div class="log-list" id="log-list-Mech"></div>
+                                    <div class="log-input-area">
+                                        <textarea class="log-text-input" data-i18n-ph="pm_ph_log" placeholder="Enter new status..."></textarea>
+                                        <div class="log-actions">
+                                            <button class="action-btn btn-upload-img" data-i18n="pm_btn_upload_img">[ UPLOAD IMAGE ]</button>
+                                            <input type="hidden" class="log-img-path">
+                                            <span class="img-preview-name" style="font-size:0.7em; color:#888;"></span>
+                                            <button class="action-btn btn-add-log" data-i18n="pm_btn_add_log">[ ADD LOG ]</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Control -->
+                                <div class="status-col control" data-dept="Control">
+                                    <div class="col-header" data-i18n="pm_dept_control">[ CONTROL ]</div>
+                                    <div class="log-list" id="log-list-Control"></div>
+                                    <div class="log-input-area">
+                                        <textarea class="log-text-input" data-i18n-ph="pm_ph_log" placeholder="Enter new status..."></textarea>
+                                        <div class="log-actions">
+                                            <button class="action-btn btn-upload-img" data-i18n="pm_btn_upload_img">[ UPLOAD IMAGE ]</button>
+                                            <input type="hidden" class="log-img-path">
+                                            <span class="img-preview-name" style="font-size:0.7em; color:#888;"></span>
+                                            <button class="action-btn btn-add-log" data-i18n="pm_btn_add_log">[ ADD LOG ]</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Elec -->
+                                <div class="status-col elec" data-dept="Elec">
+                                    <div class="col-header" data-i18n="pm_dept_elec">[ ELEC ]</div>
+                                    <div class="log-list" id="log-list-Elec"></div>
+                                    <div class="log-input-area">
+                                        <textarea class="log-text-input" data-i18n-ph="pm_ph_log" placeholder="Enter new status..."></textarea>
+                                        <div class="log-actions">
+                                            <button class="action-btn btn-upload-img" data-i18n="pm_btn_upload_img">[ UPLOAD IMAGE ]</button>
+                                            <input type="hidden" class="log-img-path">
+                                            <span class="img-preview-name" style="font-size:0.7em; color:#888;"></span>
+                                            <button class="action-btn btn-add-log" data-i18n="pm_btn_add_log">[ ADD LOG ]</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Sales -->
+                                <div class="status-col sales" data-dept="Sales">
+                                    <div class="col-header" data-i18n="pm_dept_sales">[ SALES ]</div>
+                                    <div class="log-list" id="log-list-Sales"></div>
+                                    <div class="log-input-area">
+                                        <textarea class="log-text-input" data-i18n-ph="pm_ph_log" placeholder="Enter new status..."></textarea>
+                                        <div class="log-actions">
+                                            <button class="action-btn btn-upload-img" data-i18n="pm_btn_upload_img">[ UPLOAD IMAGE ]</button>
+                                            <input type="hidden" class="log-img-path">
+                                            <span class="img-preview-name" style="font-size:0.7em; color:#888;"></span>
+                                            <button class="action-btn btn-add-log" data-i18n="pm_btn_add_log">[ ADD LOG ]</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Done Logs -->
+                            <div id="pm-done-tab" class="pm-tab-content" style="display:none; flex:1; flex-direction:column;">
+                                <div class="list-header" style="margin-bottom: 10px;">
+                                    <input type="text" id="pm_done_search_localized" class="search-box" style="width: 100%;" data-i18n-ph="pm_ph_search_logs" placeholder="> Search dept or content ...">
+                                </div>
+                                <div class="status-col" style="flex:1; border: 1px solid var(--border-color); background: #1e1e1e; overflow-y: auto;">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 120px;" data-i18n="pm_th_tag">Tag</th>
+                                                <th style="width: 80px;" data-i18n="pm_th_dept">Dept</th>
+                                                <th style="width: 160px;" data-i18n="pm_th_timestamp">Timestamp</th>
+                                                <th data-i18n="pm_th_content">Content</th>
+                                                <th style="width: 220px;" data-i18n="pm_th_actions">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pm-done-table-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Deleted Logs -->
+                            <div id="pm-deleted-tab" class="pm-tab-content" style="display:none; flex:1; flex-direction:column;">
+                                <div class="list-header" style="margin-bottom: 10px;">
+                                    <input type="text" id="pm_deleted_search_localized" class="search-box" style="width: 100%;" data-i18n-ph="pm_ph_search_logs" placeholder="> Search dept or content ...">
+                                </div>
+                                <div class="status-col" style="flex:1; border: 1px solid var(--border-color); background: #1e1e1e; overflow-y: auto;">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 120px;" data-i18n="pm_th_tag">Tag</th>
+                                                <th style="width: 80px;" data-i18n="pm_th_dept">Dept</th>
+                                                <th style="width: 160px;" data-i18n="pm_th_timestamp">Timestamp</th>
+                                                <th data-i18n="pm_th_content">Content</th>
+                                                <th style="width: 220px;" data-i18n="pm_th_actions">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pm-deleted-table-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="project-main" id="project-done-view" style="display:none; flex:1; flex-direction:column;">
+                         <div class="section-header">
+                            <h3 data-i18n="pm_done_projects_list">[ Done Projects ]</h3>
+                        </div>
+                        <div style="flex:1; border: 1px solid var(--border-color); background: #1e1e1e; overflow-y: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="pm_label_name">Project Name</th>
+                                        <th data-i18n="pm_label_manager">Manager</th>
+                                        <th data-i18n="pm_label_client">Client</th>
+                                        <th data-i18n="pm_th_timestamp">Created Date</th>
+                                        <th data-i18n="pm_th_actions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pm-done-projects-table-body">
+                                    <!-- Done projects here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="project-main" id="project-deleted-view" style="display:none; flex:1; flex-direction:column;">
+                         <div class="section-header">
+                            <h3 data-i18n="pm_deleted_projects_list">[ Deleted Projects ]</h3>
+                        </div>
+                        <div style="flex:1; border: 1px solid var(--border-color); background: #1e1e1e; overflow-y: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="pm_label_name">Project Name</th>
+                                        <th data-i18n="pm_label_manager">Manager</th>
+                                        <th data-i18n="pm_label_client">Client</th>
+                                        <th data-i18n="pm_th_timestamp">Created Date</th>
+                                        <th data-i18n="pm_th_actions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pm-deleted-projects-table-body">
+                                    <!-- Deleted projects here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -381,7 +580,7 @@
                 </select>
             </div>
             <div class="settings-group">
-                <label data-i18n="settings_about">About SJ WorkAssist:</label>
+                <label data-i18n="settings_about">About WorkAssist:</label>
                 <div style="border: 1px dotted var(--border-color); padding: 10px; margin-top: 10px;">
                     <p data-i18n="about_author">Author: Wonseup Shin</p>
                     <p data-i18n="about_org">Organization: Samjeong Automation</p>
@@ -477,6 +676,16 @@
                 <button class="action-btn" id="initialize-cancel" data-i18n="modal_cancel">[ CANCEL ]</button>
                 <button class="action-btn" id="btn-do-initialize" data-i18n="btn_initialize" style="border-color: var(--urgent-color); color: var(--urgent-color);">[ INITIALIZE ]</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div class="modal-overlay" id="image-viewer-modal">
+        <div class="modal" style="width: 80%; max-width: 800px; padding: 10px; background: #000; border-color: #333;">
+            <div style="text-align: right;">
+                <button class="action-btn" id="image-viewer-close" style="color: #FFF; border-color: #555;">[ X ]</button>
+            </div>
+            <img id="image-viewer-img" style="width: 100%; height: auto; max-height: 80vh; object-fit: contain; margin-top: 10px;">
         </div>
     </div>
 

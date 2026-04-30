@@ -75,6 +75,47 @@ def init_db():
     if 'task_tag' not in columns:
         cursor.execute("ALTER TABLE tasks ADD COLUMN task_tag TEXT DEFAULT ''")
         
+    # Create Projects table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            owner_id INTEGER,
+            name TEXT NOT NULL,
+            description TEXT,
+            manager TEXT,
+            client TEXT,
+            created_at TEXT NOT NULL,
+            status TEXT DEFAULT 'active',
+            FOREIGN KEY (owner_id) REFERENCES users(id)
+        )
+    ''')
+
+    # Migration for projects
+    cursor.execute("PRAGMA table_info(projects)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if 'status' not in columns:
+        cursor.execute("ALTER TABLE projects ADD COLUMN status TEXT DEFAULT 'active'")
+
+    # Create Status Logs table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS status_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            department TEXT NOT NULL,
+            text_content TEXT,
+            image_path TEXT,
+            timestamp TEXT NOT NULL,
+            FOREIGN KEY (project_id) REFERENCES projects(id)
+        )
+    ''')
+
+    cursor.execute("PRAGMA table_info(status_logs)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if 'status' not in columns:
+        cursor.execute("ALTER TABLE status_logs ADD COLUMN status TEXT DEFAULT 'active'")
+    if 'tag' not in columns:
+        cursor.execute("ALTER TABLE status_logs ADD COLUMN tag TEXT")
+
     conn.commit()
     conn.close()
 
@@ -150,8 +191,9 @@ def get_all_tasks(owner_id=None):
 def get_next_tag_sequence(owner_id, date_prefix):
     conn = get_connection()
     cursor = conn.cursor()
-    # Count tasks for this user created today (based on task_tag prefix)
-    cursor.execute("SELECT COUNT(*) FROM tasks WHERE owner_id = ? AND task_tag LIKE ?", (owner_id, f"{date_prefix}%"))
+    # Count tasks for this user created today (supporting both old and new formats)
+    cursor.execute("SELECT COUNT(*) FROM tasks WHERE owner_id = ? AND (task_tag LIKE ? OR task_tag LIKE ?)", 
+                   (owner_id, f"{date_prefix}%", f"T-{date_prefix}%"))
     count = cursor.fetchone()[0]
     conn.close()
     return count + 1
@@ -269,6 +311,147 @@ def delete_meeting(meeting_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM meetings WHERE id = ?", (meeting_id,))
+    conn.commit()
+    conn.close()
+
+# Project Manager Methods
+def get_all_projects(owner_id=None, status='active'):
+    conn = get_connection()
+    cursor = conn.cursor()
+    if owner_id is not None:
+        cursor.execute("SELECT id, name, description, manager, client, created_at, status FROM projects WHERE owner_id = ? AND status = ? ORDER BY created_at DESC", (owner_id, status))
+    else:
+        cursor.execute("SELECT id, name, description, manager, client, created_at, status FROM projects WHERE status = ? ORDER BY created_at DESC", (status,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    projects = []
+    for row in rows:
+        projects.append({
+            'id': row[0],
+            'name': row[1],
+            'description': row[2] or '',
+            'manager': row[3] or '',
+            'client': row[4] or '',
+            'created_at': row[5],
+            'status': row[6] or 'active'
+        })
+    return projects
+
+def add_project(owner_id, name, description, manager, client):
+    conn = get_connection()
+    cursor = conn.cursor()
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute('''
+        INSERT INTO projects (owner_id, name, description, manager, client, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (owner_id, name, description, manager, client, now))
+    new_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return new_id
+
+def update_project(project_id, name, description, manager, client):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE projects 
+        SET name = ?, description = ?, manager = ?, client = ?
+        WHERE id = ?
+    ''', (name, description, manager, client, project_id))
+    conn.commit()
+    conn.close()
+
+def delete_project(project_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    # Now mark as 'deleted' status instead of physical deletion
+    cursor.execute("UPDATE projects SET status = 'deleted' WHERE id = ?", (project_id,))
+    conn.commit()
+    conn.close()
+
+def delete_project_permanent(project_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM status_logs WHERE project_id = ?", (project_id,))
+    cursor.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+    conn.commit()
+    conn.close()
+
+def update_project_status(project_id, status):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE projects SET status = ? WHERE id = ?", (status, project_id))
+    conn.commit()
+    conn.close()
+
+def get_status_logs(project_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, department, text_content, image_path, timestamp, status, tag FROM status_logs WHERE project_id = ? ORDER BY timestamp ASC", (project_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    logs = []
+    for row in rows:
+        logs.append({
+            'id': row[0],
+            'department': row[1],
+            'text_content': row[2] or '',
+            'image_path': row[3] or '',
+            'timestamp': row[4],
+            'status': row[5] or 'active',
+            'tag': row[6] or ''
+        })
+    return logs
+
+def get_next_tag_serial(date_str):
+    """Returns the next serial number for a given date (YY/MM/DD)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    # Find the max serial for today's date
+    cursor.execute("SELECT tag FROM status_logs WHERE tag LIKE ?", (f'L-{date_str}-%',))
+    tags = cursor.fetchall()
+    conn.close()
+    
+    max_serial = 0
+    for row in tags:
+        tag = row[0]
+        if tag:
+            parts = tag.split('-')
+            if len(parts) == 3:
+                try:
+                    serial = int(parts[2])
+                    if serial > max_serial:
+                        max_serial = serial
+                except ValueError:
+                    continue
+    return max_serial + 1
+
+def add_status_log(project_id, department, text_content, image_path, tag=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute('''
+        INSERT INTO status_logs (project_id, department, text_content, image_path, timestamp, tag)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (project_id, department, text_content, image_path, now, tag))
+    new_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return new_id
+
+def delete_status_log(log_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM status_logs WHERE id = ?", (log_id,))
+    conn.commit()
+    conn.close()
+
+def update_status_log_state(log_id, status):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE status_logs SET status = ? WHERE id = ?", (status, log_id))
     conn.commit()
     conn.close()
 

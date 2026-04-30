@@ -24,6 +24,11 @@
     padding: 0;
 }
 
+/* Password reveal icon style */
+input::-ms-reveal {
+    filter: invert(100%);
+}
+
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
@@ -120,7 +125,7 @@ header {
 
 .sidebar-footer {
     padding: 20px 10px 0 10px;
-    border-top: 1px dotted var(--border-color);
+    border-top: 1px solid var(--border-color);
 }
 
 /* Main Container & Pages */
@@ -459,6 +464,10 @@ select {
     gap: 15px;
 }
 
+#task-detail-modal .modal {
+    width: 600px;
+}
+
 .modal-header {
     font-size: 1.2em;
     font-weight: bold;
@@ -645,6 +654,37 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .btn-delete-mom:hover {
     color: var(--urgent-color);
+    font-weight: bold;
+}
+
+.btn-delete-project {
+    background: transparent;
+    border: none;
+    color: #444;
+    cursor: pointer;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.9em;
+    margin-left: 5px;
+}
+
+.btn-delete-project:hover {
+    color: var(--urgent-color);
+    font-weight: bold;
+}
+
+.btn-done-project {
+    background: transparent;
+    border: none;
+    color: #444;
+    cursor: pointer;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.9em;
+    margin-left: 5px;
+}
+
+.btn-done-project:hover {
+    color: var(--col-review);
+    font-weight: bold;
 }
 
 .meeting-item .m-date {
@@ -655,6 +695,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .meeting-item .m-title {
     font-size: 0.9em;
+    color: #FFF;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -817,4 +858,213 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     font-family: 'Courier New', Courier, monospace;
     white-space: pre-wrap;
     min-height: 400px;
+}
+
+/* Project Manager Styles */
+.project-container {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+}
+
+.project-sidebar {
+    width: 280px;
+    background: #16161e;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+}
+
+.project-sidebar-header {
+    padding: 0 15px 15px 15px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+    color: #888;
+}
+
+.project-search-container {
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.project-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.project-item-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dotted #333;
+    padding-right: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.project-item-wrapper:hover {
+    background: #1a1b26;
+}
+
+.project-item-wrapper.active {
+    background: #1a1b26;
+    border-left: 3px solid var(--urgent-color);
+}
+
+.project-item {
+    flex: 1;
+    padding: 12px 15px;
+    color: #FFF;
+    font-size: 0.9em;
+}
+
+.project-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+    background: #121212;
+}
+
+.project-editor-header {
+    margin-bottom: 20px;
+}
+
+.project-status-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.status-grid {
+    display: flex;
+    gap: 15px;
+    flex: 1;
+    min-height: 400px;
+}
+
+.status-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    background: #1e1e1e;
+}
+
+.status-col.mech { border-color: var(--col-doing); }
+.status-col.mech .col-header { color: var(--col-doing); border-bottom-color: var(--col-doing); }
+
+.status-col.control { border-color: var(--col-review); }
+.status-col.control .col-header { color: var(--col-review); border-bottom-color: var(--col-review); }
+
+.status-col.elec { border-color: var(--col-todo); }
+.status-col.elec .col-header { color: var(--col-todo); border-bottom-color: var(--col-todo); }
+
+.status-col.sales { border-color: var(--urgent-color); }
+.status-col.sales .col-header { color: var(--urgent-color); border-bottom-color: var(--urgent-color); }
+
+.status-col .col-header {
+    text-align: center;
+    padding: 10px;
+    font-weight: bold;
+    border-bottom: 1px dotted var(--border-color);
+    color: #A9B1D6;
+}
+
+.log-list {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.log-item {
+    background: #16161e;
+    border: 1px solid #292e42;
+    padding: 10px;
+    position: relative;
+    font-size: 0.9em;
+}
+
+.log-time {
+    font-size: 0.8em;
+    color: #565f89;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.log-text {
+    color: var(--text-color);
+    white-space: pre-wrap;
+    margin-bottom: 10px;
+}
+
+.log-image-thumb {
+    max-width: 100%;
+    max-height: 150px;
+    object-fit: cover;
+    border: 1px solid #333;
+    cursor: pointer;
+    display: block;
+}
+
+.log-delete-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: transparent;
+    border: none;
+    color: #444;
+    cursor: pointer;
+}
+
+.log-delete-btn:hover {
+    color: var(--urgent-color);
+}
+
+.log-input-area {
+    border-top: 1px dotted var(--border-color);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.log-text-input {
+    background: #121212;
+    border: 1px solid #333;
+    color: #FFF;
+    padding: 8px;
+    font-family: 'Cascadia Code', monospace;
+    min-height: 60px;
+    resize: vertical;
+}
+
+.log-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.retro-btn-small {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 2px 6px;
+    font-size: 0.8em;
+    cursor: pointer;
+    font-family: 'Cascadia Code', monospace;
+}
+
+.retro-btn-small:hover {
+    border-color: #FFF;
+    color: #FFF;
+    background: rgba(255, 255, 255, 0.1);
 }
