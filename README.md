@@ -1,6 +1,6 @@
 # SJ WorkAssist
 
-SJ WorkAssist is a minimalist, retro-styled productivity suite designed for efficient task management and meeting documentation. It features a sleek "Tokyo Night" aesthetic and is built with Python (PyWebView) and Vanilla JS for a lightweight, high-performance experience.
+SJ WorkAssist is a minimalist, retro-styled productivity suite designed for efficient task management and meeting documentation. It is built with Python (PyWebView) and Vanilla JS for a lightweight, high-performance experience.
 
 ## Key Features
 
