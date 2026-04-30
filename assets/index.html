@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SJ WorkAssist</title>
+    <link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+    <div id="login-view" style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
+        <h1 style="color: var(--urgent-color); margin-bottom: 30px; font-size: 2em; letter-spacing: 2px; display: flex; align-items: center; gap: 15px;">
+            <img src="logo_pixel.png" style="width: 48px; height: 48px; image-rendering: pixelated;">
+            <span data-i18n="app_title">SJ WorkAssist</span>
+        </h1>
+        <div class="modal" style="position: static; transform: none; display: block; width: 600px; padding: 30px;">
+            <div class="form-group">
+                <label data-i18n="login_id">ID:</label>
+                <input type="text" id="login-id-input" style="font-size: 1.2em; padding: 10px;">
+            </div>
+            <div class="form-group">
+                <label data-i18n="login_password">PASSWORD:</label>
+                <input type="password" id="login-pw-input" style="font-size: 1.2em; padding: 10px;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="action-btn" id="btn-do-login" data-i18n="btn_login" style="flex:1; border-color:var(--urgent-color); color:var(--urgent-color); font-size: 1.1em; padding: 10px;">[ LOGIN ]</button>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: space-between;">
+                <button class="action-btn" id="btn-show-create" data-i18n="btn_create_id" style="font-size: 0.8em; color: #888; border: none; background: transparent;">[ CREATE ID ]</button>
+                <button class="action-btn" id="btn-show-hint" data-i18n="btn_hint" style="font-size: 0.8em; color: #888; border: none; background: transparent;">[ PASSWORD HINT ]</button>
+                <button class="action-btn" id="btn-show-change-pw" data-i18n="btn_change_pw" style="font-size: 0.8em; color: #888; border: none; background: transparent;">[ CHANGE PASSWORD ]</button>
+            </div>
+        </div>
+        <footer class="copyright">© 2026. [Wonseup Shin / Samjeong] All rights reserved.</footer>
+        <div class="app-version-display" id="app-version-login">v1.0.0</div>
+    </div>
+
+    <div id="app-content" style="display: none; height: 100vh;">
+        <nav id="main-sidebar">
+            <div class="sidebar-brand">
+                <img src="logo_pixel.png" style="width: 32px; height: 32px; image-rendering: pixelated;">
+                <span data-i18n="app_title">SJ WorkAssist</span>
+            </div>
+            <div class="sidebar-nav">
+                <button class="nav-item active" data-page="kanban-page" data-i18n="menu_kanban">[ Task Manager ]</button>
+                <button class="nav-item" data-page="meeting-page" data-i18n="menu_meetings">[ Meeting minutes ]</button>
+                <button class="nav-item" data-page="namebook-page" data-i18n="menu_namebook">[ Namebook ]</button>
+            </div>
+            <div class="sidebar-footer">
+                <button class="action-btn" id="btn-settings-side" data-i18n="tab_settings" style="width: 100%; text-align: left; margin-bottom: 10px;">[ SETTINGS ]</button>
+                <button class="action-btn" id="btn-logout-side" data-i18n="btn_logout" style="width: 100%; text-align: left; border-color: var(--urgent-color); color: var(--urgent-color);">[ LOGOUT ]</button>
+            </div>
+        </nav>
+
+        <div id="main-container">
+            <!-- KANBAN PAGE -->
+            <div id="kanban-page" class="page-view active">
+                <header>
+                    <div class="header-nav">
+                        <div class="tabs">
+                            <button class="tab-btn active" data-target="board-view" data-i18n="tab_board">[ BOARD ]</button>
+                            <button class="tab-btn" data-target="calendar-view" data-i18n="tab_calendar">[ CALENDAR ]</button>
+                            <button class="tab-btn" data-target="urgent-view" data-i18n="tab_urgent">[ URGENT ]</button>
+                            <button class="tab-btn" data-target="done-view" data-i18n="tab_done">[ DONE ]</button>
+                            <button class="tab-btn" data-target="recycle-view" data-i18n="tab_recycle">[ RECYCLE BIN ]</button>
+                        </div>
+                        <div class="actions">
+                            <button class="action-btn" id="btn-add-task" data-i18n="btn_add_task">[+ NEW TASK]</button>
+                            <button class="action-btn btn-urgent" id="btn-urgent-task" data-i18n="btn_urgent_task">[! URGENT]</button>
+                        </div>
+                    </div>
+                </header>
+
+                <main>
+                    <!-- Board View -->
+                    <div id="board-view" class="view-section active">
+                        <div class="kanban-col" data-status="Note">
+                            <div class="col-header" data-i18n="col_note">[ NOTE ]</div>
+                            <div class="task-list"></div>
+                        </div>
+                        <div class="kanban-col" data-status="To-do">
+                            <div class="col-header" data-i18n="col_todo">[ TO-DO ]</div>
+                            <div class="task-list"></div>
+                        </div>
+                        <div class="kanban-col" data-status="Doing">
+                            <div class="col-header" data-i18n="col_doing">[ DOING ]</div>
+                            <div class="task-list"></div>
+                        </div>
+                        <div class="kanban-col" data-status="Review">
+                            <div class="col-header" data-i18n="col_review">[ REVIEW ]</div>
+                            <div class="task-list"></div>
+                        </div>
+                    </div>
+
+                    <!-- Calendar View -->
+                    <div id="calendar-view" class="view-section">
+                        <div class="calendar-header">
+                            <button class="action-btn" id="cal-prev">&lt;</button>
+                            <h2 id="cal-month-year">YYYY-MM</h2>
+                            <button class="action-btn" id="cal-next">&gt;</button>
+                        </div>
+                        <div class="calendar-grid"></div>
+                    </div>
+
+                    <!-- Urgent View -->
+                    <div id="urgent-view" class="view-section">
+                        <div class="list-header">
+                            <h2 style="color: var(--urgent-color);" data-i18n="tab_urgent">[ URGENT ]</h2>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Manager</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="urgent-table-body"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Done View -->
+                    <div id="done-view" class="view-section">
+                        <div class="list-header">
+                            <input type="text" id="done-search" class="search-box" data-i18n-ph="search_placeholder" placeholder="> Search title or manager...">
+                            <button class="action-btn" id="btn-export-csv" data-i18n="btn_export_csv">[ EXPORT CSV ]</button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Manager</th>
+                                    <th>Completed At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="done-table-body"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Recycle Bin View -->
+                    <div id="recycle-view" class="view-section">
+                        <div class="list-header">
+                            <h2 style="color: var(--urgent-color);" data-i18n="tab_recycle">[ RECYCLE BIN ]</h2>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Manager</th>
+                                    <th>Deleted At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recycle-table-body"></tbody>
+                        </table>
+                    </div>
+                </main>
+                <footer class="copyright">© 2026. [Wonseup Shin / Samjeong] All rights reserved.</footer>
+                <div class="app-version-display" id="app-version-main">v1.0.0</div>
+            </div>
+
+            <!-- Placeholder Pages -->
+            <!-- Meeting Page -->
+            <div id="meeting-page" class="page-view">
+                <div class="meeting-container">
+                    <div class="meeting-sidebar">
+                        <div class="meeting-sidebar-header">
+                            <span data-i18n="meeting_history_header">[ MOM List ]</span>
+                            <button id="btn-new-meeting" class="retro-btn-small" title="New Meeting">[+]</button>
+                        </div>
+                        <div class="meeting-search-container">
+                            <input type="text" id="meeting-search" data-i18n-ph="mom_ph_search" placeholder="> Search Title..." class="search-box-small">
+                        </div>
+                        <div id="meeting-list" class="meeting-list">
+                            <!-- Items populated via JS -->
+                        </div>
+                        <div class="meeting-sidebar-footer">
+                            <button id="btn-export-all-md" class="action-btn" data-i18n="mom_btn_export_all">[ EXPORT ALL .MD ]</button>
+                        </div>
+                    </div>
+                    <div class="meeting-main">
+                        <div class="meeting-editor-header">
+                            <div class="editor-row">
+                                <input type="text" id="meeting-title" data-i18n-ph="mom_ph_title" placeholder="Meeting Title" class="retro-input-large">
+                            </div>
+                            <div class="editor-row-multi">
+                                <div class="editor-group">
+                                    <label data-i18n="mom_label_date">Date:</label>
+                                    <input type="date" id="meeting-date">
+                                </div>
+                                <div class="editor-group">
+                                    <label data-i18n="mom_label_location">Location:</label>
+                                    <input type="text" id="meeting-location" data-i18n-ph="mom_ph_location" placeholder="Conference Room A">
+                                </div>
+                            </div>
+                            <div class="editor-row">
+                                <label data-i18n="mom_label_participants">Participants:</label>
+                                <input type="text" id="meeting-participants" data-i18n-ph="mom_ph_participants" placeholder="John, Doe, ...">
+                            </div>
+                        </div>
+
+                        <div class="meeting-body-split">
+                            <div id="meeting-input" class="meeting-editor-column">
+                                <div class="content-section">
+                                    <div class="section-header">
+                                        <h3 data-i18n="mom_free_memo">📝 Free Memo</h3>
+                                    </div>
+                                    <div class="editor-row">
+                                        <div class="editor-group">
+                                            <textarea id="meeting-memo" data-i18n-ph="mom_ph_memo" placeholder="Free notes here..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="content-section">
+                                    <div class="section-header">
+                                        <h3 data-i18n="mom_decisions_header">💡 Decisions & Rationales</h3>
+                                        <button id="btn-add-decision" class="retro-btn-small" title="Add Decision">[+]</button>
+                                    </div>
+                                    <div id="decision-rows">
+                                        <!-- Dynamic rows -->
+                                    </div>
+                                </div>
+
+                                <div class="content-section">
+                                    <div class="section-header">
+                                        <h3 data-i18n="mom_actions_header">✅ Action Items</h3>
+                                        <button id="btn-add-action" class="retro-btn-small" title="Add Action Item">[+]</button>
+                                    </div>
+                                    <div id="action-rows">
+                                        <!-- Dynamic rows -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="meeting-preview" class="meeting-preview-column">
+                                <div class="section-header">
+                                    <h3>📄 Live Preview</h3>
+                                </div>
+                                <div id="markdown-preview" class="markdown-body">
+                                    <!-- Live preview here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="meeting-footer">
+                            <div class="footer-left">
+                                <button id="btn-save-meeting" class="action-btn" data-i18n="mom_btn_save">[ SAVE ]</button>
+                                <button id="btn-reset-meeting" class="action-btn" data-i18n="mom_btn_reset" style="color: #888;">[ RESET ]</button>
+                            </div>
+                            <div class="footer-right">
+                                <button id="btn-copy-md" class="action-btn" data-i18n="mom_btn_copy">[ COPY MD ]</button>
+                                <button id="btn-export-md" class="action-btn" data-i18n="mom_btn_export">[ EXPORT .MD ]</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="namebook-page" class="page-view">
+                <div style="display: flex; justify-content: center; align-items: center; height: 100%; color: #555; font-size: 1.5rem;">
+                    [ Namebook ]
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Task Modal -->
+    <div class="modal-overlay" id="task-modal">
+        <div class="modal">
+            <div class="modal-header" data-i18n="modal_new_task">[ NEW TASK ]</div>
+            
+            <input type="hidden" id="modal-is-urgent" value="0">
+            
+            <div class="form-group">
+                <label data-i18n="modal_title">Title:</label>
+                <input type="text" id="modal-title">
+            </div>
+            
+            <div class="form-group">
+                <label data-i18n="modal_content">Content (Auto-parsed if pasted here):</label>
+                <textarea id="modal-content" placeholder="E.g. Title: Fix Bug\nManager: John\nStart: 2024-01-01\nDue: 2024-01-05"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label data-i18n="modal_manager">Manager:</label>
+                <input type="text" id="modal-manager">
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex:1;">
+                    <label data-i18n="modal_start">Start Date:</label>
+                    <input type="date" id="modal-start">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label data-i18n="modal_due">Due Date:</label>
+                    <input type="date" id="modal-due">
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="action-btn" id="modal-cancel" data-i18n="modal_cancel">[ CANCEL ]</button>
+                <button class="action-btn" id="modal-save" data-i18n="modal_save">[ SAVE ]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Detail Modal -->
+    <div class="modal-overlay" id="task-detail-modal">
+        <div class="modal">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span data-i18n="modal_detail_header">[ TASK DETAILS ]</span>
+                <span id="detail-tag" class="task-tag" style="margin-bottom: 0;"></span>
+            </div>
+            
+            <div class="form-group">
+                <label data-i18n="modal_title">Title:</label>
+                <div id="detail-title" class="detail-view-el" style="padding: 8px; border: 1px dotted var(--border-color); color: #FFF; background: #1e1e1e;"></div>
+                <input type="text" id="detail-title-input" class="detail-edit-el" style="display: none;">
+            </div>
+            
+            <div class="form-group">
+                <label data-i18n="modal_content">Content:</label>
+                <div id="detail-content" class="detail-view-el" style="padding: 8px; border: 1px dotted var(--border-color); color: var(--text-color); background: #1e1e1e; min-height: 80px; white-space: pre-wrap;"></div>
+                <textarea id="detail-content-input" class="detail-edit-el" style="display: none; min-height: 80px;"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label data-i18n="modal_status">Status:</label>
+                <div id="detail-status" style="padding: 8px; border: 1px dotted var(--border-color); color: var(--urgent-color); background: #1e1e1e; font-weight: bold;"></div>
+            </div>
+            
+            <div class="form-group">
+                <label data-i18n="modal_manager">Manager:</label>
+                <div id="detail-manager" class="detail-view-el" style="padding: 8px; border: 1px dotted var(--border-color); color: #FFF; background: #1e1e1e;"></div>
+                <input type="text" id="detail-manager-input" class="detail-edit-el" style="display: none;">
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex:1;">
+                    <label data-i18n="modal_start">Start Date:</label>
+                    <div id="detail-start" class="detail-view-el" style="padding: 8px; border: 1px dotted var(--border-color); color: #FFF; background: #1e1e1e;"></div>
+                    <input type="date" id="detail-start-input" class="detail-edit-el" style="display: none;">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label data-i18n="modal_due">Due Date:</label>
+                    <div id="detail-due" class="detail-view-el" style="padding: 8px; border: 1px dotted var(--border-color); color: #FFF; background: #1e1e1e;"></div>
+                    <input type="date" id="detail-due-input" class="detail-edit-el" style="display: none;">
+                </div>
+            </div>
+            
+            <div class="form-group" id="detail-review-group" style="display: none;">
+                <div id="reviewer-input-container">
+                    <label data-i18n="modal_reviewer">Reviewer:</label>
+                    <input type="text" id="detail-reviewer-name" style="margin-bottom: 10px;">
+                </div>
+                <label data-i18n="modal_review_comment">Review Result:</label>
+                <textarea id="detail-review-comment" data-i18n-ph="ph_review_comment" style="min-height: 60px; margin-top: 10px;"></textarea>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="action-btn" id="detail-delete" data-i18n="btn_delete" style="color: var(--urgent-color); border-color: var(--urgent-color); margin-right: auto;">[ DELETE ]</button>
+                <button class="action-btn" id="detail-edit" data-i18n="btn_edit" style="border-color: var(--col-ready); color: var(--col-ready);">[ EDIT ]</button>
+                <button class="action-btn" id="detail-save-edit" data-i18n="btn_save_changes" style="display: none; border-color: var(--ok-color); color: var(--ok-color);">[ SAVE CHANGES ]</button>
+                <button class="action-btn" id="detail-mark-done" data-i18n="btn_mark_done" style="display: none; border-color: var(--ok-color); color: var(--ok-color);">[ MARK DONE ]</button>
+                <button class="action-btn" id="detail-close" data-i18n="btn_close">[ CLOSE ]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal">
+            <div class="modal-header" data-i18n="tab_settings">[ SETTINGS ]</div>
+            
+            <div class="settings-group">
+                <label data-i18n="settings_lang">Language Selection:</label>
+                <select id="lang-select-modal" style="width: 100%; margin-top: 10px;">
+                    <option value="en">English</option>
+                    <option value="kr">한국어</option>
+                </select>
+            </div>
+            <div class="settings-group">
+                <label data-i18n="settings_about">About SJ WorkAssist:</label>
+                <div style="border: 1px dotted var(--border-color); padding: 10px; margin-top: 10px;">
+                    <p data-i18n="about_author">Author: Wonseup Shin</p>
+                    <p data-i18n="about_org">Organization: Samjeong Automation</p>
+                    <p data-i18n="about_web">Website: www.sjautomation.com</p>
+                </div>
+            </div>
+            <div class="settings-group">
+                <label data-i18n="btn_initialize">Initialize Data:</label>
+                <button class="action-btn" id="btn-show-initialize" data-i18n="btn_initialize" style="width: 100%; border-color: var(--urgent-color); color: var(--urgent-color); margin-top: 10px;">[ INITIALIZE ]</button>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="action-btn" id="settings-cancel" data-i18n="modal_cancel">[ CANCEL ]</button>
+                <button class="action-btn" id="settings-save" data-i18n="modal_save">[ SAVE ]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create ID Modal -->
+    <div class="modal-overlay" id="create-id-modal">
+        <div class="modal">
+            <div class="modal-header" data-i18n="modal_create_id">[ CREATE ID ]</div>
+            <div class="form-group">
+                <label data-i18n="login_id">ID:</label>
+                <input type="text" id="create-id-input">
+            </div>
+            <div class="form-group">
+                <label data-i18n="login_password">PASSWORD:</label>
+                <input type="password" id="create-pw-input">
+            </div>
+            <div class="form-group">
+                <label data-i18n="login_hint">PASSWORD HINT:</label>
+                <input type="text" id="create-hint-input">
+            </div>
+            <div class="modal-actions">
+                <button class="action-btn" id="create-cancel" data-i18n="modal_cancel">[ CANCEL ]</button>
+                <button class="action-btn" id="create-save" data-i18n="modal_save">[ SAVE ]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="change-pw-modal">
+        <div class="modal">
+            <div class="modal-header" data-i18n="modal_change_pw">[ CHANGE PASSWORD ]</div>
+            <div class="form-group">
+                <label data-i18n="login_id">ID:</label>
+                <input type="text" id="change-id-input">
+            </div>
+            <div class="form-group">
+                <label data-i18n="login_old_pw">Old Password:</label>
+                <input type="password" id="change-old-pw">
+            </div>
+            <div class="form-group">
+                <label data-i18n="login_new_pw">New Password:</label>
+                <input type="password" id="change-new-pw">
+            </div>
+            <div class="modal-actions">
+                <button class="action-btn" id="change-pw-cancel" data-i18n="modal_cancel">[ CANCEL ]</button>
+                <button class="action-btn" id="change-pw-save" data-i18n="modal_save">[ SAVE ]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Hint Modal -->
+    <div class="modal-overlay" id="hint-modal">
+        <div class="modal">
+            <div class="modal-header" data-i18n="modal_hint">[ PASSWORD HINT ]</div>
+            <div class="form-group">
+                <label data-i18n="login_id">ID:</label>
+                <input type="text" id="hint-id-input">
+            </div>
+            <div class="form-group" style="display:none;" id="hint-result-group">
+                <label data-i18n="login_hint">PASSWORD HINT:</label>
+                <div id="hint-result-display" style="padding: 10px; border: 1px dotted var(--border-color); color: #FFF; background: #1e1e1e;"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="action-btn" id="hint-cancel" data-i18n="btn_close">[ CLOSE ]</button>
+                <button class="action-btn" id="hint-submit" data-i18n="btn_hint">[ GET HINT ]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Initialize Confirmation Modal -->
+    <div class="modal-overlay" id="initialize-modal">
+        <div class="modal">
+            <div class="modal-header" data-i18n="modal_initialize_header" style="color: var(--urgent-color);">[ DATA INITIALIZE ]</div>
+            <div class="form-group">
+                <p data-i18n="msg_initialize_warn" style="color: var(--urgent-color); line-height: 1.5;">Initializing will delete all records and cannot be undone.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="action-btn" id="initialize-cancel" data-i18n="modal_cancel">[ CANCEL ]</button>
+                <button class="action-btn" id="btn-do-initialize" data-i18n="btn_initialize" style="border-color: var(--urgent-color); color: var(--urgent-color);">[ INITIALIZE ]</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
