@@ -4,5 +4,6 @@ build/
 dist/
 *.db
 *.pyc
-*.spec
 .vscode/
+scratch/
+scratch_test*.py

@@ -1,12 +1,15 @@
 import db
-import csv
 import os
 import io
+import base64
 import hashlib
+import shutil
+import uuid
 
+import webview
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
-from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image as OpenpyxlImage
 HAS_OPENPYXL = True
 
 from version import VERSION
@@ -370,10 +373,6 @@ class API:
             
             # 1. Chart Sheet (Visual Table)
             if image_data:
-                import io
-                import base64
-                from openpyxl.drawing.image import Image as OpenpyxlImage
-                
                 ws_chart = wb.active
                 ws_chart.title = "Chart"
                 
@@ -383,10 +382,9 @@ class API:
                 img_ptr = io.BytesIO(data)
                 
                 img = OpenpyxlImage(img_ptr)
-                # Scale down slightly if too large? Or just keep it.
                 ws_chart.add_image(img, 'B2')
                 
-                # 2. Logs Sheet
+                # Logs Sheet
                 ws_logs = wb.create_sheet(title="Logs")
             else:
                 ws_logs = wb.active
@@ -466,7 +464,6 @@ class API:
             filename = f"{safe_name}_TimeTable.xlsx"
         
             try:
-                import webview
                 file_types = ('Excel Files (*.xlsx)', 'All files (*.*)')
                 dest_path = self.window.create_file_dialog(
                     webview.SAVE_DIALOG, 
@@ -503,10 +500,6 @@ class API:
         if not self.window:
             return {'status': 'error', 'message': 'No window context'}
         
-        import webview
-        import shutil
-        import uuid
-        
         file_types = ('Image files (*.png;*.jpg;*.jpeg;*.gif)', 'All files (*.*)')
         result = self.window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False, file_types=file_types)
         
@@ -532,7 +525,6 @@ class API:
         if not path or not os.path.exists(path):
             return ""
         try:
-            import base64
             with open(path, "rb") as image_file:
                 encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                 ext = os.path.splitext(path)[1].lower()
