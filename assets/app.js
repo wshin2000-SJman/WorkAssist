@@ -48,7 +48,8 @@ function setLoginImage() {
 // Setup Event Listeners
 function setupAuthListeners() {
     // Login
-    document.getElementById('btn-do-login').addEventListener('click', async () => {
+    // Login
+    const performLogin = async () => {
         const id = document.getElementById('login-id-input').value;
         const pw = document.getElementById('login-pw-input').value;
         const res = await window.pywebview.api.login(id, pw);
@@ -66,6 +67,16 @@ function setupAuthListeners() {
                 alert(i18nData[currentLang].msg_login_fail || res.message);
             }
         }
+    };
+
+    document.getElementById('btn-do-login').addEventListener('click', performLogin);
+
+    // Enter key listener for login
+    document.getElementById('login-id-input').addEventListener('keyup', (e) => {
+        if(e.key === 'Enter') performLogin();
+    });
+    document.getElementById('login-pw-input').addEventListener('keyup', (e) => {
+        if(e.key === 'Enter') performLogin();
     });
 
     // Modals open
@@ -1167,6 +1178,16 @@ function applyLanguage(lang) {
 let allProjects = [];
 let currentProjectId = null;
 
+function getDeptDisplayName(deptCode) {
+    const p = allProjects.find(x => x.id === currentProjectId);
+    if(!p) return deptCode;
+    if(deptCode === 'Mech') return p.dept1_name || '[DPT. 1]';
+    if(deptCode === 'Control') return p.dept2_name || '[DPT. 2]';
+    if(deptCode === 'Elec') return p.dept3_name || '[DPT. 3]';
+    if(deptCode === 'Sales') return p.dept4_name || '[DPT. 4]';
+    return deptCode;
+}
+
 async function refreshProjects() {
     allProjects = await window.pywebview.api.get_projects();
     renderProjectList();
@@ -1243,9 +1264,25 @@ async function loadProject(id) {
     document.getElementById('project-client').value = p.client;
     document.getElementById('project-desc').value = p.description;
     
+    document.getElementById('project-dept1-name').value = p.dept1_name || '[DPT. 1]';
+    document.getElementById('project-dept2-name').value = p.dept2_name || '[DPT. 2]';
+    document.getElementById('project-dept3-name').value = p.dept3_name || '[DPT. 3]';
+    document.getElementById('project-dept4-name').value = p.dept4_name || '[DPT. 4]';
+    
+    // Update headers
+    document.getElementById('pm-dept1-header').innerText = p.dept1_name || '[DPT. 1]';
+    document.getElementById('pm-dept2-header').innerText = p.dept2_name || '[DPT. 2]';
+    document.getElementById('pm-dept3-header').innerText = p.dept3_name || '[DPT. 3]';
+    document.getElementById('pm-dept4-header').innerText = p.dept4_name || '[DPT. 4]';
+    
     const activeTab = document.querySelector('.pm-tab.active');
-    if(activeTab && activeTab.dataset.target === 'pm-timetable-tab') {
+    const targetTab = activeTab ? activeTab.dataset.target : 'pm-active-tab';
+    
+    if(targetTab === 'pm-timetable-tab') {
         await renderTimeTable();
+        await renderMilestones(id);
+    } else if(targetTab === 'pm-milestone-tab') {
+        await renderMilestones(id);
     } else {
         await refreshStatusLogs();
     }
@@ -1376,7 +1413,7 @@ if(btnDeleteProject) {
 
 // Auto-save Project Info (Debounce)
 let projectSaveTimeout = null;
-['project-name', 'project-manager', 'project-client', 'project-desc'].forEach(id => {
+['project-name', 'project-manager', 'project-client', 'project-desc', 'project-dept1-name', 'project-dept2-name', 'project-dept3-name', 'project-dept4-name'].forEach(id => {
     const el = document.getElementById(id);
     if(el) {
         el.addEventListener('input', () => {
@@ -1388,11 +1425,20 @@ let projectSaveTimeout = null;
                     name: document.getElementById('project-name').value,
                     manager: document.getElementById('project-manager').value,
                     client: document.getElementById('project-client').value,
-                    description: document.getElementById('project-desc').value
+                    description: document.getElementById('project-desc').value,
+                    dept1_name: document.getElementById('project-dept1-name').value,
+                    dept2_name: document.getElementById('project-dept2-name').value,
+                    dept3_name: document.getElementById('project-dept3-name').value,
+                    dept4_name: document.getElementById('project-dept4-name').value
                 };
                 await window.pywebview.api.save_project(data);
                 allProjects = await window.pywebview.api.get_projects();
                 renderProjectList();
+                // Update headers immediately
+                document.getElementById('pm-dept1-header').innerText = data.dept1_name || '[DPT. 1]';
+                document.getElementById('pm-dept2-header').innerText = data.dept2_name || '[DPT. 2]';
+                document.getElementById('pm-dept3-header').innerText = data.dept3_name || '[DPT. 3]';
+                document.getElementById('pm-dept4-header').innerText = data.dept4_name || '[DPT. 4]';
             }, 1000);
         });
     }
@@ -1523,8 +1569,7 @@ async function renderStatusTable(tbodyId, logs, searchId, isDeleted) {
             contentHtml += `<br><span class="img-preview-link" style="color:var(--col-doing); cursor:pointer; font-size:0.8em; text-decoration: underline;">[ View Image ]</span>`;
         }
         
-        const deptKey = 'dept_' + log.department.toLowerCase();
-        const deptName = i18nData[currentLang][deptKey] || log.department;
+        const deptName = getDeptDisplayName(log.department);
         
         let deptColor = 'var(--text-color)';
         if (log.department === 'Mech') deptColor = 'var(--col-doing)';
@@ -1632,8 +1677,7 @@ function openPMModal(dept, log = null) {
     currentPMDept = dept;
     currentEditingLogId = log ? log.id : null;
     
-    const deptKey = 'dept_' + dept.toLowerCase();
-    const deptName = i18nData[currentLang][deptKey] || dept;
+    const deptName = getDeptDisplayName(dept);
     
     if(log) {
         document.getElementById('pm-log-modal-header').innerText = `[ ${i18nData[currentLang].btn_edit || 'EDIT LOG'} - ${deptName.toUpperCase()} ]`;
@@ -1777,12 +1821,53 @@ if(btnShowDoneProjects) btnShowDoneProjects.onclick = showDoneProjects;
 const btnShowDeletedProjects = document.getElementById('btn-show-deleted-projects');
 if(btnShowDeletedProjects) btnShowDeletedProjects.onclick = showDeletedProjects;
 
+const btnExportExcel = document.getElementById('pm-timetable-export-excel');
+if(btnExportExcel) {
+    btnExportExcel.addEventListener('click', async () => {
+        if(!currentProjectId) return;
+        
+        try {
+            // Capture the timetable container as an image
+            const container = document.getElementById('pm-timetable-container');
+            const canvas = await html2canvas(container, {
+                backgroundColor: '#0d0d12', // Match the container background
+                scale: 2, // Better resolution
+                logging: false,
+                useCORS: true
+            });
+            const imageData = canvas.toDataURL('image/png');
+            
+            const result = await window.pywebview.api.export_project_excel(currentProjectId, imageData);
+            if(result.status === 'success') {
+                const msg = i18nData[currentLang].msg_exported || "Exported successfully to:";
+                alert(`${msg}\n${result.path}`);
+            } else {
+                if(result.message !== 'User cancelled export.') {
+                    alert(`Export failed: ${result.message}`);
+                }
+            }
+        } catch (err) {
+            console.error("Screenshot capture failed:", err);
+            // Fallback: Export without image if capture fails
+            const result = await window.pywebview.api.export_project_excel(currentProjectId, null);
+            if(result.status === 'success') {
+                const msg = i18nData[currentLang].msg_exported || "Exported successfully to:";
+                alert(`${msg}\n${result.path}`);
+            } else {
+                if(result.message !== 'User cancelled export.') {
+                    alert(`Export failed: ${result.message}`);
+                }
+            }
+        }
+    });
+}
+
 // PM Tabs Switching
 document.querySelectorAll('.pm-tab').forEach(tab => {
     tab.addEventListener('click', () => {
         document.querySelectorAll('.pm-tab').forEach(t => {
             t.classList.remove('active');
-            t.style.color = '#555';
+            t.style.color = '#888';
         });
         document.querySelectorAll('.pm-tab-content').forEach(c => c.style.display = 'none');
         
@@ -1792,9 +1877,17 @@ document.querySelectorAll('.pm-tab').forEach(tab => {
         if(target) target.style.display = 'flex';
         
         const controls = document.getElementById('pm-timetable-controls');
+        
         if(tab.dataset.target === 'pm-timetable-tab') {
             if(controls) controls.style.display = 'flex';
             renderTimeTable();
+            renderMilestones(currentProjectId);
+        } else if(tab.dataset.target === 'pm-milestone-tab') {
+            if(controls) controls.style.display = 'none';
+            renderMilestones(currentProjectId);
+        } else if(tab.dataset.target === 'pm-active-tab') {
+            if(controls) controls.style.display = 'none';
+            refreshStatusLogs();
         } else {
             if(controls) controls.style.display = 'none';
             refreshStatusLogs();
@@ -1805,6 +1898,7 @@ document.querySelectorAll('.pm-tab').forEach(tab => {
 async function renderTimeTable() {
     if(!currentProjectId) return;
     const logs = await window.pywebview.api.get_status_logs(currentProjectId);
+    const milestones = await window.pywebview.api.get_milestones(currentProjectId);
     const container = document.getElementById('pm-timetable-container');
     const scaleSelect = document.getElementById('pm-timetable-scale');
     if(!scaleSelect || !container) return;
@@ -1826,6 +1920,24 @@ async function renderTimeTable() {
         startDate = new Date(timetableBaseDate.getFullYear(), timetableBaseDate.getMonth() - 5, 1);
         days = 12; // Show 12 months
     }
+
+    function calculatePct(date) {
+        if(scale === 'weekly') {
+            const diffTime = date.getTime() - startDate.getTime();
+            const diffDays = diffTime / (1000 * 3600 * 24);
+            if(diffDays >= -1 && diffDays <= 8) { // buffer
+                return (diffDays / 7) * 100;
+            }
+        } else {
+            const monthDiff = (date.getFullYear() - startDate.getFullYear()) * 12 + (date.getMonth() - startDate.getMonth());
+            if(monthDiff >= -1 && monthDiff <= 13) {
+                const day = date.getDate();
+                const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+                return ((monthDiff + (day / daysInMonth)) / 12) * 100;
+            }
+        }
+        return -1;
+    }
     
     const header = document.createElement('div');
     header.className = 'timetable-header';
@@ -1836,6 +1948,32 @@ async function renderTimeTable() {
     
     const xAxis = document.createElement('div');
     xAxis.className = 'timetable-x-axis';
+    xAxis.style.position = 'relative';
+    
+    if(milestones.length > 0) {
+        const sorted = [...milestones].filter(m => m.deadline).sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
+        sorted.forEach((m, idx) => {
+            const mDate = new Date(m.deadline);
+            const pct = calculatePct(mDate);
+            if(pct >= 0 && pct <= 100) {
+                const line = document.createElement('div');
+                line.className = 'milestone-line';
+                if(m.is_done) line.classList.add('is-done');
+                line.style.left = pct + '%';
+                line.style.height = '1000px'; 
+                line.style.top = '0';
+                
+                const label = document.createElement('div');
+                label.className = 'milestone-line-label';
+                label.innerText = m.name;
+                // Stagger labels below header text (approx 35px down)
+                label.style.top = (32 + (idx % 3) * 20) + 'px';
+                line.appendChild(label);
+                
+                xAxis.appendChild(line);
+            }
+        });
+    }
     
     const dayNames = currentLang === 'kr' ? ['일', '월', '화', '수', '목', '금', '토'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const monthNames = currentLang === 'kr' ? 
@@ -1854,6 +1992,16 @@ async function renderTimeTable() {
             const day = d.getDate();
             const dayName = dayNames[d.getDay()];
             dayCol.innerText = `${m}/${day} (${dayName})`;
+            
+            // Highlight if milestone
+            const dStr = getLocalDateString(d);
+            const dayMilestones = milestones.filter(ms => ms.deadline === dStr);
+            if(dayMilestones.length > 0) {
+                dayCol.classList.add('milestone-highlight');
+                if(dayMilestones.every(ms => ms.is_done)) {
+                    dayCol.classList.add('is-done');
+                }
+            }
         } else {
             // Monthly view labels with Year
             const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
@@ -1890,8 +2038,8 @@ async function renderTimeTable() {
         
         const label = document.createElement('div');
         label.className = 'timetable-track-label';
-        const deptName = i18nData[currentLang][deptI18nKeys[dept]] || dept;
-        label.innerText = `[ ${deptName.toUpperCase()} ]`;
+        const deptDisplayName = getDeptDisplayName(dept);
+        label.innerText = `[ ${deptDisplayName.toUpperCase()} ]`;
         label.style.color = deptColors[dept] || '#aaa';
         track.appendChild(label);
         
@@ -1918,24 +2066,6 @@ async function renderTimeTable() {
             const sDateStr = log.start_date;
             const dDateStr = log.due_date;
             const logDate = new Date(log.timestamp.replace(' ', 'T'));
-
-            function calculatePct(date) {
-                if(scale === 'weekly') {
-                    const diffTime = date.getTime() - startDate.getTime();
-                    const diffDays = diffTime / (1000 * 3600 * 24);
-                    if(diffDays >= -1 && diffDays <= 8) { // buffer
-                        return (diffDays / 7) * 100;
-                    }
-                } else {
-                    const monthDiff = (date.getFullYear() - startDate.getFullYear()) * 12 + (date.getMonth() - startDate.getMonth());
-                    if(monthDiff >= -1 && monthDiff <= 13) {
-                        const day = date.getDate();
-                        const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-                        return ((monthDiff + (day / daysInMonth)) / 12) * 100;
-                    }
-                }
-                return -1;
-            }
 
             if(sDateStr && dDateStr && sDateStr !== dDateStr) {
                 // Range display
@@ -2025,6 +2155,7 @@ async function renderTimeTable() {
         body.appendChild(track);
     });
     
+    
     container.appendChild(body);
 }
 
@@ -2060,8 +2191,7 @@ async function refreshPMTimetableLogDetail(logId) {
     if(log.status === 'done') statusTag = ` [${i18nData[currentLang].pm_status_done || 'DONE'}]`;
     else if(log.status === 'deleted') statusTag = ` [${i18nData[currentLang].pm_status_deleted || 'DELETED'}]`;
     
-    const deptKey = 'dept_' + log.department.toLowerCase();
-    const deptName = i18nData[currentLang][deptKey] || log.department;
+    const deptName = getDeptDisplayName(log.department);
     header.innerText = `[${deptName.toUpperCase()}] ${log.tag || ''} - ${log.timestamp}${statusTag}`;
     
     let html = '';
@@ -2127,3 +2257,214 @@ async function refreshPMTimetableLogDetail(logId) {
         }
     };
 }
+
+// Helper for local YYYY-MM-DD
+function getLocalDateString(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+// Milestones Logic
+async function renderMilestones(projectId) {
+    if(!projectId) return;
+    const milestones = await window.pywebview.api.get_milestones(projectId);
+    
+    // 1. Populate Management Tab
+    // Reset all 10 slots
+    for(let i=1; i<=10; i++) {
+        const row = document.querySelector(`#milestone-management-list .milestone-row[data-slot="${i}"]`);
+        if(!row) continue;
+        
+        const nameInput = row.querySelector('.ms-name');
+        const deadlineInput = row.querySelector('.ms-deadline');
+        const contentInput = row.querySelector('.ms-content');
+        const saveBtn = row.querySelector('.btn-ms-save');
+        const editBtn = row.querySelector('.btn-ms-edit');
+        const doneBtn = row.querySelector('.btn-ms-done');
+        
+        nameInput.value = '';
+        deadlineInput.value = '';
+        contentInput.value = '';
+        
+        nameInput.disabled = false;
+        deadlineInput.disabled = false;
+        contentInput.disabled = false;
+        
+        saveBtn.style.display = 'inline-block';
+        editBtn.style.display = 'none';
+        doneBtn.style.display = 'none';
+        doneBtn.innerText = i18nData[currentLang].pm_btn_done || '[ DONE ]';
+        row.classList.remove('saved');
+        row.classList.remove('is-done');
+        row.style.opacity = '1';
+    }
+    
+    // Populate slots
+    milestones.forEach(m => {
+        const row = document.querySelector(`#milestone-management-list .milestone-row[data-slot="${m.slot_number}"]`);
+        if(!row) return;
+        
+        const nameInput = row.querySelector('.ms-name');
+        const deadlineInput = row.querySelector('.ms-deadline');
+        const contentInput = row.querySelector('.ms-content');
+        const saveBtn = row.querySelector('.btn-ms-save');
+        const editBtn = row.querySelector('.btn-ms-edit');
+        const doneBtn = row.querySelector('.btn-ms-done');
+        
+        nameInput.value = m.name || '';
+        deadlineInput.value = m.deadline || '';
+        contentInput.value = m.content || '';
+        
+        if(m.is_saved) {
+            nameInput.disabled = true;
+            deadlineInput.disabled = true;
+            contentInput.disabled = true;
+            saveBtn.style.display = 'none';
+            editBtn.style.display = 'inline-block';
+            doneBtn.style.display = 'inline-block';
+            row.classList.add('saved');
+            
+            if(m.is_done) {
+                row.classList.add('is-done');
+                row.style.opacity = '0.6';
+                doneBtn.innerText = i18nData[currentLang].pm_btn_completed || '[ COMPLETED ]';
+                doneBtn.style.color = 'var(--text-color)';
+            } else {
+                doneBtn.innerText = i18nData[currentLang].pm_btn_done || '[ DONE ]';
+                doneBtn.style.color = 'var(--accent-color)';
+            }
+        }
+    });
+
+    // 2. Populate Read-only list in Time Table
+    const listContainer = document.getElementById('pm-timetable-ms-list');
+    if(listContainer) {
+        listContainer.innerHTML = '';
+        const savedMs = milestones.filter(m => m.is_saved && m.name && m.deadline);
+        if(savedMs.length === 0) {
+            const noMsg = i18nData[currentLang].msg_no_milestones || "No milestones registered.";
+            listContainer.innerHTML = `<div style="color: #666; font-size: 0.9em; font-style: italic;">${noMsg}</div>`;
+        } else {
+            savedMs.sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
+            savedMs.forEach(m => {
+                const item = document.createElement('div');
+                item.style.fontSize = '0.95em';
+                item.style.padding = '12px 20px';
+                item.style.background = m.is_done ? 'rgba(86, 95, 137, 0.1)' : 'rgba(158, 206, 106, 0.05)';
+                item.style.borderLeft = m.is_done ? '4px solid #565f89' : '4px solid var(--col-review)';
+                item.style.borderRadius = '2px';
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.whiteSpace = 'nowrap';
+                item.style.overflow = 'hidden';
+                item.style.textOverflow = 'ellipsis';
+                item.style.marginBottom = '10px';
+                item.style.opacity = m.is_done ? '0.6' : '1';
+                
+                const doneMark = m.is_done ? `<span style="color: #565f89; margin-right: 10px; font-weight: bold;">[COMPLETED]</span>` : '';
+                const textStyle = m.is_done ? 'text-decoration: line-through; color: #565f89;' : 'color: #fff;';
+
+                item.innerHTML = `
+                    <span style="color: ${m.is_done ? '#565f89' : 'var(--col-review)'}; font-weight: bold; width: 120px; flex-shrink: 0; ${m.is_done ? 'text-decoration: line-through;' : ''}">[ ${m.deadline} ]</span>
+                    ${doneMark}
+                    <span style="${textStyle} margin-left: 10px; font-weight: bold; flex-shrink: 0;">${m.name}</span>
+                    ${m.content ? `<span style="color: #666; margin-left: 30px; font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; ${m.is_done ? 'text-decoration: line-through;' : ''}">- ${m.content}</span>` : ''}
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+    }
+}
+
+// Initialize Milestone Listeners
+document.querySelectorAll('.btn-ms-save').forEach(btn => {
+    btn.onclick = async (e) => {
+        const row = e.target.closest('.milestone-row');
+        const slot = parseInt(row.dataset.slot);
+        const name = row.querySelector('.ms-name').value.trim();
+        const deadline = row.querySelector('.ms-deadline').value;
+        const content = row.querySelector('.ms-content').value.trim();
+        
+        if(!name) {
+            alert((i18nData[currentLang].pm_milestone_name || "Name") + " is required.");
+            return;
+        }
+
+        if(!deadline) {
+            alert((i18nData[currentLang].pm_milestone_deadline || "Deadline") + " is required.");
+            return;
+        }
+
+        // Check for duplicate dates
+        const milestones = await window.pywebview.api.get_milestones(currentProjectId);
+        const isDuplicate = milestones.some(m => m.slot_number !== slot && m.deadline === deadline);
+        if(isDuplicate) {
+            alert(currentLang === 'kr' ? '하나의 목표일에 여러개의 마일스톤을 설정할 수 없습니다.' : 'Cannot set multiple milestones on the same target date.');
+            return;
+        }
+        
+        await window.pywebview.api.save_milestone({
+            project_id: currentProjectId,
+            slot_number: slot,
+            name: name,
+            deadline: deadline,
+            content: content,
+            is_saved: true
+        });
+        
+        renderMilestones(currentProjectId);
+        renderTimeTable(); // Refresh timetable to show the new milestone line/highlight
+    };
+});
+
+document.querySelectorAll('.btn-ms-edit').forEach(btn => {
+    btn.onclick = (e) => {
+        const row = e.target.closest('.milestone-row');
+        row.querySelector('.ms-name').disabled = false;
+        row.querySelector('.ms-deadline').disabled = false;
+        row.querySelector('.ms-content').disabled = false;
+        row.querySelector('.btn-ms-save').style.display = 'inline-block';
+        row.querySelector('.btn-ms-edit').style.display = 'none';
+        row.classList.remove('saved');
+    };
+});
+
+document.querySelectorAll('.btn-ms-delete').forEach(btn => {
+    btn.onclick = async (e) => {
+        if(!confirm(i18nData[currentLang].msg_confirm_delete || "Delete?")) return;
+        const row = e.target.closest('.milestone-row');
+        const slot = parseInt(row.dataset.slot);
+        
+        await window.pywebview.api.delete_milestone(currentProjectId, slot);
+        renderMilestones(currentProjectId);
+    };
+});
+
+document.querySelectorAll('.btn-ms-done').forEach(btn => {
+    btn.onclick = async (e) => {
+        const row = e.target.closest('.milestone-row');
+        const slot = parseInt(row.dataset.slot);
+        const milestones = await window.pywebview.api.get_milestones(currentProjectId);
+        const m = milestones.find(ms => ms.slot_number === slot);
+        
+        if(!m) return;
+        
+        // Toggle is_done
+        const newDoneState = !m.is_done;
+        
+        await window.pywebview.api.save_milestone({
+            project_id: currentProjectId,
+            slot_number: slot,
+            name: m.name,
+            deadline: m.deadline,
+            content: m.content,
+            is_saved: true,
+            is_done: newDoneState
+        });
+        
+        renderMilestones(currentProjectId);
+        renderTimeTable();
+    };
+});

@@ -95,6 +95,35 @@ def init_db():
     columns = [col[1] for col in cursor.fetchall()]
     if 'status' not in columns:
         cursor.execute("ALTER TABLE projects ADD COLUMN status TEXT DEFAULT 'active'")
+    if 'dept1_name' not in columns:
+        cursor.execute("ALTER TABLE projects ADD COLUMN dept1_name TEXT DEFAULT '[DPT. 1]'")
+    if 'dept2_name' not in columns:
+        cursor.execute("ALTER TABLE projects ADD COLUMN dept2_name TEXT DEFAULT '[DPT. 2]'")
+    if 'dept3_name' not in columns:
+        cursor.execute("ALTER TABLE projects ADD COLUMN dept3_name TEXT DEFAULT '[DPT. 3]'")
+    if 'dept4_name' not in columns:
+        cursor.execute("ALTER TABLE projects ADD COLUMN dept4_name TEXT DEFAULT '[DPT. 4]'")
+
+    # Create Milestones table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS milestones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            slot_number INTEGER,
+            name TEXT,
+            deadline TEXT,
+            content TEXT,
+            is_saved BOOLEAN DEFAULT 0,
+            is_done BOOLEAN DEFAULT 0,
+            FOREIGN KEY (project_id) REFERENCES projects(id),
+            UNIQUE(project_id, slot_number)
+        )
+    ''')
+
+    cursor.execute("PRAGMA table_info(milestones)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if 'is_done' not in columns:
+        cursor.execute("ALTER TABLE milestones ADD COLUMN is_done BOOLEAN DEFAULT 0")
 
     # Create Status Logs table
     cursor.execute('''
@@ -124,6 +153,49 @@ def init_db():
     if 'due_date' not in columns:
         cursor.execute("ALTER TABLE status_logs ADD COLUMN due_date TEXT")
 
+    conn.commit()
+    conn.close()
+
+# Milestone Methods
+def get_milestones(project_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT slot_number, name, deadline, content, is_saved, is_done FROM milestones WHERE project_id = ? ORDER BY slot_number ASC", (project_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    milestones = []
+    for row in rows:
+        milestones.append({
+            'slot_number': row[0],
+            'name': row[1],
+            'deadline': row[2],
+            'content': row[3],
+            'is_saved': bool(row[4]),
+            'is_done': bool(row[5])
+        })
+    return milestones
+
+def save_milestone(project_id, slot_number, name, deadline, content, is_saved, is_done=False):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO milestones (project_id, slot_number, name, deadline, content, is_saved, is_done)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(project_id, slot_number) DO UPDATE SET
+            name=excluded.name,
+            deadline=excluded.deadline,
+            content=excluded.content,
+            is_saved=excluded.is_saved,
+            is_done=excluded.is_done
+    ''', (project_id, slot_number, name, deadline, content, 1 if is_saved else 0, 1 if is_done else 0))
+    conn.commit()
+    conn.close()
+
+def delete_milestone(project_id, slot_number):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM milestones WHERE project_id = ? AND slot_number = ?", (project_id, slot_number))
     conn.commit()
     conn.close()
 
@@ -327,9 +399,9 @@ def get_all_projects(owner_id=None, status='active'):
     conn = get_connection()
     cursor = conn.cursor()
     if owner_id is not None:
-        cursor.execute("SELECT id, name, description, manager, client, created_at, status FROM projects WHERE owner_id = ? AND status = ? ORDER BY created_at DESC", (owner_id, status))
+        cursor.execute("SELECT id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name FROM projects WHERE owner_id = ? AND status = ? ORDER BY created_at DESC", (owner_id, status))
     else:
-        cursor.execute("SELECT id, name, description, manager, client, created_at, status FROM projects WHERE status = ? ORDER BY created_at DESC", (status,))
+        cursor.execute("SELECT id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name FROM projects WHERE status = ? ORDER BY created_at DESC", (status,))
     rows = cursor.fetchall()
     conn.close()
     
@@ -342,7 +414,11 @@ def get_all_projects(owner_id=None, status='active'):
             'manager': row[3] or '',
             'client': row[4] or '',
             'created_at': row[5],
-            'status': row[6] or 'active'
+            'status': row[6] or 'active',
+            'dept1_name': row[7] or '[DPT. 1]',
+            'dept2_name': row[8] or '[DPT. 2]',
+            'dept3_name': row[9] or '[DPT. 3]',
+            'dept4_name': row[10] or '[DPT. 4]'
         })
     return projects
 
@@ -351,22 +427,45 @@ def add_project(owner_id, name, description, manager, client):
     cursor = conn.cursor()
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cursor.execute('''
-        INSERT INTO projects (owner_id, name, description, manager, client, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (owner_id, name, description, manager, client, now))
+        INSERT INTO projects (owner_id, name, description, manager, client, created_at, dept1_name, dept2_name, dept3_name, dept4_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (owner_id, name, description, manager, client, now, '[DPT. 1]', '[DPT. 2]', '[DPT. 3]', '[DPT. 4]'))
     new_id = cursor.lastrowid
     conn.commit()
     conn.close()
     return new_id
 
-def update_project(project_id, name, description, manager, client):
+def get_project_by_id(project_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name FROM projects WHERE id = ?", (project_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {
+        'id': row[0],
+        'name': row[1],
+        'description': row[2] or '',
+        'manager': row[3] or '',
+        'client': row[4] or '',
+        'created_at': row[5],
+        'status': row[6] or 'active',
+        'dept1_name': row[7] or '[DPT. 1]',
+        'dept2_name': row[8] or '[DPT. 2]',
+        'dept3_name': row[9] or '[DPT. 3]',
+        'dept4_name': row[10] or '[DPT. 4]'
+    }
+
+def update_project(project_id, name, description, manager, client, dept1_name, dept2_name, dept3_name, dept4_name):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
         UPDATE projects 
-        SET name = ?, description = ?, manager = ?, client = ?
+        SET name = ?, description = ?, manager = ?, client = ?, 
+            dept1_name = ?, dept2_name = ?, dept3_name = ?, dept4_name = ?
         WHERE id = ?
-    ''', (name, description, manager, client, project_id))
+    ''', (name, description, manager, client, dept1_name, dept2_name, dept3_name, dept4_name, project_id))
     conn.commit()
     conn.close()
 

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SJ WorkAssist</title>
     <link rel="stylesheet" href="style.css?v=2">
+    <script src="html2canvas.min.js"></script>
 </head>
 <body>
     <div id="login-view" style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
@@ -42,9 +43,9 @@
                 <span data-i18n="app_title" style="font-size: 1.5em; letter-spacing: 1px;">WorkAssist</span>
             </div>
             <div class="sidebar-nav">
-                <button class="nav-item active" data-page="kanban-page" data-i18n="menu_kanban">[ Task Manager ]</button>
-                <button class="nav-item" data-page="meeting-page" data-i18n="menu_meetings">[ Meeting minutes ]</button>
-                <button class="nav-item" data-page="project-page" data-i18n="menu_namebook">[ Project Manager ]</button>
+                <button class="nav-item active" data-page="kanban-page" data-i18n="menu_kanban">[ Task Mngr. ]</button>
+                <button class="nav-item" data-page="meeting-page" data-i18n="menu_meetings">[ Meeting Mngr. ]</button>
+                <button class="nav-item" data-page="project-page" data-i18n="menu_namebook">[ Project Mngr. ]</button>
             </div>
             <div class="sidebar-footer">
                 <button class="action-btn" id="btn-settings-side" data-i18n="tab_settings" style="width: 100%; text-align: left; margin-bottom: 10px;">[ SETTINGS ]</button>
@@ -277,7 +278,7 @@
                             <button id="btn-show-deleted-projects" class="action-btn" data-i18n="pm_deleted_projects_list" style="width:100%; text-align:left;">[ DELETED PROJECTS ]</button>
                         </div>
                     </div>
-                    <div class="project-main" id="project-dashboard" style="display:none;">
+                    <div class="project-main" id="project-dashboard" style="display:none; flex-direction: column;">
                         <!-- General Info -->
                         <div class="project-editor-header">
                             <div class="section-header">
@@ -296,21 +297,25 @@
                                     <input type="text" id="project-client">
                                 </div>
                             </div>
-                            <div class="editor-row">
-                                <label data-i18n="pm_label_desc">Description:</label>
-                                <textarea id="project-desc" style="min-height: 50px;"></textarea>
-                            </div>
+                             <div class="editor-row">
+                                 <label data-i18n="pm_label_desc">Description:</label>
+                                 <textarea id="project-desc" style="min-height: 50px;"></textarea>
+                             </div>
                         </div>
 
                         <!-- Status Monitoring (Tabs) -->
                         <div class="project-status-section">
                             <div class="section-header project-tabs-container" style="display:flex; gap:15px; justify-content: flex-start; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-bottom: 15px;">
+                                <button class="pm-tab" data-target="pm-timetable-tab" data-i18n="pm_timetable_tab" style="background:transparent; border:none; color:#888; cursor:pointer; font-family: 'Cascadia Code', monospace; font-weight: bold; font-size: 1.1em; padding: 5px 0;">[ TIME TABLE ]</button>
                                 <button class="pm-tab active" data-target="pm-active-tab" data-i18n="pm_status_monitoring" style="background:transparent; border:none; color:var(--text-color); cursor:pointer; font-family: 'Cascadia Code', monospace; font-weight: bold; font-size: 1.1em; padding: 5px 0;">[ STATUS ]</button>
-                                <button class="pm-tab" data-target="pm-timetable-tab" data-i18n="pm_timetable_tab" style="background:transparent; border:none; color:#555; cursor:pointer; font-family: 'Cascadia Code', monospace; font-weight: bold; font-size: 1.1em; padding: 5px 0;">[ TIME TABLE ]</button>
-                                <button class="pm-tab" data-target="pm-done-tab" data-i18n="pm_done_list" style="background:transparent; border:none; color:#555; cursor:pointer; font-family: 'Cascadia Code', monospace; font-weight: bold; font-size: 1.1em; padding: 5px 0;">[ DONE ]</button>
-                                <button class="pm-tab" data-target="pm-deleted-tab" data-i18n="pm_deleted_list" style="background:transparent; border:none; color:#555; cursor:pointer; font-family: 'Cascadia Code', monospace; font-weight: bold; font-size: 1.1em; padding: 5px 0;">[ DELETED ]</button>
+                                <button class="pm-tab" data-target="pm-milestone-tab" data-i18n="pm_tab_milestone" style="background:transparent; border:none; color:#888; cursor:pointer; font-family: 'Cascadia Code', monospace; font-weight: bold; font-size: 1.1em; padding: 5px 0;">[ MILE STONE ]</button>
                                 
-                                <div id="pm-timetable-controls" class="timetable-controls" style="margin-left: auto; display: none; align-items: center; gap: 15px;">
+                                <div style="flex: 1;"></div>
+                                
+                                <button class="pm-tab" data-target="pm-done-tab" data-i18n="pm_done_list" style="background:transparent; border:none; color:#888; cursor:pointer; font-family: 'Cascadia Code', monospace; font-weight: bold; font-size: 1.1em; padding: 5px 0;">[ DONE ]</button>
+                                <button class="pm-tab" data-target="pm-deleted-tab" data-i18n="pm_deleted_list" style="background:transparent; border:none; color:#888; cursor:pointer; font-family: 'Cascadia Code', monospace; font-weight: bold; font-size: 1.1em; padding: 5px 0;">[ DELETED ]</button>
+                                
+                                <div id="pm-timetable-controls" class="timetable-controls" style="display: none; align-items: center; gap: 15px; margin-left: 15px;">
                                     <label style="display: flex; align-items: center; gap: 5px; font-size: 0.85em; color: #aaa; cursor: pointer;">
                                         <input type="checkbox" id="pm-timetable-show-deleted" style="cursor: pointer;">
                                         <span data-i18n="pm_timetable_show_deleted">Show Deleted LOGs</span>
@@ -346,14 +351,134 @@
                                     <div id="pm-timetable-detail-content" style="white-space: pre-wrap; font-size: 0.9em; color: #ccc; margin-top: 5px;"></div>
                                     <div id="pm-timetable-detail-image" style="margin-top: 10px; display: flex; gap: 10px;"></div>
                                 </div>
+                                
+                                <!-- Milestones Area (Read-only in Timetable) -->
+                                <div id="pm-timetable-milestones-area" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                                    <div class="section-header" style="margin-bottom: 10px;">
+                                        <h3 data-i18n="pm_milestones_list_title">Milestone List</h3>
+                                    </div>
+                                    <div id="pm-timetable-ms-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 120px; overflow-y: auto; padding-right: 5px;">
+                                        <!-- Filled by JS -->
+                                    </div>
+                                </div>
+                                
+                                <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+                                    <button id="pm-timetable-export-excel" class="action-btn" data-i18n="pm_btn_export_excel" style="color: var(--col-doing);">[ EXPORT EXCEL ]</button>
+                                </div>
+                            </div>
+
+                            <!-- Milestone Management Tab -->
+                            <div id="pm-milestone-tab" class="pm-tab-content" style="display:none; flex:1; flex-direction:column;">
+                                <div class="milestone-list-container" style="background: #1a1b26; padding: 20px; border: 1px solid var(--border-color); border-radius: 4px;">
+                                    <div id="milestone-management-list" style="display: flex; flex-direction: column; gap: 12px;">
+                                        <!-- 10 Milestone Rows -->
+                                        <div class="milestone-row" data-slot="1">
+                                            <input type="text" class="ms-name" data-i18n-ph="pm_milestone_name" placeholder="Name">
+                                            <input type="date" class="ms-deadline">
+                                            <input type="text" class="ms-content" data-i18n-ph="pm_milestone_content" placeholder="Content">
+                                            <button class="retro-btn-small btn-ms-save" data-i18n="modal_save">[ SAVE ]</button>
+                                            <button class="retro-btn-small btn-ms-edit" data-i18n="btn_edit" style="display:none;">[ EDIT ]</button>
+                                            <button class="retro-btn-small btn-ms-done" style="color:var(--accent-color); display:none;">[ DONE ]</button>
+                                            <button class="retro-btn-small btn-ms-delete" style="color:var(--urgent-color);">[X]</button>
+                                        </div>
+                                        <div class="milestone-row" data-slot="2">
+                                            <input type="text" class="ms-name" data-i18n-ph="pm_milestone_name" placeholder="Name">
+                                            <input type="date" class="ms-deadline">
+                                            <input type="text" class="ms-content" data-i18n-ph="pm_milestone_content" placeholder="Content">
+                                            <button class="retro-btn-small btn-ms-save" data-i18n="modal_save">[ SAVE ]</button>
+                                            <button class="retro-btn-small btn-ms-edit" data-i18n="btn_edit" style="display:none;">[ EDIT ]</button>
+                                            <button class="retro-btn-small btn-ms-done" style="color:var(--accent-color); display:none;">[ DONE ]</button>
+                                            <button class="retro-btn-small btn-ms-delete" style="color:var(--urgent-color);">[X]</button>
+                                        </div>
+                                        <div class="milestone-row" data-slot="3">
+                                            <input type="text" class="ms-name" data-i18n-ph="pm_milestone_name" placeholder="Name">
+                                            <input type="date" class="ms-deadline">
+                                            <input type="text" class="ms-content" data-i18n-ph="pm_milestone_content" placeholder="Content">
+                                            <button class="retro-btn-small btn-ms-save" data-i18n="modal_save">[ SAVE ]</button>
+                                            <button class="retro-btn-small btn-ms-edit" data-i18n="btn_edit" style="display:none;">[ EDIT ]</button>
+                                            <button class="retro-btn-small btn-ms-done" style="color:var(--accent-color); display:none;">[ DONE ]</button>
+                                            <button class="retro-btn-small btn-ms-delete" style="color:var(--urgent-color);">[X]</button>
+                                        </div>
+                                        <div class="milestone-row" data-slot="4">
+                                            <input type="text" class="ms-name" data-i18n-ph="pm_milestone_name" placeholder="Name">
+                                            <input type="date" class="ms-deadline">
+                                            <input type="text" class="ms-content" data-i18n-ph="pm_milestone_content" placeholder="Content">
+                                            <button class="retro-btn-small btn-ms-save" data-i18n="modal_save">[ SAVE ]</button>
+                                            <button class="retro-btn-small btn-ms-edit" data-i18n="btn_edit" style="display:none;">[ EDIT ]</button>
+                                            <button class="retro-btn-small btn-ms-done" style="color:var(--accent-color); display:none;">[ DONE ]</button>
+                                            <button class="retro-btn-small btn-ms-delete" style="color:var(--urgent-color);">[X]</button>
+                                        </div>
+                                        <div class="milestone-row" data-slot="5">
+                                            <input type="text" class="ms-name" data-i18n-ph="pm_milestone_name" placeholder="Name">
+                                            <input type="date" class="ms-deadline">
+                                            <input type="text" class="ms-content" data-i18n-ph="pm_milestone_content" placeholder="Content">
+                                            <button class="retro-btn-small btn-ms-save" data-i18n="modal_save">[ SAVE ]</button>
+                                            <button class="retro-btn-small btn-ms-edit" data-i18n="btn_edit" style="display:none;">[ EDIT ]</button>
+                                            <button class="retro-btn-small btn-ms-done" style="color:var(--accent-color); display:none;">[ DONE ]</button>
+                                            <button class="retro-btn-small btn-ms-delete" style="color:var(--urgent-color);">[X]</button>
+                                        </div>
+                                        <div class="milestone-row" data-slot="6">
+                                            <input type="text" class="ms-name" data-i18n-ph="pm_milestone_name" placeholder="Name">
+                                            <input type="date" class="ms-deadline">
+                                            <input type="text" class="ms-content" data-i18n-ph="pm_milestone_content" placeholder="Content">
+                                            <button class="retro-btn-small btn-ms-save" data-i18n="modal_save">[ SAVE ]</button>
+                                            <button class="retro-btn-small btn-ms-edit" data-i18n="btn_edit" style="display:none;">[ EDIT ]</button>
+                                            <button class="retro-btn-small btn-ms-done" style="color:var(--accent-color); display:none;">[ DONE ]</button>
+                                            <button class="retro-btn-small btn-ms-delete" style="color:var(--urgent-color);">[X]</button>
+                                        </div>
+                                        <div class="milestone-row" data-slot="7">
+                                            <input type="text" class="ms-name" data-i18n-ph="pm_milestone_name" placeholder="Name">
+                                            <input type="date" class="ms-deadline">
+                                            <input type="text" class="ms-content" data-i18n-ph="pm_milestone_content" placeholder="Content">
+                                            <button class="retro-btn-small btn-ms-save" data-i18n="modal_save">[ SAVE ]</button>
+                                            <button class="retro-btn-small btn-ms-edit" data-i18n="btn_edit" style="display:none;">[ EDIT ]</button>
+                                            <button class="retro-btn-small btn-ms-done" style="color:var(--accent-color); display:none;">[ DONE ]</button>
+                                            <button class="retro-btn-small btn-ms-delete" style="color:var(--urgent-color);">[X]</button>
+                                        </div>
+                                        <div class="milestone-row" data-slot="8">
+                                            <input type="text" class="ms-name" data-i18n-ph="pm_milestone_name" placeholder="Name">
+                                            <input type="date" class="ms-deadline">
+                                            <input type="text" class="ms-content" data-i18n-ph="pm_milestone_content" placeholder="Content">
+                                            <button class="retro-btn-small btn-ms-save" data-i18n="modal_save">[ SAVE ]</button>
+                                            <button class="retro-btn-small btn-ms-edit" data-i18n="btn_edit" style="display:none;">[ EDIT ]</button>
+                                            <button class="retro-btn-small btn-ms-done" style="color:var(--accent-color); display:none;">[ DONE ]</button>
+                                            <button class="retro-btn-small btn-ms-delete" style="color:var(--urgent-color);">[X]</button>
+                                        </div>
+                                        <div class="milestone-row" data-slot="9">
+                                            <input type="text" class="ms-name" data-i18n-ph="pm_milestone_name" placeholder="Name">
+                                            <input type="date" class="ms-deadline">
+                                            <input type="text" class="ms-content" data-i18n-ph="pm_milestone_content" placeholder="Content">
+                                            <button class="retro-btn-small btn-ms-save" data-i18n="modal_save">[ SAVE ]</button>
+                                            <button class="retro-btn-small btn-ms-edit" data-i18n="btn_edit" style="display:none;">[ EDIT ]</button>
+                                            <button class="retro-btn-small btn-ms-done" style="color:var(--accent-color); display:none;">[ DONE ]</button>
+                                            <button class="retro-btn-small btn-ms-delete" style="color:var(--urgent-color);">[X]</button>
+                                        </div>
+                                        <div class="milestone-row" data-slot="10">
+                                            <input type="text" class="ms-name" data-i18n-ph="pm_milestone_name" placeholder="Name">
+                                            <input type="date" class="ms-deadline">
+                                            <input type="text" class="ms-content" data-i18n-ph="pm_milestone_content" placeholder="Content">
+                                            <button class="retro-btn-small btn-ms-save" data-i18n="modal_save">[ SAVE ]</button>
+                                            <button class="retro-btn-small btn-ms-edit" data-i18n="btn_edit" style="display:none;">[ EDIT ]</button>
+                                            <button class="retro-btn-small btn-ms-done" style="color:var(--accent-color); display:none;">[ DONE ]</button>
+                                            <button class="retro-btn-small btn-ms-delete" style="color:var(--urgent-color);">[X]</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- Active Logs -->
-                            <div id="pm-active-tab" class="pm-tab-content active">
+                            <div id="pm-active-tab" class="pm-tab-content active" style="display: flex; flex-direction: column;">
+                                <!-- Section Names Inputs (Aligned with Columns) -->
+                                <div id="pm-dept-config-bar" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 10px;">
+                                    <input type="text" id="project-dept1-name" placeholder="[DPT. 1]" style="width:100%; height: 24px; font-size: 0.85em; background: #1a1b26; border: 1px solid #333; color: #fff; padding: 0 8px; border-radius: 2px; text-align: center;">
+                                    <input type="text" id="project-dept2-name" placeholder="[DPT. 2]" style="width:100%; height: 24px; font-size: 0.85em; background: #1a1b26; border: 1px solid #333; color: #fff; padding: 0 8px; border-radius: 2px; text-align: center;">
+                                    <input type="text" id="project-dept3-name" placeholder="[DPT. 3]" style="width:100%; height: 24px; font-size: 0.85em; background: #1a1b26; border: 1px solid #333; color: #fff; padding: 0 8px; border-radius: 2px; text-align: center;">
+                                    <input type="text" id="project-dept4-name" placeholder="[DPT. 4]" style="width:100%; height: 24px; font-size: 0.85em; background: #1a1b26; border: 1px solid #333; color: #fff; padding: 0 8px; border-radius: 2px; text-align: center;">
+                                </div>
                                 <div class="status-grid">
                                 <!-- Mech -->
-                                <div class="status-col mech" data-dept="Mech">
-                                    <div class="col-header" data-i18n="pm_dept_mech">[ MECH ]</div>
+                                 <div class="status-col mech" data-dept="Mech" data-dept-idx="1">
+                                     <div class="col-header" id="pm-dept1-header" data-i18n="pm_dept_mech">[ MECH ]</div>
                                     <div class="log-list" id="log-list-Mech"></div>
                                     <div class="log-input-area">
                                         <textarea class="log-text-input" data-i18n-ph="pm_ph_log" placeholder="Enter new status..."></textarea>
@@ -366,8 +491,8 @@
                                     </div>
                                 </div>
                                 <!-- Control -->
-                                <div class="status-col control" data-dept="Control">
-                                    <div class="col-header" data-i18n="pm_dept_control">[ CONTROL ]</div>
+                                 <div class="status-col control" data-dept="Control" data-dept-idx="2">
+                                     <div class="col-header" id="pm-dept2-header" data-i18n="pm_dept_control">[ CONTROL ]</div>
                                     <div class="log-list" id="log-list-Control"></div>
                                     <div class="log-input-area">
                                         <textarea class="log-text-input" data-i18n-ph="pm_ph_log" placeholder="Enter new status..."></textarea>
@@ -380,8 +505,8 @@
                                     </div>
                                 </div>
                                 <!-- Elec -->
-                                <div class="status-col elec" data-dept="Elec">
-                                    <div class="col-header" data-i18n="pm_dept_elec">[ ELEC ]</div>
+                                 <div class="status-col elec" data-dept="Elec" data-dept-idx="3">
+                                     <div class="col-header" id="pm-dept3-header" data-i18n="pm_dept_elec">[ ELEC ]</div>
                                     <div class="log-list" id="log-list-Elec"></div>
                                     <div class="log-input-area">
                                         <textarea class="log-text-input" data-i18n-ph="pm_ph_log" placeholder="Enter new status..."></textarea>
@@ -394,8 +519,8 @@
                                     </div>
                                 </div>
                                 <!-- Sales -->
-                                <div class="status-col sales" data-dept="Sales">
-                                    <div class="col-header" data-i18n="pm_dept_sales">[ SALES ]</div>
+                                 <div class="status-col sales" data-dept="Sales" data-dept-idx="4">
+                                     <div class="col-header" id="pm-dept4-header" data-i18n="pm_dept_sales">[ SALES ]</div>
                                     <div class="log-list" id="log-list-Sales"></div>
                                     <div class="log-input-area">
                                         <textarea class="log-text-input" data-i18n-ph="pm_ph_log" placeholder="Enter new status..."></textarea>

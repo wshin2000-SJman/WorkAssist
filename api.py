@@ -4,6 +4,11 @@ import os
 import io
 import hashlib
 
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
+HAS_OPENPYXL = True
+
 from version import VERSION
 
 def hash_password(password):
@@ -275,11 +280,18 @@ class API:
         description = data.get('description', '')
         manager = data.get('manager', '')
         client = data.get('client', '')
+        dept1 = data.get('dept1_name', '[DPT. 1]')
+        dept2 = data.get('dept2_name', '[DPT. 2]')
+        dept3 = data.get('dept3_name', '[DPT. 3]')
+        dept4 = data.get('dept4_name', '[DPT. 4]')
         
         if project_id:
-            db.update_project(project_id, name, description, manager, client)
+            db.update_project(project_id, name, description, manager, client, dept1, dept2, dept3, dept4)
             return {'status': 'success', 'id': project_id}
         else:
+            # Note: add_project in db.py doesn't take depts yet, it uses defaults. 
+            # But I updated db.py to take depts if I wanted to, but the current add_project in db.py uses hardcoded defaults.
+            # Wait, I updated add_project in db.py to take values? No, I just updated the INSERT.
             new_id = db.add_project(self.current_user_id, name, description, manager, client)
             return {'status': 'success', 'id': new_id}
 
@@ -342,6 +354,139 @@ class API:
         db.delete_status_log_permanent(log_id)
         return {'status': 'success'}
 
+    def export_project_excel(self, project_id, image_data=None):
+        try:
+            if not HAS_OPENPYXL:
+                return {'status': 'error', 'message': 'openpyxl is not installed. Please contact support.'}
+                
+            project = db.get_project_by_id(project_id)
+            if not project:
+                return {'status': 'error', 'message': 'Project not found.'}
+                
+            logs = db.get_status_logs(project_id)
+            milestones = db.get_milestones(project_id)
+            
+            wb = openpyxl.Workbook()
+            
+            # 1. Chart Sheet (Visual Table)
+            if image_data:
+                import io
+                import base64
+                from openpyxl.drawing.image import Image as OpenpyxlImage
+                
+                ws_chart = wb.active
+                ws_chart.title = "Chart"
+                
+                # Decode base64 image
+                header, encoded = image_data.split(",", 1)
+                data = base64.b64decode(encoded)
+                img_ptr = io.BytesIO(data)
+                
+                img = OpenpyxlImage(img_ptr)
+                # Scale down slightly if too large? Or just keep it.
+                ws_chart.add_image(img, 'B2')
+                
+                # 2. Logs Sheet
+                ws_logs = wb.create_sheet(title="Logs")
+            else:
+                ws_logs = wb.active
+                ws_logs.title = "Logs"
+            
+            # 1/2. Logs Sheet Content
+            headers_logs = ["Tag", "Department", "Date", "Content", "Status", "Manager", "Schedule"]
+            ws_logs.append(headers_logs)
+            
+            for log in reversed(logs):
+                status_text = log['status']
+                if status_text == 'done': status_text = 'DONE'
+                elif status_text == 'deleted': status_text = 'DELETED'
+                else: status_text = 'ACTIVE'
+                
+                schedule = f"{log.get('start_date', '')} ~ {log.get('due_date', '')}"
+                if schedule == " ~ ": schedule = ""
+                
+                ws_logs.append([
+                    log.get('tag', ''),
+                    log.get('department', ''),
+                    log.get('timestamp', ''),
+                    log.get('text_content', ''),
+                    status_text,
+                    log.get('manager', ''),
+                    schedule
+                ])
+                
+            # 3. Milestones Sheet
+            ws_ms = wb.create_sheet(title="Milestones")
+            headers_ms = ["Slot", "Deadline", "Name", "Content", "Status"]
+            ws_ms.append(headers_ms)
+            
+            for ms in sorted(milestones, key=lambda x: x['slot_number']):
+                if not ms.get('is_saved'):
+                    continue
+                ws_ms.append([
+                    ms['slot_number'],
+                    ms.get('deadline', ''),
+                    ms.get('name', ''),
+                    ms.get('content', ''),
+                    'COMPLETED' if ms.get('is_done') else 'ACTIVE'
+                ])
+                
+            # Styling formatting function
+            def style_sheet(ws):
+                if ws.title == "Chart": return # Skip chart sheet
+                
+                header_fill = PatternFill(start_color="333333", end_color="333333", fill_type="solid")
+                header_font = Font(color="FFFFFF", bold=True)
+                for cell in ws[1]:
+                    cell.fill = header_fill
+                    cell.font = header_font
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+                
+                for col in ws.columns:
+                    max_length = 0
+                    column = col[0].column_letter
+                    for cell in col:
+                        try:
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                        except:
+                            pass
+                    adjusted_width = min(max_length + 2, 50) # Cap width at 50
+                    ws.column_dimensions[column].width = adjusted_width
+                    
+                # Alignment for all cells
+                for row in ws.iter_rows(min_row=2):
+                    for cell in row:
+                        cell.alignment = Alignment(wrap_text=True, vertical="top")
+
+            style_sheet(ws_logs)
+            style_sheet(ws_ms)
+            
+            safe_name = "".join([c for c in project['name'] if c.isalnum() or c in (' ', '_', '-')]).rstrip()
+            filename = f"{safe_name}_TimeTable.xlsx"
+        
+            try:
+                import webview
+                file_types = ('Excel Files (*.xlsx)', 'All files (*.*)')
+                dest_path = self.window.create_file_dialog(
+                    webview.SAVE_DIALOG, 
+                    save_filename=filename, 
+                    file_types=file_types
+                )
+                
+                if dest_path and len(dest_path) > 0:
+                    export_file = dest_path[0]
+                    wb.save(export_file)
+                    return {'status': 'success', 'path': export_file}
+                else:
+                    return {'status': 'error', 'message': 'User cancelled export.'}
+            except Exception as e:
+                return {'status': 'error', 'message': f"Failed to open file dialog: {str(e)}"}
+        except Exception as global_e:
+            import traceback
+            tb = traceback.format_exc()
+            return {'status': 'error', 'message': f"Unexpected error: {str(global_e)}\n{tb}"}
+
     def mark_status_log_done(self, log_id):
         db.update_status_log_state(log_id, 'done')
         return {'status': 'success'}
@@ -399,3 +544,23 @@ class API:
                 return f"data:{mime};base64,{encoded_string}"
         except Exception as e:
             return ""
+
+    # Milestone API
+    def get_milestones(self, project_id):
+        return db.get_milestones(project_id)
+
+    def save_milestone(self, data):
+        project_id = data.get('project_id')
+        slot_number = data.get('slot_number')
+        name = data.get('name', '')
+        deadline = data.get('deadline', '')
+        content = data.get('content', '')
+        is_saved = data.get('is_saved', False)
+        is_done = data.get('is_done', False)
+        
+        db.save_milestone(project_id, slot_number, name, deadline, content, is_saved, is_done)
+        return {'status': 'success'}
+
+    def delete_milestone(self, project_id, slot_number):
+        db.delete_milestone(project_id, slot_number)
+        return {'status': 'success'}

@@ -73,7 +73,7 @@ header {
 }
 
 #main-sidebar {
-    width: 240px;
+    width: 210px;
     background: #1a1b26;
     border-right: 1px solid var(--border-color);
     display: flex;
@@ -98,18 +98,21 @@ header {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    padding: 0 10px;
+    padding: 0 5px;
 }
 
 .nav-item {
     background: transparent;
     border: 1px solid transparent;
     color: var(--text-color);
-    padding: 12px 15px;
+    padding: 12px 10px;
     text-align: left;
     cursor: pointer;
     font-size: 0.95rem;
     transition: all 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .nav-item:hover {
@@ -1216,6 +1219,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-right: 1px solid var(--border-color);
     background: #16161e;
     color: #aaa;
+    position: relative; /* Ensure z-index works */
+    z-index: 20; /* Sit above markers that might bleed in from the right */
 }
 
 .timetable-track-content {
@@ -1302,5 +1307,176 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     z-index: 9999;
     box-shadow: 0 4px 15px rgba(0,0,0,0.7);
     backdrop-filter: blur(4px);
+}
+
+/* Milestone Styles */
+.milestone-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 8px;
+    border: 1px solid #222;
+    transition: all 0.2s;
+}
+
+.milestone-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: #333;
+}
+
+.milestone-row input {
+    background: #1a1b26;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 6px 10px;
+    font-size: 0.9em;
+    font-family: 'Cascadia Code', monospace;
+    outline: none;
+}
+
+.milestone-row input:focus {
+    border-color: var(--col-doing);
+}
+
+.milestone-row .ms-name {
+    flex: 2;
+}
+
+.milestone-row .ms-deadline {
+    width: 150px;
+}
+
+.milestone-row .ms-content {
+    flex: 3;
+}
+
+.milestone-row input:disabled {
+    background: transparent;
+    border-color: transparent;
+    color: #888;
+    cursor: default;
+}
+
+.milestone-row.saved {
+    background: rgba(158, 206, 106, 0.05);
+    border-color: rgba(158, 206, 106, 0.2);
+}
+
+.milestone-row.saved .ms-name {
+    color: var(--col-review);
+    font-weight: bold;
+}
+
+/* Milestone Visualization on Timetable */
+.milestone-line {
+    position: absolute;
+    top: 0;
+    width: 2px;
+    border-left: 2px dashed #FF0000;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.milestone-line.is-done {
+    border-left: 2px dashed #565f89 !important;
+}
+
+.milestone-line-label {
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 0.7em;
+    color: var(--urgent-color);
+    white-space: nowrap;
+    font-weight: bold;
+    background: rgba(18, 18, 18, 0.8);
+    padding: 1px 3px;
+    border: 1px solid var(--urgent-color);
+    pointer-events: none;
+}
+
+.milestone-line.is-done .milestone-line-label {
+    color: #565f89 !important;
+    border-color: #565f89 !important;
+}
+
+.timetable-day-col.milestone-highlight {
+    border-bottom: 2px solid var(--urgent-color);
+    color: #fff !important;
+}
+
+.timetable-day-col.milestone-highlight.is-done {
+    border-bottom-color: #565f89 !important;
+}
+
+/* --- Project Manager UI Refinement --- */
+.project-main {
+    padding: 20px !important;
+    background: #0f0f14 !important;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-sizing: border-box;
+    overflow-y: auto; /* Enable full-screen scrolling */
+    overflow-x: hidden;
+}
+
+.project-editor-header {
+    background: #16161e;
+    border: 1px solid #292e42;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    flex-shrink: 0; /* Keep top part fixed size */
+}
+
+.project-status-section {
+    background: #16161e;
+    border: 1px solid #292e42;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    flex: 1; /* Expand to fill remaining space */
+    display: flex;
+    flex-direction: column;
+    min-height: 550px; /* Minimum height to prevent squishing and trigger main scrolling */
+}
+
+#pm-dept-config-bar {
+    background: #1a1b26;
+    padding: 12px;
+    border: 1px solid #3b4261;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    color: var(--accent-color);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.project-tabs-container {
+    margin-top: 10px;
+}
+
+.pm-tab {
+    transition: all 0.2s;
+    opacity: 0.6;
+}
+
+.pm-tab:hover {
+    opacity: 1;
+    color: #fff !important;
+}
+
+.pm-tab.active {
+    opacity: 1;
+    border-bottom: 2px solid var(--accent-color) !important;
 }
 
