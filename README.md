@@ -1,23 +1,133 @@
-# SJ WorkAssist
+# WorkAssist
 
-SJ WorkAssist is a minimalist, retro-styled productivity suite designed for efficient task management and meeting documentation. It is built with Python (PyWebView) and Vanilla JS for a lightweight, high-performance experience.
+> **삼정오토메이션 내부용 통합 업무 보조 툴**  
+> A minimalist, retro-styled productivity suite for task, meeting, and project management.
 
-## Key Features
+Built with **Python + PyWebView** for a standalone desktop experience — no browser, no internet, no installation of Python required on end-user machines.
 
-- **Task Manager**: Kanban-style board with individual task tracking, status management, and urgent markers.
-- **MinuteMaker (Meeting Minutes)**: 
-  - Dynamic split-pane editor (Input + Live Markdown Preview).
-  - Detailed Action Items with 5 fields (Title, Content, Manager, Start Date, Due Date).
-  - **Task Export**: Seamlessly push meeting action items directly into the Task Manager board.
-  - Localization support (Korean / English).
-- **Namebook**: Simplified contact management (In progress).
-- **Data Persistence**: Local SQLite database for secure, standalone operation.
+---
 
-## Tech Stack
+## 📋 Key Features
 
-- **Backend**: Python 3, PyWebView, SQLite
-- **Frontend**: HTML5, Vanilla CSS3, Javascript (ES6+)
-- **Design**: Retro-minimalist, Cascadia Code, Tokyo Night Palette
+### ✅ Task Manager (`Task Mngr.`)
+- Kanban-style task board with status tracking (Todo / In Progress / Review / Done)
+- Urgent markers, tag-based categorization, and due date management
+- Calendar view for date-based task overview
 
-## Version
-Current Version: v1.0.0
+### 📝 Meeting Minutes (`Meeting Mngr.`)
+- Dynamic split-pane editor with **live Markdown preview**
+- Structured sections: Free Memo, Decisions & Rationales, Action Items
+- **Task Export**: Push meeting action items directly into the Task Manager
+- Export minutes as `.md` files or copy to clipboard
+- Localization support (Korean / English)
+
+### 📊 Project Manager (`Project Mngr.`)
+- Multi-project dashboard with full CRUD management
+- **Time Table**: Weekly / Monthly visual chart showing log schedules with milestone markers
+- **Status Tab**: Department-based log tracking (Active / Done / Deleted)
+- **Milestone Tab**: Up to 10 milestone slots with deadline tracking and completion status
+- **Excel Export**:
+  - Captures the current Time Table chart as a screenshot → embeds into `Chart` sheet
+  - Exports all logs to `Logs` sheet and milestones to `Milestones` sheet
+  - Native Windows Save Dialog for user-defined save path
+- Image attachments per log entry
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Backend** | Python 3.13, PyWebView 6.2.1, SQLite |
+| **Frontend** | HTML5, Vanilla CSS3, JavaScript (ES6+) |
+| **Excel Export** | openpyxl 3.1.5, html2canvas (JS) |
+| **Design** | Retro-minimalist, Cascadia Code, Tokyo Night Palette |
+| **Packaging** | PyInstaller 6.20.0 (single-file `.exe`) |
+
+---
+
+## 🚀 Getting Started (Development)
+
+### Prerequisites
+- Python 3.13+
+- Windows OS (PyWebView uses WebView2 / Edge Chromium)
+
+### Setup
+```bash
+# 1. Clone the repository
+git clone https://github.com/wshin2000-SJman/WorkAssist.git
+cd WorkAssist
+
+# 2. Create virtual environment
+python -m venv venv
+.\venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Run the application
+python main.py
+```
+
+### Build EXE
+```bash
+# Generate version info (optional, run if version changed)
+python version_info.py
+
+# Build single-file executable
+pyinstaller build.spec
+# Output: dist/SJ_Kanban.exe
+```
+
+---
+
+## 📁 Project Structure
+
+```
+SJ_WorkAssist/
+├── main.py               # App entry point (PyWebView window setup)
+├── api.py                # Python API (called from JS via pywebview.api)
+├── db.py                 # SQLite database layer
+├── version.py            # Version constant (e.g. "1.0.0")
+├── version_info.py       # Generates file_version_info.txt for PyInstaller
+├── build.spec            # PyInstaller build configuration
+├── requirements.txt      # Python dependencies
+├── UPDATE_LOG.md         # Feature update history
+└── assets/
+    ├── index.html        # Main UI structure
+    ├── app.js            # Frontend logic & API calls
+    ├── style.css         # All styles (Tokyo Night theme)
+    ├── i18n.json         # Localization strings (KO / EN)
+    ├── html2canvas.min.js # Screenshot library for Excel chart export
+    ├── logo.ico          # App icon
+    └── Title IMG_*.webp  # Seasonal login screen images
+```
+
+---
+
+## 🌍 Localization
+
+Supports **Korean** and **English** via `assets/i18n.json`. Language can be switched in Settings at runtime.
+
+---
+
+## 📦 Distribution
+
+The built `dist/SJ_Kanban.exe` is a self-contained single-file executable:
+- ✅ No Python installation required on target machines
+- ✅ No internet connection required
+- ✅ Data stored locally in `%LOCALAPPDATA%\SJ_Kanban\`
+
+---
+
+## 📄 Version
+
+**Current Version**: v1.0.0  
+See [UPDATE_LOG.md](UPDATE_LOG.md) for full change history.
+
+---
+
+## © License
+
+© 2026. [Wonseup Shin / Samjeong Automation] All rights reserved.  
+Internal use only. Not for public redistribution.
