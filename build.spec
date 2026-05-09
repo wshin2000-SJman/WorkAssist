@@ -35,7 +35,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='SJ_Kanban',
+    name='SJ_WorkAssist',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

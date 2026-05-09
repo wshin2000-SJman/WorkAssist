@@ -3,9 +3,9 @@ import os
 import datetime
 
 def get_data_dir():
-    """Get or create the SJ_Kanban data directory under LOCALAPPDATA."""
+    """Get or create the SJ_WorkAssist data directory under LOCALAPPDATA."""
     base = os.environ.get('LOCALAPPDATA', os.path.expanduser('~'))
-    data_dir = os.path.join(base, 'SJ_Kanban')
+    data_dir = os.path.join(base, 'SJ_WorkAssist')
     os.makedirs(data_dir, exist_ok=True)
     return data_dir
 

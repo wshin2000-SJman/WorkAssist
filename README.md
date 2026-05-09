@@ -76,7 +76,7 @@ python version_info.py
 
 # Build single-file executable
 pyinstaller build.spec
-# Output: dist/SJ_Kanban.exe
+# Output: dist/SJ_WorkAssist.exe
 ```
 
 ---
@@ -119,7 +119,7 @@ Distributed as a professional installer (**`WorkAssist_Setup_v1.1.0.exe`**) crea
 - ✅ **Shortcuts**: Automatically creates Start Menu and optional Desktop shortcuts
 - ✅ **No Dependencies**: No Python installation required on target machines
 - ✅ **Offline**: Works entirely without an internet connection
-- ✅ **Local Data**: All data is stored securely in `%LOCALAPPDATA%\SJ_Kanban\`
+- ✅ **Local Data**: All data is stored securely in `%LOCALAPPDATA%\SJ_WorkAssist\`
 
 ---
 

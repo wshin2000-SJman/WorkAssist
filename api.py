@@ -771,7 +771,7 @@ class API:
         if result and len(result) > 0:
             source_path = result[0]
             
-            # Destination path: %LOCALAPPDATA%/SJ_Kanban/projects/{project_id}/
+            # Destination path: %LOCALAPPDATA%/SJ_WorkAssist/projects/{project_id}/
             base = db.get_data_dir()
             proj_dir = os.path.join(base, 'projects', str(project_id))
             os.makedirs(proj_dir, exist_ok=True)

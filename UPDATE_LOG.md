@@ -22,6 +22,7 @@
 ### 4. Dependency Cleanup
 - Removed `openpyxl` from dependencies as the transition to HTML export is complete.
 - Optimized asset handling for seasonal login images and new branding assets.
+- **Data Folder Migration**: Renamed the local data storage directory from `SJ_Kanban` to `SJ_WorkAssist` for better brand alignment.
 
 ## [2026-05-04]
 
