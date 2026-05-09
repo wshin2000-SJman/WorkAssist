@@ -23,6 +23,7 @@
 - Removed `openpyxl` from dependencies as the transition to HTML export is complete.
 - Optimized asset handling for seasonal login images and new branding assets.
 - **Data Folder Migration**: Renamed the local data storage directory from `SJ_Kanban` to `SJ_WorkAssist` for better brand alignment.
+- **Default Tutorial Account**: Included a pre-configured 'tutorial' account (ID: `tutorial` / PW: `1234`) to help new users get started immediately.
 
 ## [2026-05-04]
 

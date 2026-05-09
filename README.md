@@ -112,6 +112,14 @@ Supports **Korean** and **English** via `assets/i18n.json`. Language can be swit
 
 ---
 
+## 튜토리얼 계정 (Default Account)
+
+For new users to quickly explore the app, a default tutorial account is included:
+- **ID**: `tutorial`
+- **PW**: `1234`
+
+---
+
 ## 📦 Distribution
 
 Distributed as a professional installer (**`WorkAssist_Setup_v1.1.0.exe`**) created with Inno Setup:

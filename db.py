@@ -30,6 +30,13 @@ def init_db():
         )
     ''')
     
+    # Insert default tutorial user (PW: 1234)
+    tutorial_hash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
+    cursor.execute('''
+        INSERT OR IGNORE INTO users (username, password_hash, password_hint)
+        VALUES (?, ?, ?)
+    ''', ("tutorial", tutorial_hash, "The password is '1234'"))
+    
     # Create Meetings table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS meetings (
