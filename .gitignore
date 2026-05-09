@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+build/
+dist/
+*.db
+*.pyc
+.vscode/
+scratch/
+scratch_test*.py
