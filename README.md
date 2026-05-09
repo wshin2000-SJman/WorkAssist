@@ -93,6 +93,7 @@ SJ_WorkAssist/
 ├── build.spec            # PyInstaller build configuration
 ├── requirements.txt      # Python dependencies
 ├── UPDATE_LOG.md         # Feature update history
+├── installer.iss         # Inno Setup installer script
 └── assets/
     ├── index.html        # Main UI structure
     ├── app.js            # Frontend logic & API calls
@@ -113,10 +114,12 @@ Supports **Korean** and **English** via `assets/i18n.json`. Language can be swit
 
 ## 📦 Distribution
 
-The built `dist/SJ_Kanban.exe` is a self-contained single-file executable:
-- ✅ No Python installation required on target machines
-- ✅ No internet connection required
-- ✅ Data stored locally in `%LOCALAPPDATA%\SJ_Kanban\`
+Distributed as a professional installer (**`WorkAssist_Setup_v1.1.0.exe`**) created with Inno Setup:
+- ✅ **Installation**: Installs as `WorkAssist.exe` in the Program Files directory
+- ✅ **Shortcuts**: Automatically creates Start Menu and optional Desktop shortcuts
+- ✅ **No Dependencies**: No Python installation required on target machines
+- ✅ **Offline**: Works entirely without an internet connection
+- ✅ **Local Data**: All data is stored securely in `%LOCALAPPDATA%\SJ_Kanban\`
 
 ---
 
