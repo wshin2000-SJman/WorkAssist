@@ -753,9 +753,12 @@ class API:
             filename = f"{safe_name}_GanttChart.html"
             dest_path = self.window.create_file_dialog(webview.SAVE_DIALOG, save_filename=filename, file_types=('HTML Files (*.html)', 'All files (*.*)'))
             if dest_path and len(dest_path) > 0:
-                with open(dest_path[0], 'w', encoding='utf-8') as f:
+                save_path = dest_path[0]
+                if os.path.isdir(save_path):
+                    save_path = os.path.join(save_path, filename)
+                with open(save_path, 'w', encoding='utf-8') as f:
                     f.write(html_template)
-                return {'status': 'success', 'path': dest_path[0]}
+                return {'status': 'success', 'path': save_path}
             return {'status': 'error', 'message': 'User cancelled export.'}
         except Exception as e:
             import traceback

@@ -1,5 +1,9 @@
 # WorkAssist Update Log
 
+## [2026-05-11] - Hotfix
+- **macOS Export Fix**: Resolved an issue where exporting the HTML Gantt Chart on macOS failed with a `FileExistsError` due to the native file save dialog returning a directory path instead of a file path.
+
+
 ## [2026-05-09] - v1.1.0 (Minor Update)
 
 ### 1. Interactive HTML Gantt Chart Export
