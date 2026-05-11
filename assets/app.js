@@ -5,6 +5,78 @@ let allTasks = [];
 let currentMonth = new Date();
 let timetableBaseDate = new Date();
 
+// --- Custom Notification System ---
+let notiQueue = [];
+let isNotiTyping = false;
+let stareTimer = null;
+let msgClearTimer = null;
+
+function resetStareTimer() {
+    if (stareTimer) clearInterval(stareTimer);
+    stareTimer = setInterval(() => {
+        if (!isNotiTyping && notiQueue.length === 0) {
+            const gifEl = document.getElementById('noti-gif');
+            if(gifEl) {
+                gifEl.src = "glasses_1.gif?" + new Date().getTime();
+                setTimeout(() => {
+                    if (!isNotiTyping && notiQueue.length === 0 && gifEl) {
+                        gifEl.src = "stare_1.gif";
+                    }
+                }, 3000); 
+            }
+        }
+    }, 30000);
+}
+
+function processNotiQueue() {
+    if (isNotiTyping || notiQueue.length === 0) return;
+    
+    const gifEl = document.getElementById('noti-gif');
+    const msgEl = document.getElementById('noti-msg-text');
+    if(!gifEl || !msgEl) return;
+
+    isNotiTyping = true;
+    const msg = notiQueue.shift();
+    msgEl.innerText = "";
+    
+    gifEl.src = Math.random() > 0.5 ? "chat_1.gif" : "chat_2.gif";
+    
+    let i = 0;
+    const typeSpeed = 50; 
+    
+    function typeChar() {
+        if (i < msg.length) {
+            msgEl.innerText += msg.charAt(i);
+            i++;
+            setTimeout(typeChar, typeSpeed);
+        } else {
+            isNotiTyping = false;
+            gifEl.src = "stare_1.gif";
+            resetStareTimer();
+            
+            if (msgClearTimer) clearTimeout(msgClearTimer);
+            msgClearTimer = setTimeout(() => {
+                msgEl.innerText = "";
+                processNotiQueue(); 
+            }, 5000); 
+        }
+    }
+    typeChar();
+}
+
+window.alert = function(msg) {
+    notiQueue.push(String(msg));
+    processNotiQueue();
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+    const gifEl = document.getElementById('noti-gif');
+    if(gifEl) {
+        gifEl.src = "stare_1.gif";
+        resetStareTimer();
+    }
+});
+// ----------------------------------
 // Elements
 const tabBtns = document.querySelectorAll('.tab-btn');
 const views = document.querySelectorAll('.view-section');

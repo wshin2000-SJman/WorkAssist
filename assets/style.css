@@ -1479,4 +1479,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     opacity: 1;
     border-bottom: 2px solid var(--accent-color) !important;
 }
-
+
+/* Notification UI Styles */
+.blinking-cursor {
+    font-weight: bold;
+    color: var(--urgent-color);
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
