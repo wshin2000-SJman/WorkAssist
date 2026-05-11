@@ -54,6 +54,10 @@
                 <div id="noti-msg-container" style="width: 160px; min-height: 80px; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.5); font-family: 'Courier New', Courier, monospace; font-size: 0.9em; color: var(--urgent-color); overflow-wrap: break-word; position: relative;">
                     <span id="noti-msg-text"></span><span class="blinking-cursor">_</span>
                 </div>
+                <div id="noti-btn-container" style="display: none; width: 160px; justify-content: space-between; margin-top: 10px;">
+                    <button id="noti-btn-yes" class="retro-btn-small" style="flex: 1; margin-right: 5px; color: var(--col-doing); border-color: var(--col-doing);">[ YES ]</button>
+                    <button id="noti-btn-no" class="retro-btn-small" style="flex: 1; margin-left: 5px; color: var(--urgent-color); border-color: var(--urgent-color);">[ NO ]</button>
+                </div>
             </div>
             <div class="sidebar-nav">
                 <button class="nav-item active" data-page="kanban-page" data-i18n="menu_kanban">[ Task Mngr. ]</button>

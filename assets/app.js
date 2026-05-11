@@ -33,11 +33,13 @@ function processNotiQueue() {
     
     const gifEl = document.getElementById('noti-gif');
     const msgEl = document.getElementById('noti-msg-text');
+    const btnContainer = document.getElementById('noti-btn-container');
     if(!gifEl || !msgEl) return;
 
     isNotiTyping = true;
-    const msg = notiQueue.shift();
+    const req = notiQueue.shift();
     msgEl.innerText = "";
+    if (btnContainer) btnContainer.style.display = 'none';
     
     gifEl.src = Math.random() > 0.5 ? "chat_1.gif" : "chat_2.gif";
     
@@ -45,8 +47,8 @@ function processNotiQueue() {
     const typeSpeed = 50; 
     
     function typeChar() {
-        if (i < msg.length) {
-            msgEl.innerText += msg.charAt(i);
+        if (i < req.msg.length) {
+            msgEl.innerText += req.msg.charAt(i);
             i++;
             setTimeout(typeChar, typeSpeed);
         } else {
@@ -54,19 +56,48 @@ function processNotiQueue() {
             gifEl.src = "stare_1.gif";
             resetStareTimer();
             
-            if (msgClearTimer) clearTimeout(msgClearTimer);
-            msgClearTimer = setTimeout(() => {
-                msgEl.innerText = "";
-                processNotiQueue(); 
-            }, 5000); 
+            if (req.type === 'confirm') {
+                if (btnContainer) {
+                    btnContainer.style.display = 'flex';
+                    const btnYes = document.getElementById('noti-btn-yes');
+                    const btnNo = document.getElementById('noti-btn-no');
+                    
+                    const cleanup = () => {
+                        btnContainer.style.display = 'none';
+                        btnYes.onclick = null;
+                        btnNo.onclick = null;
+                        msgEl.innerText = "";
+                        processNotiQueue();
+                    };
+                    
+                    btnYes.onclick = () => { cleanup(); req.resolve(true); };
+                    btnNo.onclick = () => { cleanup(); req.resolve(false); };
+                } else {
+                    req.resolve(false);
+                }
+            } else {
+                if (msgClearTimer) clearTimeout(msgClearTimer);
+                msgClearTimer = setTimeout(() => {
+                    msgEl.innerText = "";
+                    if (req.resolve) req.resolve();
+                    processNotiQueue(); 
+                }, 5000); 
+            }
         }
     }
     typeChar();
 }
 
 window.alert = function(msg) {
-    notiQueue.push(String(msg));
+    notiQueue.push({ type: 'alert', msg: String(msg) });
     processNotiQueue();
+};
+
+window.customConfirm = function(msg) {
+    return new Promise((resolve) => {
+        notiQueue.push({ type: 'confirm', msg: String(msg), resolve });
+        processNotiQueue();
+    });
 };
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -550,7 +581,7 @@ window.restoreTask = async function(taskId) {
 };
 
 window.permDeleteTask = async function(taskId) {
-    if(confirm(i18nData[currentLang].msg_perm_delete || "This action is irreversible. Delete permanently?")) {
+    if(await window.customConfirm(i18nData[currentLang].msg_perm_delete || "This action is irreversible. Delete permanently?")) {
         await window.pywebview.api.delete_task(taskId);
         await refreshTasks();
     }
@@ -895,7 +926,7 @@ function renderMeetingList(filter = '') {
 }
 
 async function deleteMOM(id) {
-    if(confirm('Delete this meeting note?')) {
+    if(await window.customConfirm('Delete this meeting note?')) {
         await window.pywebview.api.delete_meeting(id);
         if(currentMeetingId === id) resetMeetingEditor();
         refreshMeetings();
@@ -1330,7 +1361,7 @@ function renderProjectList() {
         doneBtn.innerText = '[DONE]';
         doneBtn.onclick = async (e) => {
             e.stopPropagation();
-            if(confirm('Mark this project as DONE?')) {
+            if(await window.customConfirm('Mark this project as DONE?')) {
                 await window.pywebview.api.mark_project_done(p.id);
                 if(currentProjectId === p.id) currentProjectId = null;
                 refreshProjects();
@@ -1342,7 +1373,7 @@ function renderProjectList() {
         delBtn.innerText = '[X]';
         delBtn.onclick = async (e) => {
             e.stopPropagation();
-            if(confirm('Delete this project? All logs will be deleted.')) {
+            if(await window.customConfirm('Delete this project? All logs will be deleted.')) {
                 await window.pywebview.api.delete_project(p.id);
                 if(currentProjectId === p.id) currentProjectId = null;
                 refreshProjects();
@@ -1434,7 +1465,7 @@ async function showDoneProjects() {
         delBtn.innerText = '[PERM. DELETE]';
         delBtn.style.color = 'var(--urgent-color)';
         delBtn.onclick = async () => {
-            if(confirm('Are you sure you want to PERMANENTLY delete this project and all its logs?')) {
+            if(await window.customConfirm('Are you sure you want to PERMANENTLY delete this project and all its logs?')) {
                 await window.pywebview.api.delete_project_permanent(p.id);
                 showDoneProjects();
             }
@@ -1484,7 +1515,7 @@ async function showDeletedProjects() {
         delBtn.innerText = '[PERM. DELETE]';
         delBtn.style.color = 'var(--urgent-color)';
         delBtn.onclick = async () => {
-            if(confirm('Are you sure you want to PERMANENTLY delete this project and all its logs?')) {
+            if(await window.customConfirm('Are you sure you want to PERMANENTLY delete this project and all its logs?')) {
                 await window.pywebview.api.delete_project_permanent(p.id);
                 showDeletedProjects();
             }
@@ -1511,7 +1542,7 @@ const btnDeleteProject = document.getElementById('btn-delete-project');
 if(btnDeleteProject) {
     btnDeleteProject.addEventListener('click', async () => {
         if(!currentProjectId) return;
-        if(confirm(i18nData[currentLang].pm_btn_delete + '?')) {
+        if(await window.customConfirm(i18nData[currentLang].pm_btn_delete + '?')) {
             await window.pywebview.api.delete_project(currentProjectId);
             currentProjectId = null;
             await refreshProjects();
@@ -1607,7 +1638,7 @@ async function refreshStatusLogs() {
             delBtn.innerText = '[X]';
             delBtn.title = "Move to Deleted";
             delBtn.onclick = async () => {
-                if(confirm('Move this log to Deleted?')) {
+                if(await window.customConfirm('Move this log to Deleted?')) {
                     await window.pywebview.api.mark_status_log_deleted(log.id);
                     refreshStatusLogs();
                 }
@@ -1628,7 +1659,7 @@ async function refreshStatusLogs() {
             doneBtn.style.color = 'var(--accent-color)';
             doneBtn.innerText = i18nData[currentLang]?.pm_btn_done || '[ DONE ]';
             doneBtn.onclick = async () => {
-                if(confirm('Mark this log as done?')) {
+                if(await window.customConfirm('Mark this log as done?')) {
                     await window.pywebview.api.mark_status_log_done(log.id);
                     refreshStatusLogs();
                 }
@@ -1721,7 +1752,7 @@ async function renderStatusTable(tbodyId, logs, searchId, isDeleted) {
             delBtn.innerText = i18nData[currentLang].btn_perm_delete || '[ PERM. DELETE ]';
             delBtn.onclick = async () => {
                 const msg = i18nData[currentLang].msg_perm_delete || "This action is irreversible. Delete permanently?";
-                if(confirm(msg)) {
+                if(await window.customConfirm(msg)) {
                     await window.pywebview.api.delete_status_log_permanent(log.id); // New API for perm delete
                     refreshStatusLogs();
                 }
@@ -1730,7 +1761,7 @@ async function renderStatusTable(tbodyId, logs, searchId, isDeleted) {
             delBtn.innerText = '[X]';
             delBtn.title = "Move to Deleted";
             delBtn.onclick = async () => {
-                if(confirm('Move this log to Deleted?')) {
+                if(await window.customConfirm('Move this log to Deleted?')) {
                     await window.pywebview.api.mark_status_log_deleted(log.id);
                     refreshStatusLogs();
                 }
@@ -2316,7 +2347,7 @@ async function refreshPMTimetableLogDetail(logId) {
     };
     
     doneBtn.onclick = async () => {
-        if(confirm(i18nData[currentLang].msg_confirm_done || "Mark as DONE?")) {
+        if(await window.customConfirm(i18nData[currentLang].msg_confirm_done || "Mark as DONE?")) {
             await window.pywebview.api.mark_status_log_done(log.id);
             refreshStatusLogs();
             renderTimeTable();
@@ -2325,7 +2356,7 @@ async function refreshPMTimetableLogDetail(logId) {
     };
 
     restoreBtn.onclick = async () => {
-        if(confirm(i18nData[currentLang].msg_confirm_restore || "Restore this log?")) {
+        if(await window.customConfirm(i18nData[currentLang].msg_confirm_restore || "Restore this log?")) {
             await window.pywebview.api.restore_status_log(log.id);
             refreshStatusLogs();
             renderTimeTable();
@@ -2334,7 +2365,7 @@ async function refreshPMTimetableLogDetail(logId) {
     };
     
     delBtn.onclick = async () => {
-        if(confirm(i18nData[currentLang].msg_confirm_delete || "Delete this log?")) {
+        if(await window.customConfirm(i18nData[currentLang].msg_confirm_delete || "Delete this log?")) {
             await window.pywebview.api.delete_status_log(log.id);
             refreshStatusLogs();
             renderTimeTable();
@@ -2518,7 +2549,7 @@ document.querySelectorAll('.btn-ms-edit').forEach(btn => {
 
 document.querySelectorAll('.btn-ms-delete').forEach(btn => {
     btn.onclick = async (e) => {
-        if(!confirm(i18nData[currentLang].msg_confirm_delete || "Delete?")) return;
+        if(!await window.customConfirm(i18nData[currentLang].msg_confirm_delete || "Delete?")) return;
         const row = e.target.closest('.milestone-row');
         const slot = parseInt(row.dataset.slot);
         
