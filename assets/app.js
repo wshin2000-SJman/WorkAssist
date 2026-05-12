@@ -66,7 +66,7 @@ function processNotiQueue() {
                         btnContainer.style.display = 'none';
                         btnYes.onclick = null;
                         btnNo.onclick = null;
-                        msgEl.innerText = "";
+                        msgEl.innerText = getIdleMessage();
                         processNotiQueue();
                     };
                     
@@ -78,7 +78,7 @@ function processNotiQueue() {
             } else {
                 if (msgClearTimer) clearTimeout(msgClearTimer);
                 msgClearTimer = setTimeout(() => {
-                    msgEl.innerText = "";
+                    msgEl.innerText = getIdleMessage();
                     if (req.resolve) req.resolve();
                     processNotiQueue(); 
                 }, 5000); 
@@ -88,10 +88,29 @@ function processNotiQueue() {
     typeChar();
 }
 
-window.alert = function(msg) {
-    notiQueue.push({ type: 'alert', msg: String(msg) });
-    processNotiQueue();
-};
+function getIdleMessage() {
+    const now = new Date();
+    const h = now.getHours();
+    const m = now.getMinutes();
+    
+    // 11:30 ~ 11:59
+    if (h === 11 && m >= 30) {
+        return "점심식사 시간이 다가오고 있습니다.";
+    }
+    // 16:30 ~ 16:59
+    if (h === 16 && m >= 30) {
+        return "퇴근 시간이 다가오고 있습니다.";
+    }
+    return "";
+}
+
+function overrideAlert() {
+    window.alert = function(msg) {
+        notiQueue.push({ type: 'alert', msg: String(msg) });
+        processNotiQueue();
+    };
+}
+overrideAlert();
 
 let isConfirmActive = false;
 
@@ -130,6 +149,7 @@ const settingsModal = document.getElementById('settings-modal');
 
 // Initialization when pywebview is ready
 window.addEventListener('pywebviewready', async function() {
+    overrideAlert(); // Ensure pywebview doesn't overwrite our alert
     await loadI18n();
     applyLanguage(currentLang);
     setupEventListeners();
@@ -1291,6 +1311,20 @@ function updateSidebarClock() {
     clockDateEl.innerText = `${year}/${month}/${date}`;
     if (clockDayEl) clockDayEl.innerText = `(${day})`;
     clockTimeEl.innerText = `${hours}:${minutes}:${seconds}`;
+
+    // Scheduled Idle Messages
+    const idleMsg = getIdleMessage();
+    const msgEl = document.getElementById('noti-msg-text');
+    
+    if (!isNotiTyping && notiQueue.length === 0 && msgEl) {
+        if (msgEl.innerText !== idleMsg) {
+            msgEl.innerText = idleMsg;
+            const gifEl = document.getElementById('noti-gif');
+            if (idleMsg !== "" && gifEl) {
+                gifEl.src = "stare_1.gif"; 
+            }
+        }
+    }
 }
 
 function applyLanguage(lang) {
