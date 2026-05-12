@@ -162,7 +162,9 @@
         "msg_backup_complete": "데이터베이스 자동 백업이 완료되었습니다.",
         "msg_manual_backup_complete": "데이터베이스 수동 백업이 완료되었습니다.",
         "msg_restore_complete": "데이터 복원이 완료되었습니다. 변경사항을 적용하려면 앱을 재시작해 주세요.",
-        "settings_data_mgmt": "데이터 관리"
+        "settings_data_mgmt": "데이터 관리",
+        "pm_btn_refresh": "[ 새로고침 ]",
+        "pm_btn_refresh_loading": "[ ... ]"
     },
     "en": {
         "app_title": "WorkAssist",
@@ -330,6 +332,8 @@
         "msg_backup_complete": "Automatic database backup completed.",
         "msg_manual_backup_complete": "Manual database backup completed.",
         "msg_restore_complete": "Data restore complete. Please restart the app to apply changes.",
-        "settings_data_mgmt": "Data Management"
+        "settings_data_mgmt": "Data Management",
+        "pm_btn_refresh": "[ REFRESH ]",
+        "pm_btn_refresh_loading": "[ ... ]"
     }
 }

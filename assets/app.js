@@ -1596,6 +1596,18 @@ if(btnNewProject) {
     });
 }
 
+const btnRefreshProjectsMain = document.getElementById('btn-refresh-projects-main');
+if(btnRefreshProjectsMain) {
+    btnRefreshProjectsMain.addEventListener('click', async () => {
+        const btn = btnRefreshProjectsMain;
+        btn.disabled = true;
+        btn.innerText = i18nData[currentLang]?.pm_btn_refresh_loading || '[ ... ]';
+        await refreshProjects();
+        btn.disabled = false;
+        btn.innerText = i18nData[currentLang]?.pm_btn_refresh || '[ REFRESH ]';
+    });
+}
+
 const btnDeleteProject = document.getElementById('btn-delete-project');
 if(btnDeleteProject) {
     btnDeleteProject.addEventListener('click', async () => {

@@ -25,6 +25,7 @@ Built with **Python + PyWebView** for a standalone desktop experience — no bro
 - Multi-project dashboard with full CRUD management
 - **Time Table**: Weekly / Monthly visual chart showing log schedules with milestone markers
 - **Status Tab**: Department-based log tracking (Active / Done / Deleted)
+- **Manual Refresh**: Dedicated `[ REFRESH ]` button in the dashboard to update project state and logs immediately.
 - **Milestone Tab**: Up to 10 milestone slots with deadline tracking and completion status
 - **Interactive HTML Export**:
   - Exports the current Time Table as a standalone, responsive HTML Gantt chart
@@ -128,7 +129,7 @@ For new users to quickly explore the app, a default tutorial account is included
 
 ## 📦 Distribution
 
-Distributed as a professional installer (**`WorkAssist_Setup_v1.2.0.exe`**) created with Inno Setup:
+Distributed as a professional installer (**`WorkAssist_Setup_v1.2.1.exe`**) created with Inno Setup:
 - ✅ **Installation**: Installs as `WorkAssist.exe` in the Program Files directory
 - ✅ **Shortcuts**: Automatically creates Start Menu and optional Desktop shortcuts
 - ✅ **No Dependencies**: No Python installation required on target machines
@@ -139,7 +140,7 @@ Distributed as a professional installer (**`WorkAssist_Setup_v1.2.0.exe`**) crea
 
 ## 📄 Version
 
-**Current Version**: v1.2.0  
+**Current Version**: v1.2.1  
 See [UPDATE_LOG.md](UPDATE_LOG.md) for full change history.
 
 ---

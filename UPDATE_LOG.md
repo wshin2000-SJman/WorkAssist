@@ -1,5 +1,15 @@
 # WorkAssist Update Log
 
+## [2026-05-12] - v1.2.1 (Project Manager UX Enhancement)
+
+### 1. Manual Refresh for Project Manager
+- **Refresh Button**: Added a dedicated `[ REFRESH ]` button to the top-right corner of the Project Manager dashboard.
+- **Improved UX**: Users can now manually trigger a data refresh to ensure they are viewing the latest project status and logs without switching pages.
+- **Loading State**: Added a visual feedback state during data fetching to inform users that the refresh is in progress.
+
+### 2. Version Bump
+- Updated application version to **v1.2.1**.
+
 ## [2026-05-12] - v1.2.0 (Backup & Data Protection)
 
 ### 1. Advanced Database Backup System
