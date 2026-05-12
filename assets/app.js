@@ -95,11 +95,11 @@ function getIdleMessage() {
     
     // 11:30 ~ 11:59
     if (h === 11 && m >= 30) {
-        return currentLang === 'kr' ? "점심식사 시간이 다가오고 있습니다." : "Lunch time is approaching.";
+        return i18nData[currentLang]?.msg_idle_lunch || "Lunch time is approaching.";
     }
     // 16:30 ~ 16:59
     if (h === 16 && m >= 30) {
-        return currentLang === 'kr' ? "퇴근 시간이 다가오고 있습니다." : "It's almost time to get off work.";
+        return i18nData[currentLang]?.msg_idle_offwork || "It's almost time to get off work.";
     }
     return "";
 }
@@ -957,7 +957,7 @@ function renderMeetingList(filter = '') {
 }
 
 async function deleteMOM(id) {
-    if(await window.customConfirm(currentLang === 'kr' ? '이 회의록을 삭제하시겠습니까?' : 'Delete this meeting note?')) {
+    if(await window.customConfirm(i18nData[currentLang]?.msg_confirm_delete_meeting || 'Delete this meeting note?')) {
         await window.pywebview.api.delete_meeting(id);
         if(currentMeetingId === id) resetMeetingEditor();
         refreshMeetings();
@@ -1406,7 +1406,7 @@ function renderProjectList() {
         doneBtn.innerText = '[DONE]';
         doneBtn.onclick = async (e) => {
             e.stopPropagation();
-            if(await window.customConfirm(currentLang === 'kr' ? '이 프로젝트를 완료 처리하시겠습니까?' : 'Mark this project as DONE?')) {
+            if(await window.customConfirm(i18nData[currentLang]?.msg_confirm_done_project || 'Mark this project as DONE?')) {
                 await window.pywebview.api.mark_project_done(p.id);
                 if(currentProjectId === p.id) currentProjectId = null;
                 refreshProjects();
@@ -1418,7 +1418,7 @@ function renderProjectList() {
         delBtn.innerText = '[X]';
         delBtn.onclick = async (e) => {
             e.stopPropagation();
-            if(await window.customConfirm(currentLang === 'kr' ? '이 프로젝트를 삭제하시겠습니까? (모든 로그가 함께 삭제됩니다)' : 'Delete this project? All logs will be deleted.')) {
+            if(await window.customConfirm(i18nData[currentLang]?.msg_confirm_delete_project || 'Delete this project? All logs will be deleted.')) {
                 await window.pywebview.api.delete_project(p.id);
                 if(currentProjectId === p.id) currentProjectId = null;
                 refreshProjects();
@@ -1510,7 +1510,7 @@ async function showDoneProjects() {
         delBtn.innerText = '[PERM. DELETE]';
         delBtn.style.color = 'var(--urgent-color)';
         delBtn.onclick = async () => {
-            if(await window.customConfirm(currentLang === 'kr' ? '이 프로젝트와 모든 로그를 영구 삭제하시겠습니까?' : 'Are you sure you want to PERMANENTLY delete this project and all its logs?')) {
+            if(await window.customConfirm(i18nData[currentLang]?.msg_confirm_perm_delete_project || 'Are you sure you want to PERMANENTLY delete this project and all its logs?')) {
                 await window.pywebview.api.delete_project_permanent(p.id);
                 showDoneProjects();
             }
@@ -1560,7 +1560,7 @@ async function showDeletedProjects() {
         delBtn.innerText = '[PERM. DELETE]';
         delBtn.style.color = 'var(--urgent-color)';
         delBtn.onclick = async () => {
-            if(await window.customConfirm(currentLang === 'kr' ? '이 프로젝트와 모든 로그를 영구 삭제하시겠습니까?' : 'Are you sure you want to PERMANENTLY delete this project and all its logs?')) {
+            if(await window.customConfirm(i18nData[currentLang]?.msg_confirm_perm_delete_project || 'Are you sure you want to PERMANENTLY delete this project and all its logs?')) {
                 await window.pywebview.api.delete_project_permanent(p.id);
                 showDeletedProjects();
             }
@@ -1587,7 +1587,7 @@ const btnDeleteProject = document.getElementById('btn-delete-project');
 if(btnDeleteProject) {
     btnDeleteProject.addEventListener('click', async () => {
         if(!currentProjectId) return;
-        if(await window.customConfirm(currentLang === 'kr' ? '정말 삭제하시겠습니까?' : 'Delete?')) {
+        if(await window.customConfirm(i18nData[currentLang]?.msg_confirm_perm_delete || 'Delete?')) {
             await window.pywebview.api.delete_project(currentProjectId);
             currentProjectId = null;
             await refreshProjects();
@@ -1683,7 +1683,7 @@ async function refreshStatusLogs() {
             delBtn.innerText = '[X]';
             delBtn.title = "Move to Deleted";
             delBtn.onclick = async () => {
-                if(await window.customConfirm(currentLang === 'kr' ? '이 로그를 휴지통으로 이동하시겠습니까?' : 'Move this log to Deleted?')) {
+                if(await window.customConfirm(i18nData[currentLang]?.msg_confirm_move_deleted || 'Move this log to Deleted?')) {
                     await window.pywebview.api.mark_status_log_deleted(log.id);
                     refreshStatusLogs();
                 }
@@ -1704,7 +1704,7 @@ async function refreshStatusLogs() {
             doneBtn.style.color = 'var(--accent-color)';
             doneBtn.innerText = i18nData[currentLang]?.pm_btn_done || '[ DONE ]';
             doneBtn.onclick = async () => {
-                if(await window.customConfirm(currentLang === 'kr' ? '이 로그를 완료 처리하시겠습니까?' : 'Mark this log as done?')) {
+                if(await window.customConfirm(i18nData[currentLang]?.msg_confirm_done || 'Mark this log as done?')) {
                     await window.pywebview.api.mark_status_log_done(log.id);
                     refreshStatusLogs();
                 }
@@ -1806,7 +1806,7 @@ async function renderStatusTable(tbodyId, logs, searchId, isDeleted) {
             delBtn.innerText = '[X]';
             delBtn.title = "Move to Deleted";
             delBtn.onclick = async () => {
-                if(await window.customConfirm(currentLang === 'kr' ? '이 로그를 휴지통으로 이동하시겠습니까?' : 'Move this log to Deleted?')) {
+                if(await window.customConfirm(i18nData[currentLang]?.msg_confirm_move_deleted || 'Move this log to Deleted?')) {
                     await window.pywebview.api.mark_status_log_deleted(log.id);
                     refreshStatusLogs();
                 }
