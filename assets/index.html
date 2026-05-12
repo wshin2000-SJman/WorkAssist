@@ -48,7 +48,7 @@
                 </div>
             </div>
             <div id="sidebar-notification" style="display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; border-bottom: 1px dotted var(--border-color); margin-bottom: 20px;">
-                <div id="noti-gif-container" style="width: 150px; height: 150px; overflow: hidden; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 10px; background: #000;">
+                <div id="noti-gif-container" style="width: 160px; height: 160px; overflow: hidden; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 10px; background: #000;">
                     <img id="noti-gif" src="stare_1.gif" style="width: 100%; height: 100%; object-fit: cover;">
                 </div>
                 <div id="noti-msg-container" style="width: 160px; min-height: 80px; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.5); font-family: 'Courier New', Courier, monospace; font-size: 0.9em; color: var(--urgent-color); overflow-wrap: break-word; position: relative;">
@@ -769,6 +769,13 @@
                     <div style="text-align: center; margin-top: 15px;">
                         <img src="BDH_V2_1.webp" style="max-width: 180px; height: auto; opacity: 0.8; border-radius: 4px;">
                     </div>
+                </div>
+            </div>
+            <div class="settings-group">
+                <label data-i18n="settings_data_mgmt">Data Management:</label>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="action-btn" id="btn-manual-backup" data-i18n="btn_manual_backup" style="flex: 1;">[ Manual Backup ]</button>
+                    <button class="action-btn" id="btn-restore-backup" data-i18n="btn_restore_backup" style="flex: 1;">[ Restore Backup ]</button>
                 </div>
             </div>
             <div class="settings-group">

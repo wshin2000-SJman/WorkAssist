@@ -1,6 +1,6 @@
 // Global State
-let i18nData = {};
-let currentLang = 'en';
+var i18nData = {};
+var currentLang = 'en';
 let allTasks = [];
 let currentMonth = new Date();
 let timetableBaseDate = new Date();
@@ -8,6 +8,7 @@ let timetableBaseDate = new Date();
 // --- Custom Notification System ---
 let notiQueue = [];
 let isNotiTyping = false;
+let isShowingAlert = false;
 let stareTimer = null;
 let msgClearTimer = null;
 
@@ -76,8 +77,10 @@ function processNotiQueue() {
                     req.resolve(false);
                 }
             } else {
+                isShowingAlert = true;
                 if (msgClearTimer) clearTimeout(msgClearTimer);
                 msgClearTimer = setTimeout(() => {
+                    isShowingAlert = false;
                     msgEl.innerText = getIdleMessage();
                     if (req.resolve) req.resolve();
                     processNotiQueue(); 
@@ -192,6 +195,7 @@ function setupAuthListeners() {
         const pw = document.getElementById('login-pw-input').value;
         const res = await window.pywebview.api.login(id, pw);
         if(res.status === 'success') {
+            document.body.classList.add('logged-in');
             document.getElementById('login-view').style.display = 'none';
             document.getElementById('app-content').style.display = 'flex';
             await refreshTasks();
@@ -327,6 +331,15 @@ function setupEventListeners() {
         settingsModal.style.display = 'none';
     });
     
+    // Backup & Restore
+    document.getElementById('btn-manual-backup').addEventListener('click', async () => {
+        settingsModal.style.display = 'none';
+        await window.pywebview.api.backup_db('manual');
+    });
+    document.getElementById('btn-restore-backup').addEventListener('click', async () => {
+        await window.pywebview.api.restore_backup();
+    });
+    
     // Initialize
     document.getElementById('btn-show-initialize').addEventListener('click', () => {
         document.getElementById('initialize-modal').style.display = 'flex';
@@ -347,6 +360,7 @@ function setupEventListeners() {
     // Logout (Sidebar version)
     document.getElementById('btn-logout-side').addEventListener('click', async () => {
         await window.pywebview.api.logout();
+        document.body.classList.remove('logged-in');
         document.getElementById('app-content').style.display = 'none';
         document.getElementById('login-view').style.display = 'flex';
         // Clear inputs
@@ -1316,7 +1330,7 @@ function updateSidebarClock() {
     const idleMsg = getIdleMessage();
     const msgEl = document.getElementById('noti-msg-text');
     
-    if (!isNotiTyping && notiQueue.length === 0 && !isConfirmActive && msgEl) {
+    if (!isNotiTyping && notiQueue.length === 0 && !isConfirmActive && !isShowingAlert && msgEl) {
         if (msgEl.innerText !== idleMsg) {
             msgEl.innerText = idleMsg;
             const gifEl = document.getElementById('noti-gif');

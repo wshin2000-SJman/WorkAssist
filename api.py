@@ -25,6 +25,85 @@ class API:
     def set_window(self, window):
         self.window = window
 
+    def backup_db(self, reason='periodic'):
+        """Backup the database file."""
+        try:
+            import datetime
+            import shutil
+            import glob
+            
+            data_dir = db.get_data_dir()
+            backup_dir = os.path.join(data_dir, 'backups')
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            now_str = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            backup_filename = f"backup_{reason}_{now_str}.db"
+            backup_path = os.path.join(backup_dir, backup_filename)
+            
+            # Use db.DB_PATH which is now sjworkassist.db
+            shutil.copy2(db.DB_PATH, backup_path)
+            
+            # If periodic, keep only the latest 3
+            if reason == 'periodic':
+                periodic_backups = sorted(glob.glob(os.path.join(backup_dir, 'backup_periodic_*.db')))
+                while len(periodic_backups) > 3:
+                    oldest = periodic_backups.pop(0)
+                    try:
+                        os.remove(oldest)
+                    except:
+                        pass
+            
+            # Show notification for manual or periodic
+            if reason in ('manual', 'periodic'):
+                msg_key = 'msg_manual_backup_complete' if reason == 'manual' else 'msg_backup_complete'
+                fallback = "Backup complete." if reason == 'manual' else "Automatic backup complete."
+                if reason == 'manual':
+                    # For manual backup, we want to make sure it shows even if i18n is not ready
+                    js_code = f"window.alert( (window.i18nData && window.i18nData[window.currentLang]) ? window.i18nData[window.currentLang]['{msg_key}'] : '{fallback}' );"
+                else:
+                    js_code = f"if(window.i18nData && window.currentLang) {{ window.alert(window.i18nData[window.currentLang]['{msg_key}']); }}"
+                
+                if self.window:
+                    self.window.evaluate_js(js_code)
+                    
+            return {'status': 'success', 'path': backup_path}
+        except Exception as e:
+            return {'status': 'error', 'message': str(e)}
+
+    def restore_backup(self):
+        """Restore database from a backup file."""
+        if not self.window:
+            return {'status': 'error', 'message': 'No window context'}
+            
+        try:
+            import shutil
+            data_dir = db.get_data_dir()
+            backup_dir = os.path.join(data_dir, 'backups')
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            file_types = ('Database files (*.db)', 'All files (*.*)')
+            result = self.window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False, file_types=file_types, directory=backup_dir)
+            
+            if result and len(result) > 0:
+                selected_path = result[0]
+                
+                # Backup current DB before restoring
+                old_backup = db.DB_PATH + ".old"
+                if os.path.exists(db.DB_PATH):
+                    shutil.copy2(db.DB_PATH, old_backup)
+                
+                # Copy selected backup to current DB
+                shutil.copy2(selected_path, db.DB_PATH)
+                
+                # Notify user to restart
+                js_code = "if(window.i18nData && window.currentLang) { window.alert(window.i18nData[window.currentLang]['msg_restore_complete']); }"
+                self.window.evaluate_js(js_code)
+                
+                return {'status': 'success'}
+            return {'status': 'cancelled'}
+        except Exception as e:
+            return {'status': 'error', 'message': str(e)}
+
     def select_folder(self):
         if not self.window:
             return None

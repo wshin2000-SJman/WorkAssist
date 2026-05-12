@@ -72,6 +72,23 @@ if __name__ == '__main__':
     )
     api.set_window(window)
     
+    # Register closing event
+    window.events.closing += lambda: api.backup_db('closing')
+    
+    # Start periodic backup (every 1 hour)
+    def periodic_backup_thread():
+        import time
+        # Wait for app to settle
+        time.sleep(60)
+        while True:
+            try:
+                api.backup_db('periodic')
+            except:
+                pass
+            time.sleep(900)
+            
+    threading.Thread(target=periodic_backup_thread, daemon=True).start()
+    
     # Start the application
     # Let pywebview choose the best GUI engine automatically for better stability
     webview.start(debug=False)

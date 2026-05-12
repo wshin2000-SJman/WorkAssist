@@ -1,5 +1,28 @@
 # WorkAssist Update Log
 
+## [2026-05-12] - v1.2.0 (Backup & Data Protection)
+
+### 1. Advanced Database Backup System
+- **Three-Tier Backup Strategy**:
+    - **Closing Backup**: Automatically saves the database state every time the application is closed.
+    - **Periodic Backup**: Automatically performs a background backup every **15 minutes**.
+    - **Manual Backup**: Users can now trigger an immediate backup via the `Settings > Data Management` section.
+- **Smart Rotation**: Periodic backups automatically manage disk space by keeping only the latest 3 versions.
+- **Restore Functionality**: Added a `[Restore Backup]` feature in Settings, allowing users to roll back to any previous `.db` file from the `backups` folder.
+
+### 2. Database Branding & Migration
+- **Consistency**: Renamed the core database file from `sjkanban.db` to `sjworkassist.db`.
+- **Seamless Transition**: Implemented an automatic migration logic that detects legacy `sjkanban.db` files and renames them on startup, ensuring no data loss during the transition.
+
+### 3. UI/UX & Notification Enhancements
+- **Global Notification Visibility**: Redesigned the modal overlay system to ensure the sidebar notification area remains bright and readable even when a modal (like Settings) is active.
+- **Sidebar Alignment**: Unified the width of the character portrait and notification message box (160px) for a more professional and symmetrical look.
+- **Fixed Notification Overwrite**: Resolved a race condition where idle messages (like lunch/off-work alerts) would immediately overwrite active system notifications.
+- **JS Visibility Fix**: Changed global variable declarations in `app.js` to ensure they are accessible to the `pywebview` engine for reliable i18n rendering.
+
+### 4. Localization
+- Full Korean/English translation support added for all backup/restore buttons, status notifications, and confirmation messages.
+
 ## [2026-05-11] - Hotfix
 - **macOS Export Fix**: Resolved an issue where exporting the HTML Gantt Chart on macOS failed with a `FileExistsError` due to the native file save dialog returning a directory path instead of a file path.
 

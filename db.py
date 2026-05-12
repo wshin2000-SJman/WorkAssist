@@ -9,7 +9,23 @@ def get_data_dir():
     os.makedirs(data_dir, exist_ok=True)
     return data_dir
 
-DB_PATH = os.path.join(get_data_dir(), 'sjkanban.db')
+DB_PATH = os.path.join(get_data_dir(), 'sjworkassist.db')
+
+def migrate_db_name():
+    """Migrate sjkanban.db to sjworkassist.db if it exists."""
+    data_dir = get_data_dir()
+    old_path = os.path.join(data_dir, 'sjkanban.db')
+    new_path = os.path.join(data_dir, 'sjworkassist.db')
+    
+    if os.path.exists(old_path) and not os.path.exists(new_path):
+        try:
+            import shutil
+            shutil.move(old_path, new_path)
+        except Exception as e:
+            print(f"Failed to migrate database: {e}")
+
+# Run migration on import
+migrate_db_name()
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)

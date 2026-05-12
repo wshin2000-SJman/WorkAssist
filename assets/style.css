@@ -505,6 +505,10 @@ select {
     z-index: 1000;
 }
 
+body.logged-in .modal-overlay {
+    left: 210px; /* Width of the sidebar */
+}
+
 .modal {
     background: var(--bg-color);
     border: 1px solid var(--text-color);
