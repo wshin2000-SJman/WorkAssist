@@ -93,9 +93,20 @@ window.alert = function(msg) {
     processNotiQueue();
 };
 
+let isConfirmActive = false;
+
 window.customConfirm = function(msg) {
+    if (isConfirmActive) return Promise.resolve(false);
+    isConfirmActive = true;
     return new Promise((resolve) => {
-        notiQueue.push({ type: 'confirm', msg: String(msg), resolve });
+        notiQueue.push({ 
+            type: 'confirm', 
+            msg: String(msg), 
+            resolve: (val) => {
+                isConfirmActive = false;
+                resolve(val);
+            } 
+        });
         processNotiQueue();
     });
 };
