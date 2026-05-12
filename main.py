@@ -27,7 +27,7 @@ def get_desktop_path():
         winreg.CloseKey(key)
         # Expand environment variables like %USERPROFILE%
         return os.path.expandvars(path)
-    except:
+    except Exception:
         # Fallback to default
         return os.path.join(os.environ['USERPROFILE'], 'Desktop')
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     # Register closing event
     window.events.closing += lambda: api.backup_db('closing')
     
-    # Start periodic backup (every 1 hour)
+    # Start periodic backup (every 15 minutes)
     def periodic_backup_thread():
         import time
         # Wait for app to settle
@@ -83,7 +83,7 @@ if __name__ == '__main__':
         while True:
             try:
                 api.backup_db('periodic')
-            except:
+            except Exception:
                 pass
             time.sleep(900)
             

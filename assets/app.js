@@ -189,7 +189,6 @@ function setLoginImage() {
 // Setup Event Listeners
 function setupAuthListeners() {
     // Login
-    // Login
     const performLogin = async () => {
         const id = document.getElementById('login-id-input').value;
         const pw = document.getElementById('login-pw-input').value;

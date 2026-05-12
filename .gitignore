@@ -7,3 +7,5 @@ dist/
 .vscode/
 scratch/
 scratch_test*.py
+file_version_info.txt
+installer_output/

@@ -1,14 +1,15 @@
 import db
 import json
 import os
-import io
+import csv
 import base64
 import hashlib
 import shutil
 import uuid
+import datetime
+import glob
 
 import webview
-HAS_OPENPYXL = False
 
 from version import VERSION
 
@@ -28,9 +29,6 @@ class API:
     def backup_db(self, reason='periodic'):
         """Backup the database file."""
         try:
-            import datetime
-            import shutil
-            import glob
             
             data_dir = db.get_data_dir()
             backup_dir = os.path.join(data_dir, 'backups')
@@ -50,7 +48,7 @@ class API:
                     oldest = periodic_backups.pop(0)
                     try:
                         os.remove(oldest)
-                    except:
+                    except Exception:
                         pass
             
             # Show notification for manual or periodic
@@ -76,7 +74,7 @@ class API:
             return {'status': 'error', 'message': 'No window context'}
             
         try:
-            import shutil
+
             data_dir = db.get_data_dir()
             backup_dir = os.path.join(data_dir, 'backups')
             os.makedirs(backup_dir, exist_ok=True)
@@ -107,7 +105,7 @@ class API:
     def select_folder(self):
         if not self.window:
             return None
-        import webview
+
         result = self.window.create_file_dialog(webview.FOLDER_DIALOG)
         if result and len(result) > 0:
             return result[0]
@@ -160,7 +158,6 @@ class API:
         if self.current_user_id is None:
             return {'status': 'error', 'message': 'Not logged in'}
             
-        import datetime
         today = datetime.datetime.now()
         date_prefix = today.strftime('%y/%m/%d')
         seq = db.get_next_tag_sequence(self.current_user_id, date_prefix)
@@ -220,8 +217,8 @@ class API:
         tasks = db.get_all_tasks(self.current_user_id)
         
         # Determine the user's desktop path to save the export
-        desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
-        export_file = os.path.join(desktop_path, 'SJKanban_Export.csv')
+        desktop_path = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+        export_file = os.path.join(desktop_path, 'WorkAssist_Export.csv')
         
         # Write to CSV with UTF-8 BOM for Excel compatibility
         with open(export_file, mode='w', newline='', encoding='utf-8-sig') as f:
@@ -267,14 +264,12 @@ class API:
         return {'status': 'success'}
 
     def _generate_md_and_save(self, data, save_dir):
-        import datetime
-        import json
         
         # Determine filename: YYYYMMDD_(회의록)_제목.md
         try:
             date_obj = datetime.datetime.strptime(data['date'], '%Y-%m-%d')
             date_str = date_obj.strftime('%Y%m%d')
-        except:
+        except Exception:
             date_str = "00000000"
             
         safe_title = "".join([c for c in data['title'] if c.isalnum() or c in (' ', '_', '-')]).rstrip()
@@ -372,9 +367,6 @@ class API:
             db.update_project(project_id, name, description, manager, client, dept1, dept2, dept3, dept4)
             return {'status': 'success', 'id': project_id}
         else:
-            # Note: add_project in db.py doesn't take depts yet, it uses defaults. 
-            # But I updated db.py to take depts if I wanted to, but the current add_project in db.py uses hardcoded defaults.
-            # Wait, I updated add_project in db.py to take values? No, I just updated the INSERT.
             new_id = db.add_project(self.current_user_id, name, description, manager, client)
             return {'status': 'success', 'id': new_id}
 
@@ -408,7 +400,7 @@ class API:
         due_date = data.get('due_date', '')
         
         # Generate tag: L-YY/MM/DD-###
-        import datetime
+
         now = datetime.datetime.now()
         date_str = now.strftime('%y/%m/%d')
         serial = db.get_next_tag_serial(date_str)
@@ -451,8 +443,7 @@ class API:
 
     def export_project_html(self, project_id):
         try:
-            import datetime
-            import json
+
             project = db.get_project_by_id(project_id)
             if not project:
                 return {'status': 'error', 'message': 'Project not found.'}
