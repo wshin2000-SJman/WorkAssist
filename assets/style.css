@@ -1,27 +1,8 @@
-@import url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/css/dseg.css');
-
 @font-face {
     font-family: 'Cascadia Code';
     src: url('fonts/CascadiaCode.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
-}
-
-/* Sidebar Clock 7-Segment Styling */
-#sidebar-clock { 
-    background: #050505 !important; 
-    border: 2px solid #222 !important; 
-    box-shadow: inset 0 0 10px #000; 
-}
-#clock-time { 
-    font-family: 'DSEG7-Classic', monospace !important; 
-    font-size: 1.6em !important; 
-    color: #ffffff !important; 
-    margin-top: 8px !important; 
-    font-weight: normal !important; 
-}
-#clock-date, #clock-day { 
-    color: #ffffff !important; 
 }
 
 :root {
@@ -1238,8 +1219,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-right: 1px solid var(--border-color);
     background: #16161e;
     color: #aaa;
-    position: relative; /* Ensure z-index works */
-    z-index: 20; /* Sit above markers that might bleed in from the right */
+    position: relative;
+    /* Ensure z-index works */
+    z-index: 20;
+    /* Sit above markers that might bleed in from the right */
 }
 
 .timetable-track-content {
@@ -1258,7 +1241,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     top: 50%;
     cursor: pointer;
     border: 2px solid #FFF;
-    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
     z-index: 5;
     transition: transform 0.2s;
 }
@@ -1274,8 +1257,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-radius: 6px;
     transform: translateY(-50%);
     cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.5);
-    box-shadow: 0 0 8px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
     z-index: 4;
     transition: height 0.2s, box-shadow 0.2s;
 }
@@ -1283,17 +1266,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .timetable-log-range:hover {
     height: 18px;
     z-index: 10;
-    box-shadow: 0 0 12px rgba(255,255,255,0.4);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
 }
 
-.timetable-log-marker.deleted, .timetable-log-range.deleted {
+.timetable-log-marker.deleted,
+.timetable-log-range.deleted {
     background-color: #555 !important;
     border-color: #888 !important;
     opacity: 0.3 !important;
     border-style: dotted;
 }
 
-.timetable-log-marker.done, .timetable-log-range.done {
+.timetable-log-marker.done,
+.timetable-log-range.done {
     border-color: #7AA2F7;
     box-shadow: 0 0 10px #7AA2F7;
 }
@@ -1324,7 +1309,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     display: none;
     pointer-events: none;
     z-index: 9999;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(4px);
 }
 
@@ -1438,7 +1423,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     flex-direction: column;
     gap: 20px;
     box-sizing: border-box;
-    overflow-y: auto; /* Enable full-screen scrolling */
+    overflow-y: auto;
+    /* Enable full-screen scrolling */
     overflow-x: hidden;
 }
 
@@ -1447,8 +1433,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border: 1px solid #292e42;
     padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    flex-shrink: 0; /* Keep top part fixed size */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    flex-shrink: 0;
+    /* Keep top part fixed size */
 }
 
 .project-status-section {
@@ -1456,11 +1443,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border: 1px solid #292e42;
     padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    flex: 1; /* Expand to fill remaining space */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    flex: 1;
+    /* Expand to fill remaining space */
     display: flex;
     flex-direction: column;
-    min-height: 550px; /* Minimum height to prevent squishing and trigger main scrolling */
+    min-height: 550px;
+    /* Minimum height to prevent squishing and trigger main scrolling */
 }
 
 #pm-dept-config-bar {
@@ -1469,7 +1458,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border: 1px solid #3b4261;
     border-radius: 6px;
     margin-bottom: 20px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .section-header h3 {
@@ -1507,17 +1496,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
 }
 
- 
- / *   S i d e b a r   C l o c k   7 - S e g m e n t   S t y l i n g   * / 
- 
- # s i d e b a r - c l o c k   {   b a c k g r o u n d :   # 0 5 0 5 0 5   ! i m p o r t a n t ;   b o r d e r :   2 p x   s o l i d   # 2 2 2   ! i m p o r t a n t ;   b o x - s h a d o w :   i n s e t   0   0   1 0 p x   # 0 0 0 ;   } 
- 
- # c l o c k - t i m e   {   f o n t - f a m i l y :   ' D S E G 7 - C l a s s i c ' ,   m o n o s p a c e   ! i m p o r t a n t ;   f o n t - s i z e :   1 . 6 e m   ! i m p o r t a n t ;   c o l o r :   # 0 f 0   ! i m p o r t a n t ;   t e x t - s h a d o w :   0   0   5 p x   # 0 f 0 ,   0   0   1 0 p x   # 0 f 0 ;   m a r g i n - t o p :   8 p x   ! i m p o r t a n t ;   l e t t e r - s p a c i n g :   2 p x ;   f o n t - w e i g h t :   n o r m a l   ! i m p o r t a n t ;   } 
- 
- # c l o c k - d a t e ,   # c l o c k - d a y   {   c o l o r :   # 0 a 0   ! i m p o r t a n t ;   t e x t - s h a d o w :   0   0   3 p x   # 0 a 0 ;   } 
- 
- 
