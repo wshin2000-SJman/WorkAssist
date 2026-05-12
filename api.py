@@ -230,7 +230,10 @@ class API:
             md_content += "| 할 일 | 담당자 | 기한 |\n"
             md_content += "| :--- | :--- | :--- |\n"
             for a in action_items:
-                md_content += f"| {a['task']} | {a['owner']} | {a['due_date']} |\n"
+                title = a.get('title', '')
+                manager = a.get('manager', '')
+                due_date = a.get('due_date', '')
+                md_content += f"| {title} | {manager} | {due_date} |\n"
         else:
             md_content += "*(없음)*\n"
             
