@@ -32,6 +32,12 @@ Built with **Python + PyWebView** for a standalone desktop experience — no bro
   - Native Windows Save Dialog for user-defined save path
 - Image attachments per log entry
 
+### 💾 Data Backup & Recovery
+- **Automatic Backup**: Periodic hourly backups (every 15 mins) and automatic backup on application exit.
+- **Manual Control**: Dedicated buttons in Settings for immediate data backup and file-based restoration.
+- **Rotation System**: Automatically maintains the latest 3 periodic backups to optimize storage.
+- **Auto-Migration**: Seamlessly migrates legacy `sjkanban.db` to the new `sjworkassist.db` format.
+
 ---
 
 ## 🛠 Tech Stack
@@ -122,7 +128,7 @@ For new users to quickly explore the app, a default tutorial account is included
 
 ## 📦 Distribution
 
-Distributed as a professional installer (**`WorkAssist_Setup_v1.1.0.exe`**) created with Inno Setup:
+Distributed as a professional installer (**`WorkAssist_Setup_v1.2.0.exe`**) created with Inno Setup:
 - ✅ **Installation**: Installs as `WorkAssist.exe` in the Program Files directory
 - ✅ **Shortcuts**: Automatically creates Start Menu and optional Desktop shortcuts
 - ✅ **No Dependencies**: No Python installation required on target machines
@@ -133,7 +139,7 @@ Distributed as a professional installer (**`WorkAssist_Setup_v1.1.0.exe`**) crea
 
 ## 📄 Version
 
-**Current Version**: v1.1.0  
+**Current Version**: v1.2.0  
 See [UPDATE_LOG.md](UPDATE_LOG.md) for full change history.
 
 ---
