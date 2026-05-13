@@ -4,7 +4,7 @@
 ; ============================================================
 
 #define AppName "WorkAssist"
-#define AppVersion "1.2.0"
+#define AppVersion "1.2.2"
 #define AppPublisher "Samjeong Automation"
 #define AppExeName "WorkAssist.exe"
 #define AppExeSrc "dist\SJ_WorkAssist.exe"
@@ -44,7 +44,7 @@ Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "바탕화면에 바로가기 만들기"; GroupDescription: "추가 아이콘:"; Flags: unchecked
+Name: "desktopicon"; Description: "바탕화면에 바로가기 만들기"; GroupDescription: "추가 아이콘:"; Flags: checkedonce
 Name: "startupicon"; Description: "Windows 시작 시 자동 실행"; GroupDescription: "시작 옵션:"; Flags: unchecked
 
 [Files]
@@ -55,8 +55,10 @@ Source: "{#AppExeSrc}"; DestDir: "{app}"; DestName: "{#AppExeName}"; Flags: igno
 ; Start Menu
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Comment: "WorkAssist - 업무 보조 툴"
 Name: "{group}\{#AppName} 제거"; Filename: "{uninstallexe}"
-; Desktop shortcut (optional task)
+; Desktop shortcut (optional task - checked by default on first install)
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon; Comment: "WorkAssist - 업무 보조 툴"
+; Desktop shortcut (always update if shortcut already exists - ensures upgrades work)
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Flags: createalways; Check: DesktopShortcutExists; Comment: "WorkAssist - 업무 보조 툴"
 ; Startup (optional task) - use common startup for admin install
 Name: "{commonstartup}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: startupicon
 
@@ -75,7 +77,15 @@ Filename: "{app}\{#AppExeName}"; Description: "설치 완료 후 {#AppName} 실�
 ; Filename: "{cmd}"; Parameters: "/C rmdir /s /q ""%LOCALAPPDATA%\SJ_WorkAssist"""; Flags: runhidden
 
 [Code]
-// Show a welcome message on the first page
+// Check if desktop shortcut already exists (for upgrade scenarios)
+function DesktopShortcutExists(): Boolean;
+var
+  DesktopPath: String;
+begin
+  DesktopPath := ExpandConstant('{autodesktop}\{#AppName}.lnk');
+  Result := FileExists(DesktopPath);
+end;
+
 function InitializeSetup(): Boolean;
 begin
   Result := True;

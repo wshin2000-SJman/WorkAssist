@@ -41,11 +41,19 @@ class API:
             # Use db.DB_PATH which is now sjworkassist.db
             shutil.copy2(db.DB_PATH, backup_path)
             
-            # If periodic, keep only the latest 3
+            # Rotation logic
             if reason == 'periodic':
                 periodic_backups = sorted(glob.glob(os.path.join(backup_dir, 'backup_periodic_*.db')))
                 while len(periodic_backups) > 3:
                     oldest = periodic_backups.pop(0)
+                    try:
+                        os.remove(oldest)
+                    except Exception:
+                        pass
+            elif reason == 'closing':
+                closing_backups = sorted(glob.glob(os.path.join(backup_dir, 'backup_closing_*.db')))
+                while len(closing_backups) > 1:
+                    oldest = closing_backups.pop(0)
                     try:
                         os.remove(oldest)
                     except Exception:

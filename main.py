@@ -32,7 +32,7 @@ def get_desktop_path():
         return os.path.join(os.environ['USERPROFILE'], 'Desktop')
 
 def create_desktop_shortcut():
-    """Create a desktop shortcut if it doesn't exist."""
+    """Create a desktop shortcut, or update it if it points to a different exe."""
     import subprocess
     
     # If running in python environment (not frozen), skip shortcut creation
@@ -42,10 +42,24 @@ def create_desktop_shortcut():
     exe_path = os.path.abspath(sys.executable)
     desktop = get_desktop_path()
     shortcut_path = os.path.join(desktop, 'WorkAssist.lnk')
+    icon_path = get_asset_path('logo.ico')
+    
+    should_create = False
     
     if not os.path.exists(shortcut_path):
-        icon_path = get_asset_path('logo.ico')
-        # Use PowerShell to create shortcut to avoid extra dependencies
+        should_create = True
+    else:
+        # Check if existing shortcut points to current exe; update if different
+        try:
+            check_cmd = f"(New-Object -COM WScript.Shell).CreateShortcut('{shortcut_path}').TargetPath"
+            result = subprocess.run(['powershell', '-Command', check_cmd], capture_output=True, text=True, timeout=5)
+            current_target = result.stdout.strip()
+            if current_target.lower() != exe_path.lower():
+                should_create = True
+        except Exception:
+            pass
+    
+    if should_create:
         powershell_cmd = f"$s=(New-Object -COM WScript.Shell).CreateShortcut('{shortcut_path}');$s.TargetPath='{exe_path}';$s.IconLocation='{icon_path}';$s.Save()"
         subprocess.run(['powershell', '-Command', powershell_cmd], capture_output=True)
 

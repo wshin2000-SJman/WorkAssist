@@ -1,5 +1,19 @@
 # WorkAssist Update Log
 
+## [2026-05-13] - v1.2.2 (Stability & Maintenance)
+
+### 1. Closing Backup Rotation
+- **Auto-Cleanup**: The `closing` backup (saved on app exit) now keeps only the **latest 1 file**. Previous closing backups are automatically deleted to prevent excessive disk usage.
+- **Manual backups remain untouched**: Manual backups (`backup_manual_*.db`) are never auto-deleted.
+
+### 2. Desktop Shortcut Version Fix
+- **Root Cause Fix (Installer)**: Updated `installer.iss` so that when upgrading, the desktop shortcut is **always updated** to point to the new executable path, preventing stale shortcuts from launching old versions.
+- **Runtime Safety Net (main.py)**: The app now checks if the existing desktop shortcut points to a different exe path on startup, and updates it automatically if mismatched.
+
+### 3. App Icon Update
+- **New Icon**: Changed the application icon from `logo_pixel.png` to the `glasses_1.gif` character. The new icon is now used for the executable, installer, and desktop shortcut.
+- **Cleanup**: Removed the unused `logo_pixel.png` asset.
+
 ## [2026-05-12] - v1.2.1 (Project Manager UX Enhancement)
 
 ### 1. Manual Refresh for Project Manager
