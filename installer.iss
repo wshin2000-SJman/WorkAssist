@@ -58,7 +58,7 @@ Name: "{group}\{#AppName} 제거"; Filename: "{uninstallexe}"
 ; Desktop shortcut (optional task - checked by default on first install)
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon; Comment: "WorkAssist - 업무 보조 툴"
 ; Desktop shortcut (always update if shortcut already exists - ensures upgrades work)
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Flags: createalways; Check: DesktopShortcutExists; Comment: "WorkAssist - 업무 보조 툴"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Check: DesktopShortcutExists; Comment: "WorkAssist - 업무 보조 툴"
 ; Startup (optional task) - use common startup for admin install
 Name: "{commonstartup}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: startupicon
 
