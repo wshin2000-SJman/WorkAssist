@@ -1,0 +1,94 @@
+pub const CREATE_USERS_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        password_hint TEXT
+    );
+";
+
+pub const CREATE_MEETINGS_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS meetings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner_id INTEGER,
+        title TEXT NOT NULL,
+        date TEXT,
+        participants TEXT,
+        location TEXT,
+        decisions TEXT,
+        action_items TEXT,
+        memo TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (owner_id) REFERENCES users(id)
+    );
+";
+
+pub const CREATE_TASKS_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner_id INTEGER,
+        title TEXT NOT NULL,
+        content TEXT,
+        manager TEXT,
+        start_date TEXT,
+        due_date TEXT,
+        status TEXT NOT NULL DEFAULT 'Note',
+        is_urgent BOOLEAN NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        review_comment TEXT DEFAULT '',
+        task_tag TEXT DEFAULT '',
+        is_deleted BOOLEAN NOT NULL DEFAULT 0,
+        FOREIGN KEY (owner_id) REFERENCES users(id)
+    );
+";
+
+pub const CREATE_PROJECTS_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner_id INTEGER,
+        name TEXT NOT NULL,
+        description TEXT,
+        manager TEXT,
+        client TEXT,
+        created_at TEXT NOT NULL,
+        status TEXT DEFAULT 'active',
+        dept1_name TEXT DEFAULT '[DPT. 1]',
+        dept2_name TEXT DEFAULT '[DPT. 2]',
+        dept3_name TEXT DEFAULT '[DPT. 3]',
+        dept4_name TEXT DEFAULT '[DPT. 4]',
+        FOREIGN KEY (owner_id) REFERENCES users(id)
+    );
+";
+
+pub const CREATE_MILESTONES_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS milestones (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER,
+        slot_number INTEGER,
+        name TEXT,
+        deadline TEXT,
+        content TEXT,
+        is_saved BOOLEAN DEFAULT 0,
+        is_done BOOLEAN DEFAULT 0,
+        FOREIGN KEY (project_id) REFERENCES projects(id),
+        UNIQUE(project_id, slot_number)
+    );
+";
+
+pub const CREATE_STATUS_LOGS_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS status_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER,
+        department TEXT NOT NULL,
+        text_content TEXT,
+        image_path TEXT,
+        timestamp TEXT NOT NULL,
+        status TEXT DEFAULT 'active',
+        tag TEXT,
+        title TEXT,
+        manager TEXT,
+        start_date TEXT,
+        due_date TEXT,
+        FOREIGN KEY (project_id) REFERENCES projects(id)
+    );
+";

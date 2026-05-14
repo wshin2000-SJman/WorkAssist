@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WorkAssist v2.0</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Login View -->
+  <div id="view-login" class="login-overlay">
+    <div class="login-card">
+      <div class="login-header">
+        <span class="login-logo">🚀</span>
+        <h1>WorkAssist v2.0</h1>
+        <p>Login to your workspace</p>
+      </div>
+      <form id="form-login" autocomplete="off">
+        <div class="form-group">
+          <input type="text" id="login-id" placeholder="Username" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <input type="password" id="login-pw" placeholder="Password" required autocomplete="off">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Login</button>
+      </form>
+      <div class="login-footer">
+        <button id="btn-show-signup" class="btn-link">Create ID</button>
+        <button id="btn-show-hint" class="btn-link">Password Hint</button>
+        <button id="btn-show-change-pw" class="btn-link">Change Password</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container hidden">
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-icon">🚀</span>
+        <span class="logo-text">WorkAssist</span>
+      </div>
+      <nav class="nav-menu">
+        <a href="#" class="nav-item active" id="nav-dashboard">
+          <span class="nav-icon">📊</span> Dashboard
+        </a>
+        <a href="#" class="nav-item" id="nav-kanban">
+          <span class="nav-icon">📋</span> Task Manager
+        </a>
+        <a href="#" class="nav-item" id="nav-minutes">
+          <span class="nav-icon">📝</span> Minutes
+        </a>
+        <a href="#" class="nav-item" id="nav-pm">
+          <span class="nav-icon">🏗️</span> PM-Master
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-actions">
+          <a href="#" class="nav-item" id="nav-settings">
+            <span class="nav-icon">⚙️</span> Settings
+          </a>
+          <button class="btn-logout" id="btn-logout">
+            <span class="nav-icon">🚪</span> Logout
+          </button>
+        </div>
+        <div class="user-profile">
+          <div class="avatar">AD</div>
+          <div class="user-info">
+            <div class="user-name">Admin User</div>
+            <div class="user-status">Online</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-bar">
+        <h1 id="page-title">Dashboard</h1>
+        <div class="top-actions">
+          <button class="btn btn-primary" id="btn-sync">Sync Data</button>
+          <div class="status-indicator">
+            <span class="pulse"></span>
+            Engine Ready
+          </div>
+        </div>
+      </header>
+
+      <section class="content-area" id="main-view">
+        <!-- Dashboard View -->
+        <div class="view" id="view-dashboard">
+          <div class="welcome-card">
+            <h2>Welcome to WorkAssist v2.0</h2>
+            <p>Rust-powered efficiency for your workflow.</p>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-label">Active Tasks</span>
+                <span class="stat-value" id="stat-tasks">0</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Meetings</span>
+                <span class="stat-value" id="stat-meetings">0</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Projects</span>
+                <span class="stat-value" id="stat-projects">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kanban View (Initially Hidden) -->
+        <div class="view hidden" id="view-kanban">
+          <div class="view-header">
+            <button id="btn-new-task" class="btn btn-primary"><span>+</span> New Task</button>
+            <button id="btn-trash-bin" class="btn btn-secondary"><span>🗑️</span> Trash Bin</button>
+          </div>
+          <div class="kanban-board">
+            <div class="kanban-column" data-status="Note">
+              <div class="column-header">
+                <h3>Note</h3>
+                <span class="count">0</span>
+              </div>
+              <div class="task-list"></div>
+            </div>
+            <div class="kanban-column" data-status="To-do">
+              <div class="column-header">
+                <h3>To-do</h3>
+                <span class="count">0</span>
+              </div>
+              <div class="task-list"></div>
+            </div>
+            <div class="kanban-column" data-status="Doing">
+              <div class="column-header">
+                <h3>Doing</h3>
+                <span class="count">0</span>
+              </div>
+              <div class="task-list"></div>
+            </div>
+            <div class="kanban-column" data-status="Done">
+              <div class="column-header">
+                <h3>Done</h3>
+                <span class="count">0</span>
+              </div>
+              <div class="task-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Minutes View -->
+        <div class="view hidden" id="view-minutes">
+          <div class="view-header">
+            <button class="btn btn-primary" id="btn-new-meeting">+ New Minutes</button>
+          </div>
+          <div class="minutes-list" id="minutes-list">
+            <!-- Meeting cards will be rendered here -->
+          </div>
+        </div>
+
+        <!-- PM View -->
+        <div class="view hidden" id="view-pm">
+          <div class="pm-container">
+            <div class="pm-sidebar">
+              <div class="pm-section-header">
+                <h3>Active Projects</h3>
+              </div>
+              <div class="project-list" id="project-list">
+                <!-- Project items will be rendered here -->
+              </div>
+            </div>
+            <div class="pm-details" id="pm-details">
+              <div class="pm-empty-state">
+                <span class="icon">🏗️</span>
+                <p>Select a project to view timeline and status logs</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trash View (Initially Hidden) -->
+        <div class="view hidden" id="view-trash">
+          <div class="view-header">
+            <h2>Deleted Tasks</h2>
+            <button class="btn btn-secondary" id="btn-back-kanban">Back to Task Manager</button>
+          </div>
+          <div class="trash-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Tag</th>
+                  <th>Title</th>
+                  <th>Original Status</th>
+                  <th>Manager</th>
+                  <th>Deleted Date</th>
+                  <th>Review Info</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="trash-list-body">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Task Modal -->
+  <div class="modal hidden" id="modal-task">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="header-with-tag">
+          <h2 id="task-modal-title">Create New Task</h2>
+          <span id="task-tag-display" class="task-tag-badge"></span>
+        </div>
+        <button class="btn-close" id="btn-close-modal">&times;</button>
+      </div>
+      <form id="form-task">
+        <input type="hidden" id="task-id">
+        <div class="form-row">
+          <div class="form-group" id="task-status-group" style="flex: 0 0 150px;">
+            <label>Current Status</label>
+            <div id="task-status-info" class="status-badge-inline">Note</div>
+          </div>
+          <div class="form-group">
+            <label for="task-title">Title</label>
+            <input type="text" id="task-title" placeholder="What needs to be done?" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="task-content">Content</label>
+          <textarea id="task-content" rows="4" placeholder="Describe the task details..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="task-manager">Manager</label>
+            <input type="text" id="task-manager" placeholder="Assignee">
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <div class="checkbox-wrapper">
+              <label for="task-urgent" class="checkbox-label">
+                <input type="checkbox" id="task-urgent">
+                Urgent Task
+                <span class="custom-checkbox"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="task-start">Start Date</label>
+            <input type="date" id="task-start">
+          </div>
+          <div class="form-group">
+            <label for="task-due">Due Date</label>
+            <input type="date" id="task-due">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-task-modal">Delete Task</button>
+          <div class="footer-right">
+            <button type="button" class="btn btn-ghost" id="btn-cancel-task">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create Task</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="modal-settings" class="modal hidden">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="btn-close" onclick="this.closest('.modal').classList.add('hidden')">&times;</button>
+      </div>
+      
+      <div class="modal-body-scroll">
+        <!-- General Section -->
+        <div class="settings-section">
+          <h3>General</h3>
+          <p class="settings-desc">Select your preferred language for the application interface.</p>
+          <div class="settings-actions">
+            <button class="btn btn-secondary btn-lang active">한국어</button>
+            <button class="btn btn-secondary btn-lang">English</button>
+          </div>
+        </div>
+
+        <!-- Database Management Section -->
+        <div class="settings-section">
+          <h3>Database Management</h3>
+          <p class="settings-desc">Manage your data with manual backups, imports, or full initialization.</p>
+          <div class="settings-actions-grid">
+            <button id="btn-manual-backup" class="btn btn-secondary">
+              <span>💾</span> Manual Backup
+            </button>
+            <button id="btn-import-db" class="btn btn-secondary">
+              <span>📥</span> Import Backup
+            </button>
+            <button id="btn-open-backup-dir" class="btn btn-secondary">
+              <span>📂</span> Open Backup Folder
+            </button>
+            <button id="btn-initialize-db" class="btn btn-danger-outline">
+              <span>⚠️</span> Initialize Data
+            </button>
+          </div>
+        </div>
+
+        <!-- About Section -->
+        <div class="settings-section no-border">
+          <h3>About WorkAssist</h3>
+          <div class="about-card">
+            <div class="about-info">
+              <div class="about-row">
+                <span class="about-label">Author</span>
+                <span class="about-value">Wonseup Shin</span>
+              </div>
+              <div class="about-row">
+                <span class="about-label">Organization</span>
+                <span class="about-value">Samjeong Automation</span>
+              </div>
+              <div class="about-row">
+                <span class="about-label">Website</span>
+                <span class="about-value"><span data-url="https://sjautomation.com/" class="about-link">https://sjautomation.com/</span></span>
+              </div>
+              <div class="about-row">
+                <span class="about-label">Version</span>
+                <span class="about-value highlight">v2.0.0 (Tauri)</span>
+              </div>
+            </div>
+            <div class="about-logo">
+              <img src="assets/glasses_1.gif" alt="WorkAssist" class="about-img">
+              <div class="logo-placeholder">WA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" onclick="this.closest('.modal').classList.add('hidden')">Close</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal hidden" id="modal-meeting">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h2 id="meeting-modal-title">Meeting Minutes</h2>
+        <button class="btn-close" id="btn-close-meeting">&times;</button>
+      </div>
+      <form id="form-meeting">
+        <input type="hidden" id="meeting-id">
+        <div class="form-group">
+          <label for="meeting-title">Meeting Title</label>
+          <input type="text" id="meeting-title" placeholder="What was the meeting about?" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="meeting-date">Date</label>
+            <input type="date" id="meeting-date">
+          </div>
+          <div class="form-group">
+            <label for="meeting-location">Location</label>
+            <input type="text" id="meeting-location" placeholder="Conference Room A">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="meeting-participants">Participants</label>
+          <input type="text" id="meeting-participants" placeholder="Name 1, Name 2, ...">
+        </div>
+        <div class="form-group">
+          <label for="meeting-memo">Free Memo / Agenda</label>
+          <textarea id="meeting-memo" rows="8" placeholder="Type meeting details here..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-export-md">Export to MD</button>
+          <div style="flex: 1"></div>
+          <button type="button" class="btn btn-ghost" id="btn-cancel-meeting">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Minutes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div id="modal-review" class="modal hidden">
+    <div class="modal-content">
+      <h2>Review & Complete</h2>
+      <form id="form-review">
+        <input type="hidden" id="review-task-id">
+        <div class="form-group">
+          <label>Reviewer Name</label>
+          <input type="text" id="reviewer-name" required placeholder="Enter your name">
+        </div>
+        <div class="form-group">
+          <label>Review Comment</label>
+          <textarea id="review-comment" required placeholder="Enter review feedback"></textarea>
+        </div>
+        <div class="modal-footer">
+          <div class="footer-right">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-review">Cancel</button>
+            <button type="submit" class="btn btn-primary">Approve & Delete</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Signup Modal -->
+  <div id="modal-signup" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Create New Account</h2>
+        <button class="btn-close" onclick="this.closest('.modal').classList.add('hidden')">&times;</button>
+      </div>
+      <form id="form-signup">
+        <div class="form-group">
+          <label>Desired Username</label>
+          <input type="text" id="signup-id" placeholder="Enter new ID" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="signup-pw" placeholder="Create a strong password" required>
+        </div>
+        <div class="form-group">
+          <label>Password Hint</label>
+          <input type="text" id="signup-hint" placeholder="Enter a reminder for your password" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').classList.add('hidden')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Hint Modal -->
+  <div id="modal-hint" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Find Password Hint</h2>
+        <button class="btn-close" onclick="this.closest('.modal').classList.add('hidden')">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>Enter your ID</label>
+        <input type="text" id="hint-query-id" placeholder="Username" required>
+      </div>
+      <div id="hint-display" class="hint-result hidden">
+        <p class="hint-label">Your Password Hint:</p>
+        <p id="hint-text" class="hint-content"></p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').classList.add('hidden')">Close</button>
+        <button type="button" class="btn btn-primary" id="btn-get-hint-submit">Show Hint</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change PW Modal -->
+  <div id="modal-change-pw" class="modal hidden">
+    <div class="modal-content">
+      <h2>Change Password</h2>
+      <form id="form-change-pw">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="change-pw-id" required>
+        </div>
+        <div class="form-group">
+          <label>Current Password</label>
+          <input type="password" id="change-pw-old" required>
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" id="change-new-pw" placeholder="Enter new password" required>
+        </div>
+        <div class="form-group">
+          <label>New Password Hint</label>
+          <input type="text" id="change-pw-hint" placeholder="Enter new password hint" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').classList.add('hidden')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
