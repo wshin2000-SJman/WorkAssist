@@ -79,6 +79,7 @@ pub const CREATE_STATUS_LOGS_TABLE: &str = "
     CREATE TABLE IF NOT EXISTS status_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         project_id INTEGER,
+        owner_id INTEGER,
         department TEXT NOT NULL,
         text_content TEXT,
         image_path TEXT,
@@ -89,6 +90,54 @@ pub const CREATE_STATUS_LOGS_TABLE: &str = "
         manager TEXT,
         start_date TEXT,
         due_date TEXT,
-        FOREIGN KEY (project_id) REFERENCES projects(id)
+        FOREIGN KEY (project_id) REFERENCES projects(id),
+        FOREIGN KEY (owner_id) REFERENCES users(id)
+    );
+";
+
+pub const CREATE_SECURE_VAULT_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS secure_vault (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        original_text TEXT UNIQUE NOT NULL,
+        token_id TEXT NOT NULL,
+        entity_type TEXT NOT NULL
+    );
+";
+
+pub const CREATE_SHADOW_MEETINGS_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS shadow_meetings (
+        id INTEGER PRIMARY KEY, -- Matches original meeting ID
+        title TEXT,
+        participants TEXT,
+        location TEXT,
+        decisions TEXT,
+        action_items TEXT,
+        memo TEXT
+    );
+";
+
+pub const CREATE_SHADOW_TASKS_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS shadow_tasks (
+        id INTEGER PRIMARY KEY, -- Matches original task ID
+        title TEXT,
+        content TEXT,
+        review_comment TEXT
+    );
+";
+
+pub const CREATE_SHADOW_PROJECTS_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS shadow_projects (
+        id INTEGER PRIMARY KEY, -- Matches original project ID
+        name TEXT,
+        description TEXT
+    );
+";
+
+pub const CREATE_SHADOW_STATUS_LOGS_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS shadow_status_logs (
+        id INTEGER PRIMARY KEY, -- Matches original status_log ID
+        title TEXT,
+        text_content TEXT,
+        manager TEXT
     );
 ";

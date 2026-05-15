@@ -14,14 +14,24 @@ serde_json = "1.0"
 # DateTime & UUID
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
+rand = "0.8"
+regex = "1.10"
 
 # Tauri v2 Core
 tauri = { version = "2.0.0", features = ["devtools"] }
 tauri-plugin-shell = "2.3.5"
 tauri-plugin-dialog = "2.7.1"
+tauri-plugin-fs = "2.5.1"
+open = "5.1"
 
 [build-dependencies]
 tauri-build = { version = "2.0.0", features = [] }
 
 [dev-dependencies]
 tempfile = "3.10"
+
+[features]
+default = ["kanban", "minutes", "pm"]
+kanban = []
+minutes = []
+pm = []

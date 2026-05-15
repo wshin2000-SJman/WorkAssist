@@ -1,3 +1,60 @@
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('./assets/fonts/Inter-300.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/Inter-400.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./assets/fonts/Inter-600.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./assets/fonts/Inter-700.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('./assets/fonts/Outfit-300.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/Outfit-400.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./assets/fonts/Outfit-600.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./assets/fonts/Outfit-700.ttf') format('truetype');
+}
+
 /* Global Scrollbar Customization */
 * {
   scrollbar-width: thin;
@@ -1394,4 +1451,92 @@ input::-webkit-credentials-auto-fill-button {
 .btn-danger-outline:hover {
   background: rgba(248, 113, 113, 0.1);
   box-shadow: 0 0 15px rgba(248, 113, 113, 0.2);
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--card-border);
+}
+
+/* Table Row Highlights */
+tr:has(.status-done) {
+  background: rgba(16, 185, 129, 0.05) !important;
+}
+
+tr:has(.status-review) {
+  background: rgba(139, 92, 246, 0.03) !important;
+}
+
+.status-badge.note, .status-note {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.status-badge.todo, .status-todo {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.status-badge.doing, .status-doing {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.status-badge.done, .status-done {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+}
+
+.status-badge.review, .status-review {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+/* Trash Bin Enhanced Styles */
+.completed-row td {
+  background: rgba(16, 185, 129, 0.04) !important;
+  border-top: 1px solid rgba(16, 185, 129, 0.15) !important;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.15) !important;
+}
+
+.completed-row td:first-child {
+  border-left: 1px solid rgba(16, 185, 129, 0.15) !important;
+}
+
+.completed-row td:last-child {
+  border-right: 1px solid rgba(16, 185, 129, 0.15) !important;
+}
+
+.completed-row:hover td {
+  background: rgba(16, 185, 129, 0.08) !important;
+  border-color: #10b981 !important;
+}
+
+.review-text-cell {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.completed-row .review-text-cell {
+  color: #10b981;
+  opacity: 0.8;
 }

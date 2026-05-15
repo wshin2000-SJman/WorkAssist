@@ -64,3 +64,36 @@ impl AuthModule {
         Ok(updated > 0)
     }
 }
+
+// --- Auth Plugin Commands ---
+
+#[tauri::command]
+pub async fn login(api: tauri::State<'_, crate::api::Api>, username: String, password_hash: String) -> Result<Option<User>, String> {
+    api.auth().login(&username, &password_hash).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn create_user(api: tauri::State<'_, crate::api::Api>, username: String, password_hash: String, hint: String) -> Result<(), String> {
+    api.auth().create_user(&username, &password_hash, &hint).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_password_hint(api: tauri::State<'_, crate::api::Api>, username: String) -> Result<Option<String>, String> {
+    api.auth().get_hint(&username).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn change_password(api: tauri::State<'_, crate::api::Api>, username: String, old_hash: String, new_hash: String, new_hint: String) -> Result<bool, String> {
+    api.auth().change_password(&username, &old_hash, &new_hash, &new_hint).map_err(|e| e.to_string())
+}
+
+pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+    tauri::plugin::Builder::new("auth")
+        .invoke_handler(tauri::generate_handler![
+            login,
+            create_user,
+            get_password_hint,
+            change_password
+        ])
+        .build()
+}

@@ -18,7 +18,7 @@ impl PmModule {
         let conn = self.storage.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, owner_id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name 
-             FROM projects WHERE owner_id = ? AND status = 'active' ORDER BY created_at DESC"
+             FROM projects WHERE (owner_id = ? OR owner_id = 999) AND status = 'active' ORDER BY created_at DESC"
         )?;
         
         let project_iter = stmt.query_map(params![owner_id], |row| {
@@ -67,8 +67,10 @@ impl PmModule {
                 project.dept4_name,
             ],
         )?;
+        let project_id = conn.last_insert_rowid();
+        let _ = self.storage.save_project_dual(&conn, &project, project_id);
 
-        Ok(conn.last_insert_rowid())
+        Ok(project_id)
     }
 
     pub fn get_status_logs(&self, project_id: i64) -> Result<Vec<StatusLog>> {
@@ -101,4 +103,65 @@ impl PmModule {
         }
         Ok(logs)
     }
+
+    pub fn add_status_log(&self, mut log: StatusLog) -> Result<i64> {
+        let now = Utc::now().to_rfc3339();
+        log.timestamp = now;
+
+        let conn = self.storage.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO status_logs (project_id, department, text_content, image_path, timestamp, status, tag, title, manager, start_date, due_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            params![
+                log.project_id,
+                log.department,
+                log.text_content,
+                log.image_path,
+                log.timestamp,
+                log.status,
+                log.tag,
+                log.title,
+                log.manager,
+                log.start_date,
+                log.due_date,
+            ],
+        )?;
+        let log_id = conn.last_insert_rowid();
+        let _ = self.storage.save_status_log_dual(&conn, &log, log_id);
+
+        Ok(log_id)
+    }
+}
+
+// --- PM Plugin Commands ---
+
+#[tauri::command]
+pub async fn get_project_count(api: tauri::State<'_, crate::api::Api>, owner_id: i64) -> Result<usize, String> {
+    api.pm().get_active_projects(owner_id).map(|p| p.len()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_projects(api: tauri::State<'_, crate::api::Api>, owner_id: i64) -> Result<Vec<Project>, String> {
+    api.pm().get_active_projects(owner_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_status_logs(api: tauri::State<'_, crate::api::Api>, project_id: i64) -> Result<Vec<StatusLog>, String> {
+    api.pm().get_status_logs(project_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn add_status_log(api: tauri::State<'_, crate::api::Api>, log: StatusLog) -> Result<i64, String> {
+    api.pm().add_status_log(log).map_err(|e| e.to_string())
+}
+
+pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+    tauri::plugin::Builder::new("pm")
+        .invoke_handler(tauri::generate_handler![
+            get_project_count,
+            get_projects,
+            get_status_logs,
+            add_status_log
+        ])
+        .build()
 }

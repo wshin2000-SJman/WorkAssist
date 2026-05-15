@@ -18,7 +18,7 @@ impl KanbanModule {
         let conn = self.storage.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, owner_id, title, content, manager, start_date, due_date, status, is_urgent, created_at, review_comment, task_tag, is_deleted 
-             FROM tasks WHERE owner_id = ? AND is_deleted = 0"
+             FROM tasks WHERE (owner_id = ? OR owner_id = 999) AND is_deleted = 0"
         )?;
         
         let task_iter = stmt.query_map(params![owner_id], |row| {
@@ -40,8 +40,8 @@ impl KanbanModule {
         })?;
 
         let mut tasks = Vec::new();
-        for task in task_iter {
-            tasks.push(task?);
+        for task_res in task_iter {
+            tasks.push(task_res?);
         }
         Ok(tasks)
     }
@@ -98,7 +98,10 @@ impl KanbanModule {
             ],
         ).map_err(|e| e.to_string())?;
 
-        Ok(conn.last_insert_rowid())
+        let task_id = conn.last_insert_rowid();
+        let _ = self.storage.save_task_dual(&conn, &task, task_id);
+
+        Ok(task_id)
     }
 
     pub fn update_status(&self, task_id: i64, new_status: &str) -> Result<()> {
@@ -139,6 +142,9 @@ impl KanbanModule {
                 task.id,
             ],
         )?;
+
+        let _ = self.storage.save_task_dual(&conn, &task, task.id.unwrap_or(0));
+
         Ok(())
     }
 
@@ -152,7 +158,7 @@ impl KanbanModule {
         let conn = self.storage.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, owner_id, title, content, manager, start_date, due_date, status, is_urgent, created_at, review_comment, task_tag, is_deleted 
-             FROM tasks WHERE owner_id = ? AND is_deleted = 1 ORDER BY created_at DESC"
+             FROM tasks WHERE (owner_id = ? OR owner_id = 999) AND is_deleted = 1 ORDER BY created_at DESC"
         )?;
         
         let task_iter = stmt.query_map(params![owner_id], |row| {
@@ -186,4 +192,67 @@ impl KanbanModule {
         conn.execute("DELETE FROM tasks WHERE id = ?", params![task_id])?;
         Ok(())
     }
+}
+
+// --- Kanban Plugin Commands ---
+
+#[tauri::command]
+pub async fn get_task_count(api: tauri::State<'_, crate::api::Api>, owner_id: i64) -> Result<usize, String> {
+    api.kanban().get_all_tasks(owner_id).map(|t| t.len()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_tasks(api: tauri::State<'_, crate::api::Api>, owner_id: i64) -> Result<Vec<Task>, String> {
+    api.kanban().get_all_tasks(owner_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn add_task(api: tauri::State<'_, crate::api::Api>, task: Task) -> Result<i64, String> {
+    api.kanban().add_task(task)
+}
+
+#[tauri::command]
+pub async fn update_task_status(api: tauri::State<'_, crate::api::Api>, task_id: i64, new_status: String) -> Result<(), String> {
+    api.kanban().update_status(task_id, &new_status).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn update_task(api: tauri::State<'_, crate::api::Api>, task: Task) -> Result<(), String> {
+    api.kanban().update_task(task).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_task(api: tauri::State<'_, crate::api::Api>, task_id: i64) -> Result<(), String> {
+    api.kanban().delete_task(task_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_deleted_tasks(api: tauri::State<'_, crate::api::Api>, owner_id: i64) -> Result<Vec<Task>, String> {
+    api.kanban().get_deleted_tasks(owner_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn restore_task(api: tauri::State<'_, crate::api::Api>, task_id: i64) -> Result<(), String> {
+    api.kanban().restore_task(task_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn hard_delete_task_cmd(api: tauri::State<'_, crate::api::Api>, task_id: i64) -> Result<(), String> {
+    api.kanban().hard_delete_task(task_id).map_err(|e| e.to_string())
+}
+
+pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+    tauri::plugin::Builder::new("kanban")
+        .invoke_handler(tauri::generate_handler![
+            get_task_count,
+            get_tasks,
+            add_task,
+            update_task_status,
+            update_task,
+            delete_task,
+            get_deleted_tasks,
+            restore_task,
+            hard_delete_task_cmd
+        ])
+        .build()
 }

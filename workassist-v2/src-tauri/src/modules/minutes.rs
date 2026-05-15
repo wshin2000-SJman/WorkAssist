@@ -18,7 +18,7 @@ impl MinutesModule {
         let conn = self.storage.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, owner_id, title, date, participants, location, decisions, action_items, memo, created_at 
-             FROM meetings WHERE owner_id = ? ORDER BY date DESC"
+             FROM meetings WHERE owner_id = ? OR owner_id = 999 ORDER BY date DESC"
         )?;
         
         let meeting_iter = stmt.query_map(params![owner_id], |row| {
@@ -61,6 +61,7 @@ impl MinutesModule {
                     id
                 ],
             )?;
+            let _ = self.storage.save_meeting_dual(&conn, &meeting, id);
             Ok(id)
         } else {
             meeting.created_at = now;
@@ -79,7 +80,9 @@ impl MinutesModule {
                     meeting.created_at
                 ],
             )?;
-            Ok(conn.last_insert_rowid())
+            let meeting_id = conn.last_insert_rowid();
+            let _ = self.storage.save_meeting_dual(&conn, &meeting, meeting_id);
+            Ok(meeting_id)
         }
     }
 
@@ -98,4 +101,37 @@ impl MinutesModule {
         md.push_str("\n---\n*Created by SJ WorkAssist v2.0 (Rust Engine)*");
         md
     }
+}
+
+// --- Minutes Plugin Commands ---
+
+#[tauri::command]
+pub async fn get_meeting_count(api: tauri::State<'_, crate::api::Api>, owner_id: i64) -> Result<usize, String> {
+    api.minutes().get_all_meetings(owner_id).map(|m| m.len()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_meetings(api: tauri::State<'_, crate::api::Api>, owner_id: i64) -> Result<Vec<Meeting>, String> {
+    api.minutes().get_all_meetings(owner_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_meeting(api: tauri::State<'_, crate::api::Api>, meeting: Meeting) -> Result<i64, String> {
+    api.minutes().save_meeting(meeting).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn export_meeting_md(api: tauri::State<'_, crate::api::Api>, meeting: Meeting) -> Result<String, String> {
+    Ok(api.minutes().export_to_markdown(&meeting))
+}
+
+pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+    tauri::plugin::Builder::new("minutes")
+        .invoke_handler(tauri::generate_handler![
+            get_meeting_count,
+            get_meetings,
+            save_meeting,
+            export_meeting_md
+        ])
+        .build()
 }

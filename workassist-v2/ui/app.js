@@ -20,9 +20,20 @@ let draggingTaskId = null;
 
 let currentUser = null;
 
+async function askConfirm(message, title = "Confirm") {
+    if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+        return confirm(message);
+    }
+    return await window.__TAURI__.dialog.ask(message, {
+        title: title,
+        kind: 'warning'
+    });
+}
+
 const init = () => {
     console.log('WorkAssist UI Initialized');
     setupAuth();
+    initFeatureToggles();
     
     if (!invoke) {
         console.error("Critical: Tauri Backend not connected. Check DevTools for details.");
@@ -37,6 +48,12 @@ const init = () => {
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
+            
+            if (item.id === 'nav-settings') {
+                document.getElementById('modal-settings').classList.remove('hidden');
+                return;
+            }
+
             console.log("Navigating to:", item.id);
             navItems.forEach(i => i.classList.remove('active'));
             item.classList.add('active');
@@ -55,8 +72,42 @@ const init = () => {
     });
 
     setupModals();
+    setupSettings();
     initDragAndDrop();
 };
+
+async function initFeatureToggles() {
+    try {
+        const enabledFeatures = await invoke('plugin:engine|get_enabled_features');
+        console.log("Enabled Features:", enabledFeatures);
+
+        const featureMap = {
+            'kanban': { nav: 'nav-kanban', stat: 'stat-tasks' },
+            'minutes': { nav: 'nav-minutes', stat: 'stat-meetings' },
+            'pm': { nav: 'nav-pm', stat: 'stat-projects' }
+        };
+
+        Object.keys(featureMap).forEach(feature => {
+            if (!enabledFeatures.includes(feature)) {
+                const config = featureMap[feature];
+                // Hide nav item
+                const navItem = document.getElementById(config.nav);
+                if (navItem) navItem.style.display = 'none';
+                
+                // Hide dashboard stat card
+                const statVal = document.getElementById(config.stat);
+                if (statVal) {
+                    const card = statVal.closest('.stat-card');
+                    if (card) card.style.display = 'none';
+                }
+                
+                console.log(`Feature [${feature}] disabled - UI updated.`);
+            }
+        });
+    } catch (err) {
+        console.error("Error toggling features:", err);
+    }
+}
 
 function setupAuth() {
     const formLogin = document.getElementById('form-login');
@@ -78,7 +129,7 @@ function setupAuth() {
 
             try {
                 // Use passwordHash to match Rust's snake_case -> JS camelCase naming
-                const user = await invoke('login', { username, passwordHash: password });
+                const user = await invoke('plugin:auth|login', { username, passwordHash: password });
                 if (user) {
                     console.log("Login Success:", user);
                     currentUser = user;
@@ -136,7 +187,7 @@ function setupAuth() {
             const id = document.getElementById('hint-query-id').value;
             if (!id) return alert('Please enter ID.');
             try {
-                const hint = await invoke('get_password_hint', { username: id });
+                const hint = await invoke('plugin:auth|get_password_hint', { username: id });
                 const display = document.getElementById('hint-display');
                 const text = document.getElementById('hint-text');
                 if (hint) {
@@ -156,7 +207,7 @@ function setupAuth() {
         const pw = document.getElementById('signup-pw').value;
         const hint = document.getElementById('signup-hint').value;
         try {
-            await invoke('create_user', { username: id, passwordHash: pw, hint });
+            await invoke('plugin:auth|create_user', { username: id, passwordHash: pw, hint });
             alert('Account created successfully!');
             modalSignup.classList.add('hidden');
         } catch (err) { alert('Failed to create account.'); }
@@ -170,7 +221,7 @@ function setupAuth() {
         const newPw = document.getElementById('change-pw-new').value;
         const newHint = document.getElementById('change-pw-hint').value;
         try {
-            const success = await invoke('change_password', { username: id, oldHash: oldPw, newHash: newPw, newHint: newHint });
+            const success = await invoke('plugin:auth|change_password', { username: id, oldHash: oldPw, newHash: newPw, newHint: newHint });
             if (success) {
                 alert('Password updated!');
                 modalChangePw.classList.add('hidden');
@@ -183,8 +234,8 @@ function setupAuth() {
     // Logout
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) {
-        btnLogout.onclick = () => {
-            if (confirm('Are you sure you want to logout?')) {
+        btnLogout.onclick = async () => {
+            if (await askConfirm('Are you sure you want to logout?')) {
                 currentUser = null;
                 appContainer.classList.add('hidden');
                 viewLogin.classList.remove('hidden');
@@ -197,76 +248,40 @@ function setupAuth() {
         };
     }
 
-    const navSettings = document.getElementById('nav-settings');
-    const modalSettings = document.getElementById('modal-settings');
-    if (navSettings) {
-        navSettings.onclick = (e) => {
-            e.preventDefault();
-            modalSettings.classList.remove('hidden');
-        };
-    }
+    const btnCloseSignup = document.getElementById('btn-close-signup');
+    const btnCancelSignup = document.getElementById('btn-cancel-signup');
+    if (btnCloseSignup) btnCloseSignup.onclick = () => modalSignup.classList.add('hidden');
+    if (btnCancelSignup) btnCancelSignup.onclick = () => modalSignup.classList.add('hidden');
 
-    const btnManualBackup = document.getElementById('btn-manual-backup');
-    if (btnManualBackup) {
-        btnManualBackup.onclick = async () => {
+    const btnCloseHint = document.getElementById('btn-close-hint-modal');
+    const btnCloseHintOk = document.getElementById('btn-close-hint-ok');
+    if (btnCloseHint) btnCloseHint.onclick = () => modalHint.classList.add('hidden');
+    if (btnCloseHintOk) btnCloseHintOk.onclick = () => modalHint.classList.add('hidden');
+
+    const btnCancelChangePw = document.getElementById('btn-cancel-change-pw');
+    if (btnCancelChangePw) btnCancelChangePw.onclick = () => modalChangePw.classList.add('hidden');
+
+    const btnSync = document.getElementById('btn-sync');
+    if (btnSync) {
+        btnSync.onclick = async () => {
+            console.log("Global Sync Triggered");
+            const btnText = btnSync.textContent;
+            btnSync.textContent = "Syncing...";
+            btnSync.disabled = true;
             try {
-                // In Tauri v2, dialog is often via plugin-dialog
-                const path = await window.__TAURI__.dialog.save({
-                    filters: [{ name: 'SQLite Database', extensions: ['db'] }],
-                    defaultPath: 'sjworkassist_v2_manual_backup.db'
-                });
-                
-                if (path) {
-                    await invoke('manual_backup', { path });
-                    alert('Manual backup successful!');
-                }
+                await refreshStats();
+                await loadView(currentView);
+                setTimeout(() => {
+                    btnSync.textContent = "Synced!";
+                    setTimeout(() => {
+                        btnSync.textContent = btnText;
+                        btnSync.disabled = false;
+                    }, 1000);
+                }, 500);
             } catch (err) {
-                console.error('Backup error:', err);
-                alert('Backup failed. Make sure you are running in Tauri.');
-            }
-        };
-    }
-
-    const btnImportDb = document.getElementById('btn-import-db');
-    if (btnImportDb) {
-        btnImportDb.onclick = async () => {
-            if (confirm('Importing a database will overwrite your current data. The app will restart after import. Continue?')) {
-                try {
-                    const path = await window.__TAURI__.dialog.open({
-                        multiple: false,
-                        filters: [{ name: 'SQLite Database', extensions: ['db'] }]
-                    });
-                    
-                    if (path) {
-                        await invoke('import_db', { path });
-                        alert('Import successful! The app will now close. Please restart it.');
-                        // Close app to ensure new DB is loaded correctly on next start
-                        window.close(); 
-                    }
-                } catch (err) {
-                    console.error('Import error:', err);
-                    alert('Import failed.');
-                }
-            }
-        };
-    }
-
-    const btnInitializeDb = document.getElementById('btn-initialize-db');
-    if (btnInitializeDb) {
-        btnInitializeDb.onclick = async () => {
-            const confirmed1 = confirm('WARNING: This will permanently delete all your tasks, meetings, and projects. This action cannot be undone. Are you sure?');
-            if (confirmed1) {
-                const confirmed2 = confirm('FINAL WARNING: Are you absolutely sure you want to initialize all data?');
-                if (confirmed2) {
-                    try {
-                        await invoke('initialize_data');
-                        alert('Data initialized successfully.');
-                        // Refresh UI
-                        location.reload(); 
-                    } catch (err) {
-                        console.error('Initialization error:', err);
-                    }
-                }
+                console.error("Sync Error:", err);
+                btnSync.textContent = "Error";
+                btnSync.disabled = false;
             }
         };
     }
@@ -293,6 +308,41 @@ function setupAuth() {
     });
 }
 
+function closeTask() { 
+    const modalTask = document.getElementById('modal-task');
+    const formTask = document.getElementById('form-task');
+    if (!modalTask || !formTask) return;
+
+    modalTask.classList.add('hidden'); 
+    formTask.reset(); 
+    document.getElementById('task-id').value = '';
+    const tagDisplay = document.getElementById('task-tag-display');
+    if (tagDisplay) {
+        tagDisplay.textContent = '';
+        tagDisplay.classList.add('hidden');
+    }
+    const modalTitle = document.getElementById('task-modal-title');
+    if (modalTitle) modalTitle.textContent = 'Create New Task';
+    
+    const submitBtn = modalTask.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.textContent = 'Create Task';
+    
+    const btnDelModal = document.getElementById('btn-delete-task-modal');
+    if (btnDelModal) btnDelModal.classList.add('hidden');
+
+    const statusGroup = document.getElementById('task-status-group');
+    if (statusGroup) statusGroup.classList.add('hidden');
+}
+
+function closeMeeting() { 
+    const modalMeeting = document.getElementById('modal-meeting');
+    const formMeeting = document.getElementById('form-meeting');
+    if (!modalMeeting || !formMeeting) return;
+
+    modalMeeting.classList.add('hidden'); 
+    formMeeting.reset();
+}
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
@@ -307,64 +357,52 @@ function setupModals() {
     const btnCancelTask = document.getElementById('btn-cancel-task');
     const btnCancelMeeting = document.getElementById('btn-cancel-meeting');
 
+    console.log("Modal Elements Init Check:", { modalTask, btnNewTask, formTask });
+
     const modalMeeting = document.getElementById('modal-meeting');
     const btnNewMeeting = document.getElementById('btn-new-meeting');
     const btnCloseMeeting = document.getElementById('btn-close-meeting');
     const formMeeting = document.getElementById('form-meeting');
 
     if (btnNewTask) {
-        btnNewTask.addEventListener('click', () => { 
+        btnNewTask.onclick = () => { 
             console.log("Opening New Task Modal");
             // Reset for new task
             closeTask(); // Use existing reset logic
             modalTask.classList.remove('hidden'); 
             document.getElementById('task-title').focus(); 
-        });
+        };
     }
 
-    const closeTask = () => { 
-        modalTask.classList.add('hidden'); 
-        formTask.reset(); 
-        document.getElementById('task-id').value = '';
-        document.getElementById('task-tag-display').textContent = '';
-        document.getElementById('task-tag-display').classList.add('hidden');
-        document.getElementById('task-modal-title').textContent = 'Create New Task';
-        modalTask.querySelector('button[type="submit"]').textContent = 'Create Task';
-        
-        const btnDelModal = document.getElementById('btn-delete-task-modal');
-        if (btnDelModal) btnDelModal.classList.add('hidden');
-
-        const statusGroup = document.getElementById('task-status-group');
-        if (statusGroup) statusGroup.classList.add('hidden');
-    };
     
     const btnDelModal = document.getElementById('btn-delete-task-modal');
     if (btnDelModal) {
-        btnDelModal.onclick = () => {
+        btnDelModal.onclick = async () => {
             const taskId = Number(document.getElementById('task-id').value);
-            if (taskId && confirm('Are you sure you want to delete this task?')) {
+            if (taskId && await askConfirm('Are you sure you want to delete this task?')) {
                 deleteTask(taskId);
                 closeTask();
             }
         };
     }
-    if (btnCloseTask) btnCloseTask.addEventListener('click', closeTask);
-    if (btnCancelTask) btnCancelTask.addEventListener('click', closeTask);
+    if (btnCloseTask) btnCloseTask.onclick = closeTask;
+    if (btnCancelTask) btnCancelTask.onclick = closeTask;
 
-    const closeMeeting = () => { 
+    function closeMeeting() { 
         modalMeeting.classList.add('hidden'); 
         formMeeting.reset();
-    };
-    if (btnCloseMeeting) btnCloseMeeting.addEventListener('click', closeMeeting);
-    if (btnCancelMeeting) btnCancelMeeting.addEventListener('click', closeMeeting);
+    }
+    if (btnCloseMeeting) btnCloseMeeting.onclick = closeMeeting;
+    if (btnCancelMeeting) btnCancelMeeting.onclick = closeMeeting;
 
     if (formTask) {
-        formTask.addEventListener('submit', async (e) => {
+        formTask.onsubmit = async (e) => {
             e.preventDefault();
+            console.log("Task Form Submitted!");
             const taskId = document.getElementById('task-id').value;
             const newTask = {
                 id: taskId ? parseInt(taskId) : null,
-                owner_id: 1, 
+                owner_id: currentUser.id, 
                 title: document.getElementById('task-title').value,
                 content: document.getElementById('task-content').value, 
                 manager: document.getElementById('task-manager').value,
@@ -400,44 +438,51 @@ function setupModals() {
                         newTask.review_comment = existingTask.review_comment;
                         newTask.task_tag = existingTask.task_tag;
                     }
-                    await invoke('update_task', { task: newTask });
+                    await invoke('plugin:kanban|update_task', { task: newTask });
                 } else {
                     // Add new task
-                    await invoke('add_task', { task: newTask });
+                    await invoke('plugin:kanban|add_task', { task: newTask });
                 }
                 closeTask();
-                currentView === 'nav-kanban' ? await refreshKanban() : await refreshStats();
-            } catch (err) { console.error("Save Task Error:", err); }
-        });
+                
+                // Always refresh stats for the dashboard numbers
+                await refreshStats();
+                
+                // If we are on Kanban or Trash, refresh tasks
+                if (currentView === 'nav-kanban' || currentView === 'nav-trash') {
+                    await refreshKanban();
+                }
+            } catch (err) { 
+                console.error("Save Task Error:", err); 
+            }
+        };
     }
 
     if (btnNewMeeting) {
-        btnNewMeeting.addEventListener('click', () => {
+        btnNewMeeting.onclick = () => {
             document.getElementById('meeting-id').value = '';
             formMeeting.reset();
             document.getElementById('meeting-modal-title').textContent = 'Create New Minutes';
             modalMeeting.classList.remove('hidden');
-        });
+        };
     }
 
-    // Already handled above
-
     if (formMeeting) {
-        formMeeting.addEventListener('submit', async (e) => {
+        formMeeting.onsubmit = async (e) => {
             e.preventDefault();
             const meetingData = {
                 id: document.getElementById('meeting-id').value ? parseInt(document.getElementById('meeting-id').value) : null,
-                owner_id: 1, title: document.getElementById('meeting-title').value,
+                owner_id: currentUser.id, title: document.getElementById('meeting-title').value,
                 date: document.getElementById('meeting-date').value, location: document.getElementById('meeting-location').value,
                 participants: document.getElementById('meeting-participants').value, decisions: "", action_items: "",
                 memo: document.getElementById('meeting-memo').value, created_at: ""
             };
             try {
-                await invoke('save_meeting', { meeting: meetingData });
+                await invoke('plugin:minutes|save_meeting', { meeting: meetingData });
                 closeMeeting();
                 await refreshMinutes();
             } catch (err) { console.error("Save Meeting Error:", err); }
-        });
+        };
     }
 
     // Track mousedown to prevent closing on drags
@@ -496,17 +541,113 @@ function setupModals() {
                 const task = currentTasks.find(t => t.id === id);
                 if (task) {
                     const updatedTask = { ...task, review_comment: reviewText };
-                    await invoke('update_task', { task: updatedTask });
-                    await invoke('delete_task', { taskId: id });
+                    await invoke('plugin:kanban|update_task', { task: updatedTask });
+                    await invoke('plugin:kanban|delete_task', { taskId: id });
                     modalReview.classList.add('hidden');
                     formReview.reset();
                     await refreshKanban();
                 }
             } catch (err) {
                 console.error("Review Process Error:", err);
-                alert("Failed to process review.");
             }
         });
+    }
+}
+
+function setupSettings() {
+    const modalSettings = document.getElementById('modal-settings');
+    const btnCloseSettings = document.getElementById('btn-close-settings');
+    const btnCloseSettingsOk = document.getElementById('btn-close-settings-ok');
+
+    const closeSettings = () => modalSettings.classList.add('hidden');
+
+    if (btnCloseSettings) btnCloseSettings.onclick = closeSettings;
+    if (btnCloseSettingsOk) btnCloseSettingsOk.onclick = closeSettings;
+
+    // Database Actions
+    const btnManualBackup = document.getElementById('btn-manual-backup');
+    const btnImportDb = document.getElementById('btn-import-db');
+    const btnOpenBackupDir = document.getElementById('btn-open-backup-dir');
+    const btnInitializeDb = document.getElementById('btn-initialize-db');
+
+    if (btnImportDb) {
+        btnImportDb.onclick = async () => {
+            try {
+                const selected = await window.__TAURI__.dialog.open({
+                    filters: [{ name: 'SQLite Database', extensions: ['db'] }],
+                    multiple: false,
+                });
+                if (selected) {
+                    await invoke('plugin:engine|import_db', { path: selected, user: currentUser });
+                    alert("Database imported successfully. The application will now reload to apply changes.");
+                    window.location.reload();
+                }
+            } catch (err) { alert("Import Failed: " + err); }
+        };
+    }
+
+    if (btnManualBackup) {
+        btnManualBackup.onclick = async () => {
+            try {
+                const path = await window.__TAURI__.dialog.save({
+                    filters: [{ name: 'SQLite Database', extensions: ['db'] }],
+                    defaultPath: 'sjworkassist_v2_manual_backup.db'
+                });
+                
+                if (path) {
+                    const msg = await invoke('plugin:engine|manual_backup', { path });
+                    alert(msg);
+                }
+            } catch (err) { alert("Backup Failed: " + err); }
+        };
+    }
+
+    if (btnOpenBackupDir) {
+        btnOpenBackupDir.onclick = async () => {
+            try {
+                await invoke('plugin:engine|open_backup_folder');
+            } catch (err) { console.error("Open Folder Error:", err); }
+        };
+    }
+
+    if (btnInitializeDb) {
+        btnInitializeDb.onclick = async () => {
+            if (await askConfirm("Are you sure? All your data will be permanently deleted!")) {
+                try {
+                    await invoke('plugin:engine|initialize_data', { user: currentUser });
+                    alert("Database Initialized.");
+                    window.location.reload();
+                } catch (err) { alert("Init Failed: " + err); }
+            }
+        };
+    }
+
+    // Demo Actions
+    const btnSeedDemo = document.getElementById('btn-seed-demo');
+    const btnClearDemo = document.getElementById('btn-clear-demo');
+
+    if (btnSeedDemo) {
+        btnSeedDemo.onclick = async () => {
+            if (await askConfirm('Load rich demo data? This will add several tasks, projects, and meetings.')) {
+                try {
+                    await invoke('plugin:engine|seed_demo_data_cmd');
+                    alert('Demo data loaded successfully!');
+                    window.location.reload();
+                } catch (err) { alert("Seed Failed: " + err); }
+            }
+        };
+    }
+
+    if (btnClearDemo) {
+        btnClearDemo.onclick = async () => {
+            if (await askConfirm('Clear all demo data? Only data marked as demo will be removed.')) {
+                try {
+                    await invoke('plugin:engine|clear_demo_data_cmd');
+                    alert("Database cleared.");
+                    window.location.reload();
+                } catch (err) { alert("Clear Failed: " + err); }
+            }
+        };
     }
 }
 
@@ -518,12 +659,11 @@ function openReviewModal(taskId) {
 
 async function deleteTask(taskId) {
     try {
-        await invoke('delete_task', { taskId });
+        await invoke('plugin:kanban|delete_task', { taskId });
         await refreshKanban();
         await refreshStats(); // Update count
     } catch (err) {
         console.error("Delete Error:", err);
-        alert("Failed to delete task.");
     }
 }
 
@@ -531,7 +671,7 @@ async function loadDeletedTasks() {
     const body = document.getElementById('trash-list-body');
     body.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
     try {
-        const deletedTasks = await invoke('get_deleted_tasks');
+        const deletedTasks = await invoke('plugin:kanban|get_deleted_tasks', { ownerId: currentUser.id });
         body.innerHTML = '';
         if (deletedTasks.length === 0) {
             body.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--text-muted)">No deleted tasks found.</td></tr>';
@@ -539,13 +679,26 @@ async function loadDeletedTasks() {
         }
         deletedTasks.forEach(t => {
             const row = document.createElement('tr');
+            const statusClass = t.status.toLowerCase().replace('-', '');
+            const isDone = t.status === 'Done' || t.status === 'Review';
+            
+            if (isDone) row.classList.add('completed-row');
+            
+            const statusIcon = isDone ? '✅' : '🗑️';
+            const titleStyle = isDone ? 'font-weight: 700; color: #10b981;' : '';
+
             row.innerHTML = `
                 <td style="font-family: monospace; font-size: 12px; color: var(--accent-color)">${t.task_tag || '-'}</td>
-                <td>${t.title}</td>
-                <td><span class="status-badge">${t.status}</span></td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>${statusIcon}</span>
+                        <span style="${titleStyle}">${t.title}</span>
+                    </div>
+                </td>
+                <td><span class="status-badge ${statusClass}">${t.status}</span></td>
                 <td>${t.manager || '-'}</td>
                 <td>${t.created_at.split('T')[0]}</td>
-                <td>${t.review_comment || '-'}</td>
+                <td><div class="review-text-cell" title="${t.review_comment || ''}">${t.review_comment || '-'}</div></td>
                 <td>
                     <div class="action-buttons">
                         <button class="btn-restore" data-id="${t.id}">🔄 Restore</button>
@@ -561,42 +714,38 @@ async function loadDeletedTasks() {
             btn.onclick = () => restoreTask(Number(btn.dataset.id));
         });
         body.querySelectorAll('.btn-hard-del').forEach(btn => {
-            btn.onclick = () => {
-                if (confirm('Permanently delete this task? This cannot be undone.')) {
+            btn.onclick = async () => {
+                if (await askConfirm('Permanently delete this task? This cannot be undone.')) {
                     hardDeleteTask(Number(btn.dataset.id));
                 }
             };
         });
     } catch (err) {
         console.error("Load Deleted Tasks Error:", err);
-        body.innerHTML = '<tr><td colspan="7" style="color:red">Failed to load data.</td></tr>';
     }
 }
 
 async function restoreTask(taskId) {
     try {
-        await invoke('restore_task', { taskId });
+        await invoke('plugin:kanban|restore_task', { taskId });
         await loadDeletedTasks();
         await refreshStats();
     } catch (err) {
         console.error("Restore Error:", err);
-        alert("Failed to restore task.");
     }
 }
 
 async function hardDeleteTask(taskId) {
     try {
-        await invoke('hard_delete_task', { taskId });
+        await invoke('plugin:kanban|hard_delete_task_cmd', { taskId });
         await loadDeletedTasks();
         await refreshStats();
     } catch (err) {
         console.error("Hard Delete Error:", err);
-        alert("Failed to permanently delete task.");
     }
 }
 
 async function loadView(viewId) {
-    console.log("Loading view:", viewId);
     
     // Update active nav and title manually for direct calls
     const titles = {
@@ -635,11 +784,10 @@ async function loadView(viewId) {
 }
 
 async function refreshStats() {
-    console.log("Refreshing stats...");
     try {
-        const t = await invoke('get_task_count');
-        const m = await invoke('get_meeting_count');
-        const p = await invoke('get_project_count');
+        const t = await invoke('plugin:kanban|get_task_count', { ownerId: currentUser.id });
+        const m = await invoke('plugin:minutes|get_meeting_count', { ownerId: currentUser.id });
+        const p = await invoke('plugin:pm|get_project_count', { ownerId: currentUser.id });
         document.getElementById('stat-tasks').textContent = t;
         document.getElementById('stat-meetings').textContent = m;
         document.getElementById('stat-projects').textContent = p;
@@ -648,9 +796,11 @@ async function refreshStats() {
 
 async function refreshKanban() {
     try {
-        currentTasks = await invoke('get_tasks');
+        currentTasks = await invoke('plugin:kanban|get_tasks', { ownerId: currentUser.id });
         renderKanban();
-    } catch (err) { console.error("Refresh Kanban Error:", err); }
+    } catch (err) { 
+        console.error("Refresh Kanban Error:", err); 
+    }
 }
 
 async function loadDashboard() {
@@ -659,10 +809,15 @@ async function loadDashboard() {
 
 function renderKanban() {
     const cols = document.querySelectorAll('.kanban-column');
-    cols.forEach(c => { c.querySelector('.task-list').innerHTML = ''; c.querySelector('.count').textContent = '0'; });
+    cols.forEach(c => { 
+        const list = c.querySelector('.task-list');
+        if (list) list.innerHTML = ''; 
+        const count = c.querySelector('.count');
+        if (count) count.textContent = '0'; 
+    });
+
     currentTasks.forEach(t => {
         let displayStatus = t.status;
-        if (displayStatus === 'Review') displayStatus = 'Done'; // Map Review status to Done column
         
         const col = document.querySelector(`.kanban-column[data-status="${displayStatus}"]`);
         if (col) {
@@ -675,7 +830,8 @@ function renderKanban() {
 
 function createTaskCard(t) {
     const card = document.createElement('a');
-    card.href = 'javascript:void(0)';
+    card.href = '#';
+    card.onclick = (e) => e.preventDefault();
     card.className = `task-card ${t.is_urgent ? 'urgent' : ''}`;
     card.dataset.id = t.id;
     card.innerHTML = `
@@ -694,11 +850,11 @@ function createTaskCard(t) {
 
     // Click on buttons shouldn't trigger card click
     card.querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const id = Number(btn.dataset.id);
             if (btn.classList.contains('btn-task-del')) {
-                if (confirm('Are you sure you want to delete this task?')) {
+                if (await askConfirm('Are you sure you want to delete this task?')) {
                     deleteTask(id);
                 }
             } else if (btn.classList.contains('btn-task-review')) {
@@ -752,15 +908,15 @@ function createTaskCard(t) {
             if (t.status === 'Done') {
                 btnDelModal.textContent = 'Approve & Delete';
                 btnDelModal.className = 'btn btn-success'; // Green style
-                btnDelModal.onclick = () => {
+                btnDelModal.onclick = async () => {
                     openReviewModal(taskId);
                     closeTask();
                 };
             } else {
                 btnDelModal.textContent = 'Delete Task';
                 btnDelModal.className = 'btn btn-danger-outline'; // Red style
-                btnDelModal.onclick = () => {
-                    if (confirm('Are you sure you want to delete this task?')) {
+                btnDelModal.onclick = async () => {
+                    if (await askConfirm('Are you sure you want to delete this task?')) {
                         deleteTask(taskId);
                         closeTask();
                     }
@@ -777,7 +933,7 @@ function createTaskCard(t) {
 
 async function refreshMinutes() {
     try {
-        currentMeetings = await invoke('get_meetings');
+        currentMeetings = await invoke('plugin:minutes|get_meetings', { ownerId: currentUser.id });
         const list = document.getElementById('minutes-list');
         list.innerHTML = '';
         currentMeetings.forEach(m => {
@@ -801,7 +957,7 @@ async function refreshMinutes() {
 
 async function refreshProjects() {
     try {
-        currentProjects = await invoke('get_projects');
+        currentProjects = await invoke('plugin:pm|get_projects', { ownerId: currentUser.id });
         const list = document.getElementById('project-list');
         list.innerHTML = '';
         currentProjects.forEach(p => {
@@ -830,7 +986,7 @@ async function loadProjectDetails(project, element) {
     `;
 
     try {
-        const logs = await invoke('get_status_logs', { projectId: project.id });
+        const logs = await invoke('plugin:pm|get_status_logs', { projectId: project.id });
         renderTimeline(logs);
     } catch (err) { console.error("Load Project Details Error:", err); }
 }
@@ -966,7 +1122,7 @@ function initDragAndDrop() {
                         currentTasks[taskIndex].status = status;
                         renderKanban();
                         try {
-                            await invoke('update_task_status', { taskId: id, newStatus: status });
+                            await invoke('plugin:kanban|update_task_status', { taskId: id, newStatus: status });
                         } catch (err) {
                             console.error("Drag Drop Error:", err);
                             currentTasks[taskIndex].status = oldStatus;

@@ -1,220 +1,137 @@
-mod models;
-mod storage;
-mod modules;
+// WorkAssist v2.0 - Core Engine (Tauri + Rust)
+// Refactored to Plugin Architecture
+
 mod api;
+mod models;
+mod modules;
+mod storage;
 
+use api::Api;
 use std::sync::Arc;
-use tauri::{State, Manager};
-use crate::api::Api;
-use crate::storage::Storage;
-use crate::models::{Task, Meeting, Project, StatusLog, Milestone, User};
+use storage::Storage;
+use tauri::{State, Manager, AppHandle};
 
-// --- Tauri Commands ---
+// --- Core Engine Commands (Stay in main for now) ---
 
 #[tauri::command]
-async fn get_task_count(api: State<'_, Api>) -> Result<usize, String> {
-    let owner_id = 1; 
-    api.kanban().get_all_tasks(owner_id).map(|t| t.len()).map_err(|e| e.to_string())
+async fn get_enabled_features() -> Vec<String> {
+    let mut features = Vec::new();
+    #[cfg(feature = "kanban")]
+    features.push("kanban".to_string());
+    #[cfg(feature = "minutes")]
+    features.push("minutes".to_string());
+    #[cfg(feature = "pm")]
+    features.push("pm".to_string());
+    features
 }
 
 #[tauri::command]
-async fn get_meeting_count(api: State<'_, Api>) -> Result<usize, String> {
-    let owner_id = 1;
-    api.minutes().get_all_meetings(owner_id).map(|m| m.len()).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn get_project_count(api: State<'_, Api>) -> Result<usize, String> {
-    let owner_id = 1;
-    api.pm().get_active_projects(owner_id).map(|p| p.len()).map_err(|e| e.to_string())
-}
-
-// --- Auth Commands ---
-
-#[tauri::command]
-async fn login(api: State<'_, Api>, username: String, password_hash: String) -> Result<Option<User>, String> {
-    api.auth().login(&username, &password_hash).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn create_user(api: State<'_, Api>, username: String, password_hash: String, hint: String) -> Result<(), String> {
-    api.auth().create_user(&username, &password_hash, &hint).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn get_password_hint(api: State<'_, Api>, username: String) -> Result<Option<String>, String> {
-    api.auth().get_hint(&username).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn change_password(api: State<'_, Api>, username: String, old_hash: String, new_hash: String, new_hint: String) -> Result<bool, String> {
-    api.auth().change_password(&username, &old_hash, &new_hash, &new_hint).map_err(|e| e.to_string())
-}
-
-// --- Kanban Commands ---
-
-#[tauri::command]
-async fn get_tasks(api: State<'_, Api>) -> Result<Vec<Task>, String> {
-    let owner_id = 1;
-    api.kanban().get_all_tasks(owner_id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn add_task(api: State<'_, Api>, task: Task) -> Result<i64, String> {
-    api.kanban().add_task(task)
-}
-
-#[tauri::command]
-async fn update_task_status(api: State<'_, Api>, task_id: i64, new_status: String) -> Result<(), String> {
-    api.kanban().update_status(task_id, &new_status).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn update_task(api: State<'_, Api>, task: Task) -> Result<(), String> {
-    api.kanban().update_task(task).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn delete_task(api: State<'_, Api>, task_id: i64) -> Result<(), String> {
-    api.kanban().delete_task(task_id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn get_deleted_tasks(api: State<'_, Api>) -> Result<Vec<Task>, String> {
-    let owner_id = 1;
-    api.kanban().get_deleted_tasks(owner_id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn restore_task(api: State<'_, Api>, task_id: i64) -> Result<(), String> {
-    api.kanban().restore_task(task_id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn hard_delete_task(api: State<'_, Api>, task_id: i64) -> Result<(), String> {
-    api.kanban().hard_delete_task(task_id).map_err(|e| e.to_string())
-}
-
-// --- Minutes Commands ---
-
-#[tauri::command]
-async fn get_meetings(api: State<'_, Api>) -> Result<Vec<Meeting>, String> {
-    let owner_id = 1;
-    api.minutes().get_all_meetings(owner_id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn save_meeting(api: State<'_, Api>, meeting: Meeting) -> Result<i64, String> {
-    api.minutes().save_meeting(meeting).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn export_meeting_md(api: State<'_, Api>, meeting: Meeting) -> Result<String, String> {
-    Ok(api.minutes().export_to_markdown(&meeting))
-}
-
-// --- PM Commands ---
-
-#[tauri::command]
-async fn get_projects(api: State<'_, Api>) -> Result<Vec<Project>, String> {
-    let owner_id = 1;
-    api.pm().get_active_projects(owner_id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn get_status_logs(api: State<'_, Api>, project_id: i64) -> Result<Vec<StatusLog>, String> {
-    api.pm().get_status_logs(project_id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn manual_backup(api: State<'_, Api>, path: String) -> Result<(), String> {
-    api.manual_backup(path).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn import_db(api: State<'_, Api>, path: String) -> Result<(), String> {
-    api.import_db(path).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn open_backup_folder(api: State<'_, Api>) -> Result<(), String> {
-    let path = api.get_backup_path();
-    #[cfg(target_os = "windows")]
-    {
-        std::process::Command::new("explorer")
-            .arg(&path)
-            .spawn()
-            .map_err(|e| e.to_string())?;
+async fn manual_backup(storage: State<'_, Arc<Storage>>, path: Option<String>) -> Result<String, String> {
+    if let Some(dest_path) = path {
+        let response_msg = format!("Backup saved to: {}", dest_path);
+        storage.inner().manual_backup(dest_path.into())?;
+        Ok(response_msg)
+    } else {
+        storage.inner().perform_backup()?;
+        Ok("Default backup created successfully".to_string())
     }
-    #[cfg(not(target_os = "windows"))]
-    {
-        // For other OS, could use 'open' or 'xdg-open'
-        println!("Open folder not implemented for this OS: {}", path);
-    }
-    Ok(())
 }
 
 #[tauri::command]
-async fn initialize_data(api: State<'_, Api>) -> Result<(), String> {
-    let user_id = 1; // For now, hardcoded as 1
-    api.initialize_data(user_id)
+async fn import_db(storage: State<'_, Arc<Storage>>, path: String, user: Option<crate::models::User>) -> Result<(), String> {
+    storage.inner().import_database(path.into(), user)
 }
 
-// --- Main Entry ---
+#[tauri::command]
+async fn open_backup_folder<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
+    let mut path = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    path.push("backups");
+    if !path.exists() {
+        std::fs::create_dir_all(&path).map_err(|e| e.to_string())?;
+    }
+    open::that(path).map_err(|e| e.to_string())
+}
 
-fn main() {
-    let db_path = Storage::get_default_path();
-    let storage = Arc::new(Storage::new(db_path).expect("Failed to initialize database"));
-    let api = Api::new(storage);
-    let api_for_thread = api.clone();
+#[tauri::command]
+async fn initialize_data(storage: State<'_, Arc<Storage>>, user: Option<crate::models::User>) -> Result<(), String> {
+    storage.inner().initialize_all_data(user).map_err(|e| e.to_string())
+}
 
-    // 15-minute background backup thread
-    std::thread::spawn(move || {
-        loop {
-            std::thread::sleep(std::time::Duration::from_secs(15 * 60));
-            println!("Performing scheduled 15-minute backup...");
-            if let Err(e) = api_for_thread.backup() {
-                eprintln!("Background backup failed: {}", e);
-            }
-        }
-    });
+#[tauri::command]
+async fn seed_demo_data_cmd(storage: State<'_, Arc<Storage>>) -> Result<(), String> {
+    storage.inner().seed_demo_data().map_err(|e| e.to_string())
+}
 
-    tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_dialog::init())
-        .manage(api)
+#[tauri::command]
+async fn clear_demo_data_cmd(storage: State<'_, Arc<Storage>>) -> Result<(), String> {
+    storage.inner().clear_demo_data().map_err(|e| e.to_string())
+}
+
+// --- Core Engine Plugin ---
+
+pub fn init_engine<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+    tauri::plugin::Builder::<R>::new("engine")
         .invoke_handler(tauri::generate_handler![
-            login,
-            create_user,
-            get_password_hint,
-            change_password,
-            get_task_count,
-            get_meeting_count,
-            get_project_count,
-            get_tasks,
-            add_task,
-            update_task_status,
-            update_task,
-            delete_task,
-            get_deleted_tasks,
-            restore_task,
-            hard_delete_task,
-            get_meetings,
-            save_meeting,
-            export_meeting_md,
-            get_projects,
-            get_status_logs,
             manual_backup,
             import_db,
             open_backup_folder,
-            initialize_data
+            initialize_data,
+            get_enabled_features,
+            seed_demo_data_cmd,
+            clear_demo_data_cmd
         ])
+        .build()
+}
+
+fn main() {
+    let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(init_engine()) // Register Engine Plugin
+        .setup(|app| {
+            // Initialize Storage in setup to get access to app paths
+            let app_data_dir = app.path().app_data_dir().expect("Failed to get app data dir");
+            if !app_data_dir.exists() {
+                std::fs::create_dir_all(&app_data_dir).expect("Failed to create app data dir");
+            }
+            let db_path = app_data_dir.join("workassist.db");
+            
+            let storage = Arc::new(Storage::new(db_path).expect("Failed to initialize database"));
+            let api = Api::new(storage.clone());
+            
+            app.manage(storage);
+            app.manage(api);
+            
+            Ok(())
+        });
+
+    // Register Business Plugins
+    builder = builder.plugin(crate::modules::auth::init());
+    builder = builder.plugin(crate::modules::gateway::init());
+
+    #[cfg(feature = "kanban")]
+    {
+        builder = builder.plugin(crate::modules::kanban::init());
+    }
+
+    #[cfg(feature = "minutes")]
+    {
+        builder = builder.plugin(crate::modules::minutes::init());
+    }
+
+    #[cfg(feature = "pm")]
+    {
+        builder = builder.plugin(crate::modules::pm::init());
+    }
+
+    builder
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
-                let api = window.state::<Api>();
-                println!("Program exiting, performing final backup...");
+                let api = window.state::<api::Api>();
+                println!("Window closing... performing final backup.");
                 if let Err(e) = api.backup() {
-                    eprintln!("Final backup failed: {}", e);
+                    eprintln!("Failed to perform exit backup: {}", e);
                 }
             }
         })

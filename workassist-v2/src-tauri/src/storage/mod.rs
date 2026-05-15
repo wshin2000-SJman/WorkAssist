@@ -1,7 +1,10 @@
 pub mod schema;
-use rusqlite::{Connection, Result};
+pub mod security;
+use rusqlite::{Connection, Result, params};
 use std::path::PathBuf;
 use std::sync::Mutex;
+use crate::models::{Task, Meeting, Project, StatusLog};
+use crate::storage::security::SecurityEngine;
 
 pub struct Storage {
     pub conn: Mutex<Connection>,
@@ -19,32 +22,15 @@ impl Storage {
             conn: Mutex::new(conn), 
             path 
         };
-        storage.init_tables()?;
+        storage.initialize_tables()?;
         
         Ok(storage)
     }
 
-    fn init_tables(&self) -> Result<()> {
+    pub fn initialize_tables(&self) -> Result<()> {
         let conn = self.conn.lock().unwrap();
-        conn.execute(schema::CREATE_USERS_TABLE, [])?;
-        conn.execute(schema::CREATE_MEETINGS_TABLE, [])?;
-        conn.execute(schema::CREATE_TASKS_TABLE, [])?;
-        conn.execute(schema::CREATE_PROJECTS_TABLE, [])?;
-        conn.execute(schema::CREATE_MILESTONES_TABLE, [])?;
-        conn.execute(schema::CREATE_STATUS_LOGS_TABLE, [])?;
-
-        // Migration: Add is_deleted column if not exists
-        let table_info: Vec<String> = {
-            let mut stmt = conn.prepare("PRAGMA table_info(tasks)")?;
-            let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
-            rows.map(|r| r.unwrap()).collect()
-        };
-
-        if !table_info.contains(&"is_deleted".to_string()) {
-            conn.execute("ALTER TABLE tasks ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT 0", [])?;
-            println!("Migration: Added is_deleted column to tasks table.");
-        }
-
+        Self::ensure_schema(&conn)?;
+        
         // Seed default user
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM users", [], |r| r.get(0))?;
         if count == 0 {
@@ -75,17 +61,23 @@ impl Storage {
         backup_dir
     }
 
-    pub fn perform_backup(&self) -> std::io::Result<()> {
+    pub fn perform_backup(&self) -> Result<(), String> {
         let backup_dir = self.get_backup_dir();
-        std::fs::create_dir_all(&backup_dir)?;
+        std::fs::create_dir_all(&backup_dir).map_err(|e| e.to_string())?;
+
+        // Checkpoint before copy
+        {
+            let conn = self.conn.lock().unwrap();
+            let _ = conn.pragma_update(None, "wal_checkpoint", "TRUNCATE");
+        }
 
         let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S").to_string();
         let backup_path = backup_dir.join(format!("sjworkassist_v2_backup_{}.db", timestamp));
 
-        std::fs::copy(&self.path, &backup_path)?;
-        println!("Backup created at: {:?}", backup_path);
+        std::fs::copy(&self.path, &backup_path).map_err(|e| e.to_string())?;
+        println!("Auto-backup created at: {:?}", backup_path);
 
-        self.cleanup_backups(backup_dir)?;
+        self.cleanup_backups(backup_dir).map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -95,51 +87,385 @@ impl Storage {
             .filter(|entry| entry.file_name().to_string_lossy().contains("backup_"))
             .collect();
 
-        // Sort by modification time (oldest first)
         backups.sort_by_key(|a| a.metadata().and_then(|m| m.modified()).ok());
 
-        // Keep only the latest 3
         if backups.len() > 3 {
             let delete_count = backups.len() - 3;
             for i in 0..delete_count {
                 std::fs::remove_file(backups[i].path())?;
-                println!("Deleted old backup: {:?}", backups[i].path());
             }
         }
         Ok(())
     }
 
-    pub fn manual_backup(&self, target_path: PathBuf) -> std::io::Result<()> {
-        std::fs::copy(&self.path, &target_path)?;
+    pub fn manual_backup(&self, target_path: PathBuf) -> Result<(), String> {
+        // Checkpoint before copy
+        {
+            let conn = self.conn.lock().unwrap();
+            let _ = conn.pragma_update(None, "wal_checkpoint", "TRUNCATE");
+        }
+        std::fs::copy(&self.path, &target_path).map_err(|e| e.to_string())?;
         Ok(())
     }
 
-    pub fn import_database(&self, source_path: PathBuf) -> std::io::Result<()> {
-        // To safely import, we overwrite the current DB file.
-        // The user should restart the app for full reliability, 
-        // but copying over it usually works if we aren't mid-transaction.
-        std::fs::copy(&source_path, &self.path)?;
+    pub fn import_database(&self, source_path: PathBuf, current_user: Option<crate::models::User>) -> Result<(), String> {
+        println!("Starting database import from: {:?}", source_path);
         
-        // Remove WAL/SHM files to avoid consistency issues with the new DB
+        // 1. Checkpoint and Close current connection
+        {
+            let mut conn = self.conn.lock().unwrap();
+            let _ = conn.pragma_update(None, "wal_checkpoint", "TRUNCATE");
+            println!("Closing current database connection...");
+            *conn = Connection::open_in_memory().map_err(|e| e.to_string())?;
+        }
+
+        // 2. Overwrite the DB file
+        println!("Overwriting database file at: {:?}", self.path);
+        std::fs::copy(&source_path, &self.path).map_err(|e| {
+            println!("FS Copy Error: {:?}", e);
+            format!("Failed to copy file: {}", e)
+        })?;
+        
+        // 3. Remove WAL/SHM files
         let mut wal = self.path.clone();
         wal.set_extension("db-wal");
         let mut shm = self.path.clone();
         shm.set_extension("db-shm");
-        
         let _ = std::fs::remove_file(wal);
         let _ = std::fs::remove_file(shm);
-        
+
+        // 4. Re-open, Migrate, and Remap
+        {
+            println!("Re-opening new database connection and migrating...");
+            let mut conn = self.conn.lock().unwrap();
+            let new_conn = Connection::open(&self.path).map_err(|e| e.to_string())?;
+            new_conn.pragma_update(None, "journal_mode", "WAL").map_err(|e| e.to_string())?;
+            
+            // CRITICAL: Ensure the new DB has all required tables and columns BEFORE remapping
+            Self::ensure_schema(&new_conn).map_err(|e| format!("Migration failed after import: {}", e))?;
+
+            // If we have a current user, preserve/remap them
+            if let Some(user) = current_user {
+                println!("Syncing user session for username: {} (provided ID: {:?})", user.username, user.id);
+                
+                // 1. Sync user record by username
+                new_conn.execute(
+                    "INSERT INTO users (username, password_hash, password_hint) 
+                     VALUES (?, ?, ?) 
+                     ON CONFLICT(username) DO UPDATE SET 
+                        password_hash = excluded.password_hash,
+                        password_hint = excluded.password_hint",
+                    params![user.username, user.password_hash, user.password_hint],
+                ).map_err(|e| format!("User sync failed: {}", e))?;
+
+                let final_id: i64 = new_conn.query_row(
+                    "SELECT id FROM users WHERE username = ?",
+                    [user.username.clone()],
+                    |row| row.get(0),
+                ).map_err(|e| format!("Failed to retrieve final user ID: {}", e))?;
+
+                println!("Remapping all records to final user ID: {}", final_id);
+
+                // 3. Remap all data to this final ID and count changes
+                let t_count = new_conn.execute("UPDATE tasks SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
+                let m_count = new_conn.execute("UPDATE meetings SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
+                let p_count = new_conn.execute("UPDATE projects SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
+                let s_count = new_conn.execute("UPDATE status_logs SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
+
+                println!("Import Summary: {} tasks, {} meetings, {} projects, {} status logs remapped.", 
+                         t_count, m_count, p_count, s_count);
+                
+                // Also ensure shadow tables are correctly associated if needed 
+                // (Note: Shadow tables currently match by ID, so if main IDs are kept, they're fine)
+            }
+
+            *conn = new_conn;
+        }
+
+        println!("Database import and remapping completed successfully.");
+        Ok(())
+    }
+
+    /// Internal helper to ensure schema is up to date on any connection
+    fn ensure_schema(conn: &Connection) -> Result<()> {
+        conn.execute(schema::CREATE_USERS_TABLE, [])?;
+        conn.execute(schema::CREATE_MEETINGS_TABLE, [])?;
+        conn.execute(schema::CREATE_TASKS_TABLE, [])?;
+        conn.execute(schema::CREATE_PROJECTS_TABLE, [])?;
+        conn.execute(schema::CREATE_MILESTONES_TABLE, [])?;
+        conn.execute(schema::CREATE_STATUS_LOGS_TABLE, [])?;
+        conn.execute(schema::CREATE_SECURE_VAULT_TABLE, [])?;
+        conn.execute(schema::CREATE_SHADOW_TASKS_TABLE, [])?;
+        conn.execute(schema::CREATE_SHADOW_MEETINGS_TABLE, [])?;
+        conn.execute(schema::CREATE_SHADOW_PROJECTS_TABLE, [])?;
+        conn.execute(schema::CREATE_SHADOW_STATUS_LOGS_TABLE, [])?;
+
+        // Column Migrations
+        let tasks_info: Vec<String> = {
+            let mut stmt = conn.prepare("PRAGMA table_info(tasks)")?;
+            let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+            rows.map(|r| r.unwrap()).collect()
+        };
+        if !tasks_info.contains(&"is_deleted".to_string()) {
+            conn.execute("ALTER TABLE tasks ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT 0", [])?;
+        }
+
+        let logs_info: Vec<String> = {
+            let mut stmt = conn.prepare("PRAGMA table_info(status_logs)")?;
+            let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+            rows.map(|r| r.unwrap()).collect()
+        };
+        if !logs_info.contains(&"owner_id".to_string()) {
+            conn.execute("ALTER TABLE status_logs ADD COLUMN owner_id INTEGER", [])?;
+        }
         Ok(())
     }
 
     pub fn initialize_user_data(&self, owner_id: i64) -> Result<()> {
         let conn = self.conn.lock().unwrap();
-        // Delete all related data for the owner
-        conn.execute("DELETE FROM status_logs WHERE project_id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
+        conn.execute("DELETE FROM status_logs WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM milestones WHERE project_id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
         conn.execute("DELETE FROM projects WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM tasks WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM meetings WHERE owner_id = ?", [owner_id])?;
+        self.clear_shadow_tables(&conn)?;
+        Ok(())
+    }
+
+    pub fn initialize_all_data(&self, current_user: Option<crate::models::User>) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM status_logs", [])?;
+        conn.execute("DELETE FROM milestones", [])?;
+        conn.execute("DELETE FROM projects", [])?;
+        conn.execute("DELETE FROM tasks", [])?;
+        conn.execute("DELETE FROM meetings", [])?;
+        self.clear_shadow_tables(&conn)?;
+
+        // Preserve current user so they can still login after wipe
+        if let Some(user) = current_user {
+            conn.execute(
+                "INSERT INTO users (username, password_hash, password_hint) 
+                 VALUES (?, ?, ?) 
+                 ON CONFLICT(username) DO UPDATE SET 
+                    password_hash = excluded.password_hash,
+                    password_hint = excluded.password_hint",
+                params![user.username, user.password_hash, user.password_hint],
+            )?;
+        }
+
+        Ok(())
+    }
+
+    fn clear_shadow_tables(&self, conn: &rusqlite::Connection) -> Result<()> {
+        conn.execute("DELETE FROM shadow_tasks", [])?;
+        conn.execute("DELETE FROM shadow_meetings", [])?;
+        conn.execute("DELETE FROM shadow_projects", [])?;
+        conn.execute("DELETE FROM shadow_status_logs", [])?;
+        conn.execute("DELETE FROM secure_vault", [])?;
+        Ok(())
+    }
+
+    // --- Dual-Write Methods ---
+
+    pub fn save_task_dual(&self, conn: &rusqlite::Connection, task: &Task, task_id: i64) -> Result<()> {
+        // 1. Tokenize content
+        let shadow_title = SecurityEngine::tokenize(conn, &task.title);
+        let shadow_content = SecurityEngine::tokenize(conn, task.content.as_deref().unwrap_or(""));
+        let shadow_comment = SecurityEngine::tokenize(conn, task.review_comment.as_deref().unwrap_or(""));
+
+        // 2. Write to shadow table
+        conn.execute(
+            "INSERT OR REPLACE INTO shadow_tasks (id, title, content, review_comment) VALUES (?, ?, ?, ?)",
+            params![task_id, shadow_title, shadow_content, shadow_comment],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn save_meeting_dual(&self, conn: &rusqlite::Connection, meeting: &Meeting, meeting_id: i64) -> Result<()> {
+        // 1. Tokenize fields
+        let s_title = SecurityEngine::tokenize(conn, &meeting.title);
+        let s_participants = SecurityEngine::tokenize(conn, meeting.participants.as_deref().unwrap_or(""));
+        let s_location = SecurityEngine::tokenize(conn, meeting.location.as_deref().unwrap_or(""));
+        let s_decisions = SecurityEngine::tokenize(conn, meeting.decisions.as_deref().unwrap_or(""));
+        let s_action = SecurityEngine::tokenize(conn, meeting.action_items.as_deref().unwrap_or(""));
+        let s_memo = SecurityEngine::tokenize(conn, meeting.memo.as_deref().unwrap_or(""));
+
+        // 2. Write to shadow
+        conn.execute(
+            "INSERT OR REPLACE INTO shadow_meetings (id, title, participants, location, decisions, action_items, memo) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            params![meeting_id, s_title, s_participants, s_location, s_decisions, s_action, s_memo],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn save_project_dual(&self, conn: &rusqlite::Connection, project: &Project, project_id: i64) -> Result<()> {
+        let s_name = SecurityEngine::tokenize(conn, &project.name);
+        let s_desc = SecurityEngine::tokenize(conn, project.description.as_deref().unwrap_or(""));
+
+        conn.execute(
+            "INSERT OR REPLACE INTO shadow_projects (id, name, description) VALUES (?, ?, ?)",
+            params![project_id, s_name, s_desc],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn save_status_log_dual(&self, conn: &rusqlite::Connection, log: &StatusLog, log_id: i64) -> Result<()> {
+        let s_title = SecurityEngine::tokenize(conn, log.title.as_deref().unwrap_or(""));
+        let s_content = SecurityEngine::tokenize(conn, log.text_content.as_deref().unwrap_or(""));
+        let s_manager = SecurityEngine::tokenize(conn, log.manager.as_deref().unwrap_or(""));
+
+        conn.execute(
+            "INSERT OR REPLACE INTO shadow_status_logs (id, title, text_content, manager) VALUES (?, ?, ?, ?)",
+            params![log_id, s_title, s_content, s_manager],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn seed_demo_data(&self) -> Result<()> {
+        let owner_id = 999;
+        let now = chrono::Utc::now().to_rfc3339();
+        let conn = self.conn.lock().unwrap();
+
+        // Ensure demo user exists
+        conn.execute(
+            "INSERT OR IGNORE INTO users (id, username, password_hash, password_hint) VALUES (?, ?, ?, ?)",
+            params![owner_id, "demo_user", "demo", "demo"],
+        )?;
+
+        // 1. Demo Projects
+        let projects = vec![
+            Project {
+                id: None, owner_id: Some(owner_id),
+                name: "SJ-Gimbal System R&D".to_string(),
+                description: Some("Developing high-precision gimbal stabilization for industrial drones.".to_string()),
+                manager: Some("Wonseup Shin".to_string()),
+                client: Some("SJ Global".to_string()),
+                created_at: now.clone(), status: "active".to_string(),
+                dept1_name: "Control".to_string(), dept2_name: "Hardware".to_string(),
+                dept3_name: "Software".to_string(), dept4_name: "Testing".to_string(),
+            },
+            Project {
+                id: None, owner_id: Some(owner_id),
+                name: "Antigravity UI Redesign".to_string(),
+                description: Some("Premium UI/UX overhaul for the core WorkAssist engine.".to_string()),
+                manager: Some("Admin User".to_string()),
+                client: Some("Internal".to_string()),
+                created_at: now.clone(), status: "active".to_string(),
+                dept1_name: "Design".to_string(), dept2_name: "Frontend".to_string(),
+                dept3_name: "Backend".to_string(), dept4_name: "QA".to_string(),
+            }
+        ];
+
+        for mut p in projects {
+            conn.execute(
+                "INSERT INTO projects (owner_id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![p.owner_id, p.name, p.description, p.manager, p.client, p.created_at, p.status, p.dept1_name, p.dept2_name, p.dept3_name, p.dept4_name],
+            )?;
+            let pid = conn.last_insert_rowid();
+            p.id = Some(pid);
+            self.save_project_dual(&conn, &p, pid)?;
+
+            // Add some status logs for the project
+            let log = StatusLog {
+                id: None, project_id: pid, department: "Software".to_string(),
+                text_content: Some("SecurityEngine tokenization logic implemented and tested with SJ-Gimbal data.".to_string()),
+                image_path: None, timestamp: now.clone(), status: "completed".to_string(),
+                tag: Some("Security".to_string()), title: Some("Security Gateway Update".to_string()),
+                manager: Some("Wonseup Shin".to_string()), start_date: None, due_date: None,
+            };
+            conn.execute(
+                "INSERT INTO status_logs (project_id, owner_id, department, text_content, timestamp, status, tag, title, manager) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![log.project_id, owner_id, log.department, log.text_content, log.timestamp, log.status, log.tag, log.title, log.manager],
+            )?;
+            let lid = conn.last_insert_rowid();
+            self.save_status_log_dual(&conn, &log, lid)?;
+        }
+
+        // 2. Demo Tasks
+        let tasks = vec![
+            Task {
+                id: None, owner_id: Some(owner_id),
+                title: "Fix Tokenization Bug in GateWay".to_string(),
+                content: Some("Ensure special characters in Wonseup Shin's profile are handled correctly.".to_string()),
+                manager: Some("Wonseup Shin".to_string()),
+                start_date: Some("2026-05-15".to_string()), due_date: Some("2026-05-20".to_string()),
+                status: "Doing".to_string(), is_urgent: true, created_at: now.clone(),
+                review_comment: None, task_tag: Some("BUG-101".to_string()), is_deleted: false,
+            },
+            Task {
+                id: None, owner_id: Some(owner_id),
+                title: "Prepare SJ-Automation Q3 Report".to_string(),
+                content: Some("Compile financial data and project status for the board meeting.".to_string()),
+                manager: Some("Admin User".to_string()),
+                start_date: Some("2026-05-10".to_string()), due_date: Some("2026-05-25".to_string()),
+                status: "Note".to_string(), is_urgent: false, created_at: now.clone(),
+                review_comment: None, task_tag: Some("MGMT-05".to_string()), is_deleted: false,
+            }
+        ];
+
+        for mut t in tasks {
+            conn.execute(
+                "INSERT INTO tasks (owner_id, title, content, manager, start_date, due_date, status, is_urgent, created_at, task_tag) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![t.owner_id, t.title, t.content, t.manager, t.start_date, t.due_date, t.status, t.is_urgent, t.created_at, t.task_tag],
+            )?;
+            let tid = conn.last_insert_rowid();
+            t.id = Some(tid);
+            self.save_task_dual(&conn, &t, tid)?;
+        }
+
+        // 3. Demo Meetings
+        let meetings = vec![
+            Meeting {
+                id: None, owner_id: Some(owner_id),
+                title: "SJ-Gimbal Core Security Review".to_string(),
+                date: Some("2026-05-16".to_string()),
+                participants: Some("Wonseup Shin, Admin User, Technical Lead".to_string()),
+                location: Some("Conference Room Alpha".to_string()),
+                decisions: Some("Approved the use of regex-based SecurityEngine for PII tokenization.".to_string()),
+                action_items: Some("1. Update schema.rs, 2. Test dual-write latency".to_string()),
+                memo: Some("Crucial meeting to finalize the Antigravity security layer.".to_string()),
+                created_at: now.clone(),
+            }
+        ];
+
+        for mut m in meetings {
+            conn.execute(
+                "INSERT INTO meetings (owner_id, title, date, participants, location, decisions, action_items, memo, created_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![m.owner_id, m.title, m.date, m.participants, m.location, m.decisions, m.action_items, m.memo, m.created_at],
+            )?;
+            let mid = conn.last_insert_rowid();
+            m.id = Some(mid);
+            self.save_meeting_dual(&conn, &m, mid)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn clear_demo_data(&self) -> Result<()> {
+        let owner_id = 999;
+        let conn = self.conn.lock().unwrap();
+
+        // Delete from shadow tables using subqueries
+        conn.execute("DELETE FROM shadow_tasks WHERE id IN (SELECT id FROM tasks WHERE owner_id = ?)", [owner_id])?;
+        conn.execute("DELETE FROM shadow_meetings WHERE id IN (SELECT id FROM meetings WHERE owner_id = ?)", [owner_id])?;
+        conn.execute("DELETE FROM shadow_projects WHERE id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
+        conn.execute("DELETE FROM shadow_status_logs WHERE id IN (SELECT id FROM status_logs WHERE owner_id = ?)", [owner_id])?;
+
+        // Delete from primary tables
+        conn.execute("DELETE FROM status_logs WHERE owner_id = ?", [owner_id])?;
+        conn.execute("DELETE FROM projects WHERE owner_id = ?", [owner_id])?;
+        conn.execute("DELETE FROM tasks WHERE owner_id = ?", [owner_id])?;
+        conn.execute("DELETE FROM meetings WHERE owner_id = ?", [owner_id])?;
+        
         Ok(())
     }
 }
