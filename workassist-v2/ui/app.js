@@ -17,6 +17,7 @@ let currentMeetings = [];
 let currentProjects = [];
 let currentView = 'nav-dashboard';
 let draggingTaskId = null;
+let currentCalendarDate = new Date();
 
 let currentUser = null;
 
@@ -73,7 +74,15 @@ const init = () => {
 
     setupModals();
     setupSettings();
+    setupKanbanTabs();
     initDragAndDrop();
+
+    // Global escape key listener
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeAllModals();
+        }
+    });
 };
 
 async function initFeatureToggles() {
@@ -128,15 +137,23 @@ function setupAuth() {
             }
 
             try {
-                // Use passwordHash to match Rust's snake_case -> JS camelCase naming
                 const user = await invoke('plugin:auth|login', { username, passwordHash: password });
                 if (user) {
-                    console.log("Login Success:", user);
+                    console.log("Login Success. User ID:", user.id);
                     currentUser = user;
-                    viewLogin.classList.add('hidden');
-                    appContainer.classList.remove('hidden');
-                    loadDashboard();
-                    refreshStats(); // Call both just in case
+                    viewLogin.style.opacity = '0';
+                    setTimeout(() => {
+                        viewLogin.classList.add('hidden');
+                        appContainer.classList.remove('hidden');
+                        
+                        // Update sidebar user info
+                        document.getElementById('sidebar-user-name').textContent = currentUser.username;
+                        const avatar = document.querySelector('.sidebar-footer .avatar');
+                        if (avatar) avatar.textContent = currentUser.username.substring(0, 2).toUpperCase();
+                        
+                        loadDashboard();
+                        refreshStats();
+                    }, 500);
                 } else {
                     alert('Invalid ID or Password');
                 }
@@ -201,35 +218,53 @@ function setupAuth() {
     }
 
     // Signup form
-    document.getElementById('form-signup').onsubmit = async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('signup-id').value;
-        const pw = document.getElementById('signup-pw').value;
-        const hint = document.getElementById('signup-hint').value;
-        try {
-            await invoke('plugin:auth|create_user', { username: id, passwordHash: pw, hint });
-            alert('Account created successfully!');
-            modalSignup.classList.add('hidden');
-        } catch (err) { alert('Failed to create account.'); }
-    };
+    const formSignup = document.getElementById('form-signup');
+    if (formSignup) {
+        formSignup.onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('signup-id').value;
+            const pw = document.getElementById('signup-pw').value;
+            const hint = document.getElementById('signup-hint').value;
+            console.log("Attempting signup for:", id);
+            try {
+                await invoke('plugin:auth|create_user', { username: id, passwordHash: pw, hint });
+                alert('Account created successfully!');
+                modalSignup.classList.add('hidden');
+            } catch (err) { 
+                console.error("Signup Error:", err);
+                alert('Failed to create account: ' + err); 
+            }
+        };
+    }
 
     // Change PW form
-    document.getElementById('form-change-pw').onsubmit = async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('change-pw-id').value;
-        const oldPw = document.getElementById('change-pw-old').value;
-        const newPw = document.getElementById('change-pw-new').value;
-        const newHint = document.getElementById('change-pw-hint').value;
-        try {
-            const success = await invoke('plugin:auth|change_password', { username: id, oldHash: oldPw, newHash: newPw, newHint: newHint });
-            if (success) {
-                alert('Password updated!');
-                modalChangePw.classList.add('hidden');
-            } else {
-                alert('Incorrect ID or current password.');
+    const formChangePw = document.getElementById('form-change-pw');
+    if (formChangePw) {
+        formChangePw.onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('change-pw-id').value;
+            const oldPw = document.getElementById('change-pw-old').value;
+            const newPw = document.getElementById('change-pw-new').value;
+            const newHint = document.getElementById('change-pw-hint').value;
+            try {
+                const success = await invoke('plugin:auth|change_password', { 
+                    username: id, 
+                    oldHash: oldPw, 
+                    newHash: newPw, 
+                    newHint: newHint 
+                });
+                if (success) {
+                    alert('Password updated!');
+                    modalChangePw.classList.add('hidden');
+                } else {
+                    alert('Incorrect ID or current password.');
+                }
+            } catch (err) { 
+                console.error("Change PW Error:", err);
+                alert('Failed to update password: ' + err); 
             }
-        } catch (err) { alert('Failed to update password.'); }
-    };
+        };
+    }
 
     // Logout
     const btnLogout = document.getElementById('btn-logout');
@@ -315,6 +350,17 @@ function closeTask() {
 
     modalTask.classList.add('hidden'); 
     formTask.reset(); 
+    
+    // Reset read-only state
+    const inputs = formTask.querySelectorAll('input, textarea');
+    inputs.forEach(input => input.disabled = false);
+    
+    const submitBtn = formTask.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.style.display = 'block';
+
+    const cancelBtn = document.getElementById('btn-cancel-task');
+    if (cancelBtn) cancelBtn.textContent = 'Cancel';
+
     document.getElementById('task-id').value = '';
     const tagDisplay = document.getElementById('task-tag-display');
     if (tagDisplay) {
@@ -324,14 +370,17 @@ function closeTask() {
     const modalTitle = document.getElementById('task-modal-title');
     if (modalTitle) modalTitle.textContent = 'Create New Task';
     
-    const submitBtn = modalTask.querySelector('button[type="submit"]');
-    if (submitBtn) submitBtn.textContent = 'Create Task';
-    
     const btnDelModal = document.getElementById('btn-delete-task-modal');
-    if (btnDelModal) btnDelModal.classList.add('hidden');
+    if (btnDelModal) {
+        btnDelModal.classList.add('hidden');
+        btnDelModal.onclick = null;
+    }
 
     const statusGroup = document.getElementById('task-status-group');
     if (statusGroup) statusGroup.classList.add('hidden');
+
+    const reviewGroup = document.getElementById('task-review-group');
+    if (reviewGroup) reviewGroup.classList.add('hidden');
 }
 
 function closeMeeting() { 
@@ -341,6 +390,42 @@ function closeMeeting() {
 
     modalMeeting.classList.add('hidden'); 
     formMeeting.reset();
+}
+
+function closeReview() {
+    const modalReview = document.getElementById('modal-review');
+    const formReview = document.getElementById('form-review');
+    if (modalReview) {
+        modalReview.classList.add('hidden');
+        if (formReview) formReview.reset();
+    }
+}
+
+function closeProject() {
+    const modalProject = document.getElementById('modal-project');
+    const formProject = document.getElementById('form-project');
+    if (modalProject) {
+        modalProject.classList.add('hidden');
+        if (formProject) formProject.reset();
+    }
+}
+
+function closeAllModals() {
+    closeTask();
+    closeMeeting();
+    closeReview();
+    closeProject();
+    
+    // Hide other non-form or simple modals
+    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw'];
+    others.forEach(id => {
+        const m = document.getElementById(id);
+        if (m) {
+            m.classList.add('hidden');
+            const form = m.querySelector('form');
+            if (form) form.reset();
+        }
+    });
 }
 
 if (document.readyState === 'loading') {
@@ -388,10 +473,6 @@ function setupModals() {
     if (btnCloseTask) btnCloseTask.onclick = closeTask;
     if (btnCancelTask) btnCancelTask.onclick = closeTask;
 
-    function closeMeeting() { 
-        modalMeeting.classList.add('hidden'); 
-        formMeeting.reset();
-    }
     if (btnCloseMeeting) btnCloseMeeting.onclick = closeMeeting;
     if (btnCancelMeeting) btnCancelMeeting.onclick = closeMeeting;
 
@@ -487,8 +568,9 @@ function setupModals() {
 
     // Track mousedown to prevent closing on drags
     let modalClickStartedOnOverlay = false;
+    const modalProject = document.getElementById('modal-project');
     window.addEventListener('mousedown', (e) => {
-        modalClickStartedOnOverlay = (e.target === modalTask || e.target === modalMeeting || e.target === document.getElementById('modal-review'));
+        modalClickStartedOnOverlay = (e.target === modalTask || e.target === modalMeeting || e.target === modalProject || e.target === document.getElementById('modal-review'));
     });
 
     window.addEventListener('click', (e) => {
@@ -496,6 +578,7 @@ function setupModals() {
 
         if (e.target === modalTask) closeTask();
         if (e.target === modalMeeting) closeMeeting();
+        if (e.target === modalProject) closeProject();
         if (e.target === document.getElementById('modal-review')) {
             document.getElementById('modal-review').classList.add('hidden');
         }
@@ -522,10 +605,7 @@ function setupModals() {
     const btnCancelReview = document.getElementById('btn-cancel-review');
 
     if (btnCancelReview) {
-        btnCancelReview.addEventListener('click', () => {
-            modalReview.classList.add('hidden');
-            formReview.reset();
-        });
+        btnCancelReview.addEventListener('click', closeReview);
     }
 
     if (formReview) {
@@ -552,6 +632,122 @@ function setupModals() {
             }
         });
     }
+
+    // Project Modal Setup
+    const btnNewProject = document.getElementById('btn-new-project');
+    const formProject = document.getElementById('form-project');
+    const btnCloseProject = document.getElementById('btn-close-project');
+    const btnCancelProject = document.getElementById('btn-cancel-project');
+
+    if (btnNewProject) {
+        btnNewProject.onclick = () => {
+            document.getElementById('project-id').value = '';
+            formProject.reset();
+            document.getElementById('project-modal-title').textContent = 'Register New Project';
+            modalProject.classList.remove('hidden');
+        };
+    }
+
+    if (btnCloseProject) btnCloseProject.onclick = closeProject;
+    if (btnCancelProject) btnCancelProject.onclick = closeProject;
+
+    if (formProject) {
+        formProject.onsubmit = async (e) => {
+            e.preventDefault();
+            const projectData = {
+                id: null,
+                owner_id: currentUser.id,
+                name: document.getElementById('project-name').value,
+                description: document.getElementById('project-desc').value,
+                manager: document.getElementById('project-manager').value,
+                client: document.getElementById('project-client').value,
+                created_at: "",
+                status: 'active',
+                dept1_name: document.getElementById('project-dept1').value,
+                dept2_name: document.getElementById('project-dept2').value,
+                dept3_name: document.getElementById('project-dept3').value,
+                dept4_name: document.getElementById('project-dept4').value
+            };
+            try {
+                await invoke('plugin:pm|add_project', { project: projectData });
+                closeProject();
+                await refreshProjects();
+            } catch (err) { console.error("Add Project Error:", err); }
+        };
+    }
+
+    // Milestone Modal
+    const formMilestone = document.getElementById('form-milestone');
+    const btnCloseMs = document.getElementById('btn-close-ms-modal');
+    const btnCancelMs = document.getElementById('btn-cancel-ms');
+    if (btnCloseMs) btnCloseMs.onclick = () => document.getElementById('modal-milestone').classList.add('hidden');
+    if (btnCancelMs) btnCancelMs.onclick = () => document.getElementById('modal-milestone').classList.add('hidden');
+
+    if (formMilestone) {
+        formMilestone.onsubmit = async (e) => {
+            e.preventDefault();
+            const milestone = {
+                id: document.getElementById('ms-id').value ? parseInt(document.getElementById('ms-id').value) : null,
+                project_id: parseInt(document.getElementById('ms-project-id').value),
+                slot_number: parseInt(document.getElementById('ms-slot-number').value),
+                name: document.getElementById('ms-name').value,
+                deadline: document.getElementById('ms-deadline').value,
+                content: document.getElementById('ms-content').value,
+                is_saved: true,
+                is_done: document.getElementById('ms-is-done').checked
+            };
+            try {
+                await invoke('plugin:pm|save_milestone', { milestone });
+                document.getElementById('modal-milestone').classList.add('hidden');
+                loadProjectDetails(milestone.project_id); // Refresh
+            } catch (err) { console.error("Save Milestone Error:", err); }
+        };
+    }
+
+    // Status Log Modal
+    const formLog = document.getElementById('form-log');
+    const btnCloseLog = document.getElementById('btn-close-log-modal');
+    const btnCancelLog = document.getElementById('btn-cancel-log');
+    if (btnCloseLog) btnCloseLog.onclick = () => document.getElementById('modal-log').classList.add('hidden');
+    if (btnCancelLog) btnCancelLog.onclick = () => document.getElementById('modal-log').classList.add('hidden');
+
+    if (formLog) {
+        formLog.onsubmit = async (e) => {
+            e.preventDefault();
+            const log = {
+                id: null,
+                project_id: parseInt(document.getElementById('log-project-id').value),
+                owner_id: currentUser.id,
+                department: document.getElementById('log-department').value,
+                text_content: document.getElementById('log-content').value,
+                image_path: "",
+                timestamp: "",
+                status: 'active',
+                tag: "",
+                title: document.getElementById('log-title').value,
+                manager: document.getElementById('log-manager').value,
+                start_date: "",
+                due_date: ""
+            };
+            try {
+                await invoke('plugin:pm|add_status_log', { log });
+                document.getElementById('modal-log').classList.add('hidden');
+                loadProjectDetails(log.project_id); // Refresh
+            } catch (err) { console.error("Add Log Error:", err); }
+        };
+    }
+
+    // PM Tabs
+    const pmTabs = document.querySelectorAll('.pm-tab');
+    pmTabs.forEach(tab => {
+        tab.onclick = () => {
+            pmTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const targetTab = tab.getAttribute('data-tab');
+            document.querySelectorAll('.pm-tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`tab-${targetTab}`).classList.add('active');
+        };
+    });
 }
 
 function setupSettings() {
@@ -651,6 +847,60 @@ function setupSettings() {
     }
 }
 
+function setupKanbanTabs() {
+    const tabs = document.querySelectorAll('#view-kanban .view-tab');
+    tabs.forEach(tab => {
+        tab.onclick = () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            const target = tab.getAttribute('data-view');
+            document.querySelectorAll('.kanban-tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`kanban-content-${target}`).classList.add('active');
+            
+            if (target === 'schedule') {
+                renderSchedule();
+            } else if (target === 'calendar') {
+                renderCalendar();
+            } else {
+                renderKanban();
+            }
+        };
+    });
+
+    // Calendar Navigation
+    const prevBtn = document.getElementById('calendar-prev');
+    const nextBtn = document.getElementById('calendar-next');
+    if (prevBtn) {
+        prevBtn.onclick = () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+            renderCalendar();
+        };
+    }
+    if (nextBtn) {
+        nextBtn.onclick = () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+            renderCalendar();
+        };
+    }
+
+    // Schedule Navigation
+    const schedPrev = document.getElementById('schedule-prev');
+    const schedNext = document.getElementById('schedule-next');
+    if (schedPrev) {
+        schedPrev.onclick = () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+            renderSchedule();
+        };
+    }
+    if (schedNext) {
+        schedNext.onclick = () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+            renderSchedule();
+        };
+    }
+}
+
 function openReviewModal(taskId) {
     document.getElementById('review-task-id').value = taskId;
     document.getElementById('modal-review').classList.remove('hidden');
@@ -679,6 +929,9 @@ async function loadDeletedTasks() {
         }
         deletedTasks.forEach(t => {
             const row = document.createElement('tr');
+            row.style.cursor = 'pointer';
+            row.onclick = () => openTaskModal(t, true);
+
             const statusClass = t.status.toLowerCase().replace('-', '');
             const isDone = t.status === 'Done' || t.status === 'Review';
             
@@ -711,10 +964,14 @@ async function loadDeletedTasks() {
 
         // Add listeners
         body.querySelectorAll('.btn-restore').forEach(btn => {
-            btn.onclick = () => restoreTask(Number(btn.dataset.id));
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                restoreTask(Number(btn.dataset.id));
+            };
         });
         body.querySelectorAll('.btn-hard-del').forEach(btn => {
-            btn.onclick = async () => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
                 if (await askConfirm('Permanently delete this task? This cannot be undone.')) {
                     hardDeleteTask(Number(btn.dataset.id));
                 }
@@ -773,7 +1030,13 @@ async function loadView(viewId) {
     });
 
     if (viewId === 'nav-kanban') {
+        const activeTab = document.querySelector('#view-kanban .view-tab.active');
+        const activeView = activeTab ? activeTab.getAttribute('data-view') : 'board';
+        
         await refreshKanban();
+        if (activeView === 'schedule') renderSchedule();
+        else renderKanban();
+        
         initDragAndDrop();
     } else if (viewId === 'nav-trash') {
         await loadDeletedTasks();
@@ -785,26 +1048,296 @@ async function loadView(viewId) {
 
 async function refreshStats() {
     try {
-        const t = await invoke('plugin:kanban|get_task_count', { ownerId: currentUser.id });
+        // Fetch fresh tasks to ensure accuracy
+        const tasks = await invoke('plugin:kanban|get_tasks', { ownerId: currentUser.id });
+        currentTasks = tasks; // Sync global state
+
         const m = await invoke('plugin:minutes|get_meeting_count', { ownerId: currentUser.id });
         const p = await invoke('plugin:pm|get_project_count', { ownerId: currentUser.id });
-        document.getElementById('stat-tasks').textContent = t;
+        
+        // Calculate pending tasks (Not Done and Not Review)
+        const pendingTasks = tasks.filter(t => t.status !== 'Done' && t.status !== 'Review');
+        const pendingCount = pendingTasks.length;
+
+        // Update Dashboard
+        const statTasks = document.getElementById('stat-tasks');
+        if (statTasks) {
+            statTasks.textContent = pendingCount;
+            // Optionally update the label to be more clear
+            const label = statTasks.previousElementSibling;
+            if (label && label.classList.contains('stat-label')) {
+                label.textContent = 'Pending Tasks';
+            }
+        }
+        
         document.getElementById('stat-meetings').textContent = m;
         document.getElementById('stat-projects').textContent = p;
+
+        updateSidebarStatus(tasks);
     } catch (err) { console.error("Refresh Stats Error:", err); }
+}
+
+function updateSidebarStatus(tasks) {
+    const pendingTasks = tasks.filter(t => t.status !== 'Done' && t.status !== 'Review');
+    const pendingCount = pendingTasks.length;
+    const statusEl = document.getElementById('sidebar-status-info');
+    if (statusEl) statusEl.textContent = `v2.1.0 | ${pendingCount} Pending`;
 }
 
 async function refreshKanban() {
     try {
         currentTasks = await invoke('plugin:kanban|get_tasks', { ownerId: currentUser.id });
         renderKanban();
+        updateSidebarStatus(currentTasks);
     } catch (err) { 
         console.error("Refresh Kanban Error:", err); 
     }
 }
 
+function renderSchedule() {
+    const timelineDays = document.getElementById('schedule-timeline-days');
+    const scheduleBody = document.getElementById('schedule-body');
+    const monthYear = document.getElementById('schedule-month-year');
+    if (!timelineDays || !scheduleBody) return;
+
+    // Use shared currentCalendarDate
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    // Update Month/Year display
+    if (monthYear) {
+        monthYear.textContent = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentCalendarDate);
+    }
+    
+    // Render header days
+    timelineDays.innerHTML = '';
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'day-cell';
+        dayCell.textContent = i;
+        timelineDays.appendChild(dayCell);
+    }
+
+    // Render task rows
+    scheduleBody.innerHTML = '';
+    if (currentTasks.length === 0) {
+        scheduleBody.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary)">No tasks found for schedule.</div>';
+        return;
+    }
+
+    currentTasks.forEach(t => {
+        const row = document.createElement('div');
+        row.className = 'schedule-row';
+        
+        const start = t.start_date ? new Date(t.start_date) : null;
+        const due = t.due_date ? new Date(t.due_date) : null;
+        
+        row.innerHTML = `
+            <div class="schedule-task-info">
+                <div class="schedule-task-title">${t.title}</div>
+                <div class="schedule-task-meta">${t.manager || '-'} | ${t.status}</div>
+            </div>
+            <div class="schedule-timeline-row">
+                <div class="schedule-bar-container"></div>
+            </div>
+        `;
+
+        const barContainer = row.querySelector('.schedule-bar-container');
+        
+        if (start && due) {
+            // Check if task falls within current month
+            if (start.getFullYear() === year && start.getMonth() === month) {
+                const startDay = start.getDate();
+                const dueDay = due.getDate();
+                const duration = Math.max(1, dueDay - startDay + 1);
+                
+                const bar = document.createElement('div');
+                const statusClass = t.status.toLowerCase().replace('-', '');
+                bar.className = `schedule-bar ${statusClass}${t.is_urgent ? ' urgent' : ''}`;
+                
+                // Position based on day width (40px)
+                bar.style.left = `${(startDay - 1) * 40}px`;
+                bar.style.width = `${duration * 40 - 4}px`; // Small gap
+                
+                bar.innerHTML = `<span class="bar-label">${t.is_urgent ? '🚨 ' : ''}${t.title}</span>`;
+                bar.onclick = () => openTaskModal(t, false);
+                barContainer.appendChild(bar);
+            }
+        }
+        
+        scheduleBody.appendChild(row);
+    });
+}
+
+function renderCalendar() {
+    const grid = document.getElementById('calendar-grid');
+    const monthYear = document.getElementById('calendar-month-year');
+    if (!grid || !monthYear) return;
+
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    
+    monthYear.textContent = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentCalendarDate);
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevDaysInMonth = new Date(year, month, 0).getDate();
+
+    grid.innerHTML = '';
+
+    // Previous month's days
+    for (let i = firstDay - 1; i >= 0; i--) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell other-month';
+        cell.innerHTML = `<div class="day-number">${prevDaysInMonth - i}</div>`;
+        grid.appendChild(cell);
+    }
+
+    // Current month's days
+    const today = new Date();
+    for (let i = 1; i <= daysInMonth; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell';
+        if (year === today.getFullYear() && month === today.getMonth() && i === today.getDate()) {
+            cell.classList.add('today');
+        }
+        
+        cell.innerHTML = `<div class="day-number">${i}</div>`;
+        
+        // Find tasks for this day (based on due_date)
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const tasksForDay = currentTasks.filter(t => t.due_date === dateStr);
+        
+        tasksForDay.forEach(t => {
+            const taskEl = document.createElement('div');
+            const statusClass = t.status.toLowerCase().replace('-', '');
+            taskEl.className = `calendar-task-item ${statusClass}${t.is_urgent ? ' urgent' : ''}`;
+            taskEl.textContent = (t.is_urgent ? '🚨 ' : '') + t.title;
+            taskEl.title = `${t.title} (${t.status})`;
+            taskEl.onclick = (e) => {
+                e.stopPropagation();
+                openTaskModal(t, false);
+            };
+            cell.appendChild(taskEl);
+        });
+
+        grid.appendChild(cell);
+    }
+
+    // Next month's days to fill the grid (total 42 cells for 6 weeks)
+    const totalCells = 42;
+    const remainingCells = totalCells - grid.children.length;
+    for (let i = 1; i <= remainingCells; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell other-month';
+        cell.innerHTML = `<div class="day-number">${i}</div>`;
+        grid.appendChild(cell);
+    }
+}
+
 async function loadDashboard() {
     await loadView('nav-dashboard');
+}
+
+function openTaskModal(t, readOnly = false) {
+    const taskId = t.id;
+    document.getElementById('task-id').value = taskId || '';
+    document.getElementById('task-title').value = t.title || '';
+    document.getElementById('task-content').value = t.content || '';
+    document.getElementById('task-manager').value = t.manager || '';
+    document.getElementById('task-urgent').checked = t.is_urgent || false;
+    document.getElementById('task-start').value = t.start_date || '';
+    document.getElementById('task-due').value = t.due_date || '';
+    
+    // Show current status with color
+    const statusGroup = document.getElementById('task-status-group');
+    if (statusGroup) statusGroup.classList.remove('hidden');
+
+    const statusInfo = document.getElementById('task-status-info');
+    if (statusInfo) {
+        let displayStatus = t.status || 'Note';
+        // We show the actual status to match the list view exactly
+        statusInfo.textContent = displayStatus;
+        
+        // Clear all possible status classes
+        statusInfo.classList.remove('status-note', 'status-todo', 'status-doing', 'status-done', 'status-review');
+        
+        // Add new status class based on actual status
+        const lowerStatus = displayStatus.toLowerCase().replace('-', '');
+        statusInfo.classList.add(`status-${lowerStatus}`);
+    }
+
+    // Show task tag in badge
+    const tagDisplay = document.getElementById('task-tag-display');
+    if (tagDisplay) {
+        tagDisplay.textContent = t.task_tag || '';
+        if (t.task_tag) tagDisplay.classList.remove('hidden');
+        else tagDisplay.classList.add('hidden');
+    }
+
+    // Show review comment if exists
+    const reviewGroup = document.getElementById('task-review-group');
+    const reviewDisplay = document.getElementById('task-review-display');
+    if (reviewGroup && reviewDisplay) {
+        if (t.review_comment) {
+            reviewDisplay.textContent = t.review_comment;
+            reviewGroup.classList.remove('hidden');
+        } else {
+            reviewGroup.classList.add('hidden');
+        }
+    }
+    
+    document.getElementById('task-modal-title').textContent = readOnly ? 'Task Details (Read Only)' : (taskId ? 'Edit Task' : 'Create New Task');
+    
+    const submitBtn = document.querySelector('#modal-task button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.textContent = taskId ? 'Update Task' : 'Create Task';
+        submitBtn.style.display = readOnly ? 'none' : 'block';
+    }
+
+    const cancelBtn = document.getElementById('btn-cancel-task');
+    if (cancelBtn) {
+        cancelBtn.textContent = readOnly ? 'Close' : 'Cancel';
+    }
+    
+    const btnDelModal = document.getElementById('btn-delete-task-modal');
+    if (btnDelModal) {
+        if (readOnly) {
+            btnDelModal.classList.add('hidden');
+        } else if (taskId) {
+            btnDelModal.classList.remove('hidden');
+            if (t.status === 'Done') {
+                btnDelModal.textContent = 'Approve & Delete';
+                btnDelModal.className = 'btn btn-success'; // Green style
+                btnDelModal.onclick = async () => {
+                    openReviewModal(taskId);
+                    closeTask();
+                };
+            } else {
+                btnDelModal.textContent = 'Delete Task';
+                btnDelModal.className = 'btn btn-danger-outline'; // Red style
+                btnDelModal.onclick = async () => {
+                    if (await askConfirm('Are you sure you want to delete this task?')) {
+                        deleteTask(taskId);
+                        closeTask();
+                    }
+                };
+            }
+        } else {
+            btnDelModal.classList.add('hidden');
+        }
+    }
+
+    // Handle read-only state for inputs
+    const formTask = document.getElementById('form-task');
+    const inputs = formTask.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        input.disabled = readOnly;
+    });
+    
+    const modalTask = document.getElementById('modal-task');
+    modalTask.classList.remove('hidden');
 }
 
 function renderKanban() {
@@ -865,67 +1398,7 @@ function createTaskCard(t) {
     
     card.addEventListener('click', (e) => {
         e.preventDefault();
-        const taskId = t.id;
-        document.getElementById('task-id').value = taskId;
-        document.getElementById('task-title').value = t.title;
-        document.getElementById('task-content').value = t.content || '';
-        document.getElementById('task-manager').value = t.manager || '';
-        document.getElementById('task-urgent').checked = t.is_urgent;
-        document.getElementById('task-start').value = t.start_date || '';
-        document.getElementById('task-due').value = t.due_date || '';
-        
-        // Show current status with color
-        const statusGroup = document.getElementById('task-status-group');
-        if (statusGroup) statusGroup.classList.remove('hidden');
-
-        const statusInfo = document.getElementById('task-status-info');
-        if (statusInfo) {
-            let displayStatus = t.status;
-            if (displayStatus === 'Review') displayStatus = 'Done';
-            
-            statusInfo.textContent = displayStatus;
-            // Clear existing status classes
-            statusInfo.classList.remove('status-note', 'status-todo', 'status-doing', 'status-done');
-            // Add new status class
-            const lowerStatus = displayStatus.toLowerCase().replace('-', '');
-            statusInfo.classList.add(`status-${lowerStatus}`);
-        }
-
-        // Show task tag in badge
-        const tagDisplay = document.getElementById('task-tag-display');
-        if (tagDisplay) {
-            tagDisplay.textContent = t.task_tag || '';
-            if (t.task_tag) tagDisplay.classList.remove('hidden');
-            else tagDisplay.classList.add('hidden');
-        }
-        
-        document.getElementById('task-modal-title').textContent = 'Edit Task';
-        document.querySelector('#modal-task button[type="submit"]').textContent = 'Update Task';
-        
-        const btnDelModal = document.getElementById('btn-delete-task-modal');
-        if (btnDelModal) {
-            btnDelModal.classList.remove('hidden');
-            if (t.status === 'Done') {
-                btnDelModal.textContent = 'Approve & Delete';
-                btnDelModal.className = 'btn btn-success'; // Green style
-                btnDelModal.onclick = async () => {
-                    openReviewModal(taskId);
-                    closeTask();
-                };
-            } else {
-                btnDelModal.textContent = 'Delete Task';
-                btnDelModal.className = 'btn btn-danger-outline'; // Red style
-                btnDelModal.onclick = async () => {
-                    if (await askConfirm('Are you sure you want to delete this task?')) {
-                        deleteTask(taskId);
-                        closeTask();
-                    }
-                };
-            }
-        }
-        
-        const modalTask = document.getElementById('modal-task');
-        modalTask.classList.remove('hidden');
+        openTaskModal(t, false);
     });
     
     return card;
@@ -964,53 +1437,146 @@ async function refreshProjects() {
             const item = document.createElement('div');
             item.className = 'project-item';
             item.innerHTML = `<h4>${p.name}</h4><div class="client">${p.client || 'Internal Project'}</div>`;
-            item.addEventListener('click', () => loadProjectDetails(p, item));
+            item.addEventListener('click', () => loadProjectDetails(p.id));
             list.appendChild(item);
         });
+        
+        // Auto-select first project if available
+        if (currentProjects.length > 0 && !document.querySelector('.project-item.active')) {
+            loadProjectDetails(currentProjects[0].id);
+        }
     } catch (err) { console.error("Refresh Projects Error:", err); }
 }
 
-async function loadProjectDetails(project, element) {
-    document.querySelectorAll('.project-item').forEach(i => i.classList.remove('active'));
-    element.classList.add('active');
+async function loadProjectDetails(projectId) {
+    const project = currentProjects.find(p => p.id === projectId);
+    if (!project) return;
 
-    const details = document.getElementById('pm-details');
-    details.innerHTML = `
-        <div class="detail-header">
-            <h2>${project.name}</h2>
-            <p>${project.description || 'No description available'}</p>
-        </div>
-        <div class="timeline" id="project-timeline">
-            <p style="color: var(--text-secondary)">Loading timeline...</p>
-        </div>
-    `;
+    // Highlight active item
+    document.querySelectorAll('.project-item').forEach(item => {
+        const title = item.querySelector('h4').textContent;
+        if (title === project.name) item.classList.add('active');
+        else item.classList.remove('active');
+    });
+
+    // Update Header Info
+    document.getElementById('detail-project-name').textContent = project.name;
+    document.getElementById('detail-project-meta').textContent = `Client: ${project.client || '-'} | Manager: ${project.manager || '-'}`;
+
+    // Update Status Tab
+    document.getElementById('detail-project-desc').textContent = project.description || 'No description available.';
+    document.getElementById('detail-dept1').textContent = `Slot 1: ${project.dept1_name || 'N/A'}`;
+    document.getElementById('detail-dept2').textContent = `Slot 2: ${project.dept2_name || 'N/A'}`;
+    document.getElementById('detail-dept3').textContent = `Slot 3: ${project.dept3_name || 'N/A'}`;
+    document.getElementById('detail-dept4').textContent = `Slot 4: ${project.dept4_name || 'N/A'}`;
+
+    // Update Log Modal Department Select
+    const logDeptSelect = document.getElementById('log-department');
+    if (logDeptSelect) {
+        logDeptSelect.innerHTML = '';
+        [project.dept1_name, project.dept2_name, project.dept3_name, project.dept4_name].forEach(name => {
+            if (name) {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                logDeptSelect.appendChild(opt);
+            }
+        });
+    }
 
     try {
+        // Load Milestones
+        const milestones = await invoke('plugin:pm|get_milestones', { projectId: project.id });
+        renderMilestones(project.id, milestones);
+
+        // Load Status Logs
         const logs = await invoke('plugin:pm|get_status_logs', { projectId: project.id });
-        renderTimeline(logs);
+        renderStatusLogs(logs);
+
+        // Update Log Form Hidden Field
+        document.getElementById('log-project-id').value = project.id;
+        
+        // Add Log Button Listener (Reset and Open)
+        const btnAddLog = document.getElementById('btn-add-log');
+        if (btnAddLog) {
+            btnAddLog.onclick = () => {
+                document.getElementById('form-log').reset();
+                document.getElementById('log-project-id').value = project.id;
+                document.getElementById('modal-log').classList.remove('hidden');
+            };
+        }
+
     } catch (err) { console.error("Load Project Details Error:", err); }
 }
 
-function renderTimeline(logs) {
-    const timeline = document.getElementById('project-timeline');
+function renderMilestones(projectId, milestones) {
+    const slots = document.querySelectorAll('.milestone-slot');
+    slots.forEach(slot => {
+        const slotNum = parseInt(slot.getAttribute('data-slot'));
+        const ms = milestones.find(m => m.slot_number === slotNum);
+        
+        const nameEl = slot.querySelector('.slot-name');
+        const dateEl = slot.querySelector('.slot-date');
+        const statusEl = slot.querySelector('.slot-status');
+        
+        if (ms) {
+            nameEl.textContent = ms.name || '---';
+            dateEl.textContent = ms.deadline || 'YYYY-MM-DD';
+            statusEl.textContent = ms.is_done ? 'Done' : 'Pending';
+            if (ms.is_done) slot.classList.add('done');
+            else slot.classList.remove('done');
+        } else {
+            nameEl.textContent = '---';
+            dateEl.textContent = 'YYYY-MM-DD';
+            statusEl.textContent = 'Pending';
+            slot.classList.remove('done');
+        }
+
+        // Click to edit
+        slot.onclick = () => {
+            document.getElementById('form-milestone').reset();
+            document.getElementById('ms-slot-num').textContent = `#0${slotNum}`;
+            document.getElementById('ms-project-id').value = projectId;
+            document.getElementById('ms-slot-number').value = slotNum;
+            
+            if (ms) {
+                document.getElementById('ms-id').value = ms.id || '';
+                document.getElementById('ms-name').value = ms.name || '';
+                document.getElementById('ms-deadline').value = ms.deadline || '';
+                document.getElementById('ms-content').value = ms.content || '';
+                document.getElementById('ms-is-done').checked = ms.is_done || false;
+            } else {
+                document.getElementById('ms-id').value = '';
+            }
+            
+            document.getElementById('modal-milestone').classList.remove('hidden');
+        };
+    });
+}
+
+function renderStatusLogs(logs) {
+    const timeline = document.getElementById('log-timeline');
+    timeline.innerHTML = '';
+    
     if (logs.length === 0) {
-        timeline.innerHTML = '<p style="color: var(--text-secondary)">No status logs found for this project.</p>';
+        timeline.innerHTML = '<p style="text-align: center; padding: 20px; color: var(--text-secondary);">No status logs yet.</p>';
         return;
     }
-    timeline.innerHTML = '';
-    logs.forEach(log => {
+
+    // Sort logs by timestamp descending (newest first)
+    const sortedLogs = [...logs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    sortedLogs.forEach(log => {
         const item = document.createElement('div');
-        item.className = 'timeline-item';
+        item.className = 'log-item';
         item.innerHTML = `
-            <div class="timeline-dot"></div>
-            <div class="status-log-card">
-                <div class="log-tag">${log.department}</div>
-                <div class="log-meta">
-                    <span>👤 ${log.manager || 'N/A'}</span>
-                    <span>🕒 ${log.timestamp || 'N/A'}</span>
-                </div>
-                <div class="log-content">${log.text_content}</div>
+            <div class="log-header">
+                <span class="log-dept">${log.department}</span>
+                <span class="log-time">${new Date(log.timestamp).toLocaleString()}</span>
             </div>
+            <div class="log-title">${log.title}</div>
+            <div class="log-content">${log.text_content || ''}</div>
+            ${log.manager ? `<div class="log-manager">PIC: ${log.manager}</div>` : ''}
         `;
         timeline.appendChild(item);
     });
@@ -1123,6 +1689,7 @@ function initDragAndDrop() {
                         renderKanban();
                         try {
                             await invoke('plugin:kanban|update_task_status', { taskId: id, newStatus: status });
+                            updateSidebarStatus(currentTasks);
                         } catch (err) {
                             console.error("Drag Drop Error:", err);
                             currentTasks[taskIndex].status = oldStatus;

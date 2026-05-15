@@ -6357,10 +6357,22 @@
           "markdownDescription": "Denies the save_meeting command without any pre-configured scope."
         },
         {
+          "description": "Enables the add_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-add-project",
+          "markdownDescription": "Enables the add_project command without any pre-configured scope."
+        },
+        {
           "description": "Enables the add_status_log command without any pre-configured scope.",
           "type": "string",
           "const": "pm:allow-add-status-log",
           "markdownDescription": "Enables the add_status_log command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_milestones command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-get-milestones",
+          "markdownDescription": "Enables the get_milestones command without any pre-configured scope."
         },
         {
           "description": "Enables the get_project_count command without any pre-configured scope.",
@@ -6381,10 +6393,28 @@
           "markdownDescription": "Enables the get_status_logs command without any pre-configured scope."
         },
         {
+          "description": "Enables the save_milestone command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-save-milestone",
+          "markdownDescription": "Enables the save_milestone command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the add_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-add-project",
+          "markdownDescription": "Denies the add_project command without any pre-configured scope."
+        },
+        {
           "description": "Denies the add_status_log command without any pre-configured scope.",
           "type": "string",
           "const": "pm:deny-add-status-log",
           "markdownDescription": "Denies the add_status_log command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_milestones command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-get-milestones",
+          "markdownDescription": "Denies the get_milestones command without any pre-configured scope."
         },
         {
           "description": "Denies the get_project_count command without any pre-configured scope.",
@@ -6403,6 +6433,12 @@
           "type": "string",
           "const": "pm:deny-get-status-logs",
           "markdownDescription": "Denies the get_status_logs command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_milestone command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-save-milestone",
+          "markdownDescription": "Denies the save_milestone command without any pre-configured scope."
         },
         {
           "description": "This permission set configures which\nshell functionality is exposed by default.\n\n#### Granted Permissions\n\nIt allows to use the `open` functionality with a reasonable\nscope pre-configured. It will allow opening `http(s)://`,\n`tel:` and `mailto:` links.\n\n#### This default permission set includes:\n\n- `allow-open`",

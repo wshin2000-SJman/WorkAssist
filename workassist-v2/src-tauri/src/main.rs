@@ -95,7 +95,7 @@ fn main() {
             if !app_data_dir.exists() {
                 std::fs::create_dir_all(&app_data_dir).expect("Failed to create app data dir");
             }
-            let db_path = app_data_dir.join("workassist.db");
+            let db_path = app_data_dir.join("sjworkassist_v2.db");
             
             let storage = Arc::new(Storage::new(db_path).expect("Failed to initialize database"));
             let api = Api::new(storage.clone());

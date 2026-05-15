@@ -131,6 +131,52 @@ impl PmModule {
 
         Ok(log_id)
     }
+
+    pub fn get_milestones(&self, project_id: i64) -> Result<Vec<Milestone>> {
+        let conn = self.storage.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, slot_number, name, deadline, content, is_saved, is_done 
+             FROM milestones WHERE project_id = ? ORDER BY slot_number ASC"
+        )?;
+        
+        let milestone_iter = stmt.query_map(params![project_id], |row| {
+            Ok(Milestone {
+                id: Some(row.get(0)?),
+                project_id: row.get(1)?,
+                slot_number: row.get(2)?,
+                name: row.get(3)?,
+                deadline: row.get(4)?,
+                content: row.get(5)?,
+                is_saved: row.get(6)?,
+                is_done: row.get(7)?,
+            })
+        })?;
+
+        let mut milestones = Vec::new();
+        for ms in milestone_iter {
+            milestones.push(ms?);
+        }
+        Ok(milestones)
+    }
+
+    pub fn save_milestone(&self, milestone: Milestone) -> Result<()> {
+        let conn = self.storage.conn.lock().unwrap();
+        conn.execute(
+            "INSERT OR REPLACE INTO milestones (id, project_id, slot_number, name, deadline, content, is_saved, is_done)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            params![
+                milestone.id,
+                milestone.project_id,
+                milestone.slot_number,
+                milestone.name,
+                milestone.deadline,
+                milestone.content,
+                milestone.is_saved,
+                milestone.is_done,
+            ],
+        )?;
+        Ok(())
+    }
 }
 
 // --- PM Plugin Commands ---
@@ -155,13 +201,31 @@ pub async fn add_status_log(api: tauri::State<'_, crate::api::Api>, log: StatusL
     api.pm().add_status_log(log).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn add_project(api: tauri::State<'_, crate::api::Api>, project: Project) -> Result<i64, String> {
+    api.pm().add_project(project).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_milestones(api: tauri::State<'_, crate::api::Api>, project_id: i64) -> Result<Vec<Milestone>, String> {
+    api.pm().get_milestones(project_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_milestone(api: tauri::State<'_, crate::api::Api>, milestone: Milestone) -> Result<(), String> {
+    api.pm().save_milestone(milestone).map_err(|e| e.to_string())
+}
+
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("pm")
         .invoke_handler(tauri::generate_handler![
             get_project_count,
             get_projects,
             get_status_logs,
-            add_status_log
+            add_status_log,
+            add_project,
+            get_milestones,
+            save_milestone
         ])
         .build()
 }
