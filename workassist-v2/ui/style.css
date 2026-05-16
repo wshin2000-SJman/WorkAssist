@@ -100,11 +100,11 @@ textarea::-webkit-scrollbar {
   --text-primary: #fefce8;
   --text-secondary: #94a3b8;
   --glass-effect: blur(25px) saturate(160%);
-  --brand-blue: #44a4ca;
-  --brand-green: #87c34b;
-  --brand-yellow: #f8c82d;
-  --brand-orange: #f38d21;
-  --brand-red: #e6512d;
+  --brand-blue: #60c5ea;
+  --brand-green: #a6e069;
+  --brand-yellow: #ffdf60;
+  --brand-orange: #ffaa40;
+  --brand-red: #ff704d;
 }
 
 .hidden {
@@ -152,8 +152,8 @@ textarea::-webkit-scrollbar {
   transform: translate(-120vw, 120vh) rotate(45deg);
   animation: barSlide 20s linear infinite;
   animation-delay: var(--delay);
-  box-shadow: 0 0 30px var(--color);
-  opacity: 0.15;
+  box-shadow: 0 0 35px var(--color);
+  opacity: 0.25;
   border-radius: 20px;
   filter: blur(1px);
   will-change: transform;
