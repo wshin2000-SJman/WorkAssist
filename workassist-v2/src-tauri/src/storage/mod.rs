@@ -210,6 +210,33 @@ impl Storage {
             conn.execute("ALTER TABLE tasks ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT 0", [])?;
         }
 
+        let shadow_tasks_info: Vec<String> = {
+            let mut stmt = conn.prepare("PRAGMA table_info(shadow_tasks)")?;
+            let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+            rows.map(|r| r.unwrap()).collect()
+        };
+        if !shadow_tasks_info.contains(&"task_tag".to_string()) {
+            conn.execute("ALTER TABLE shadow_tasks ADD COLUMN task_tag TEXT", [])?;
+        }
+        
+        let meetings_info: Vec<String> = {
+            let mut stmt = conn.prepare("PRAGMA table_info(meetings)")?;
+            let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+            rows.map(|r| r.unwrap()).collect()
+        };
+        if !meetings_info.contains(&"meeting_tag".to_string()) {
+            conn.execute("ALTER TABLE meetings ADD COLUMN meeting_tag TEXT DEFAULT ''", [])?;
+        }
+
+        let shadow_meetings_info: Vec<String> = {
+            let mut stmt = conn.prepare("PRAGMA table_info(shadow_meetings)")?;
+            let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+            rows.map(|r| r.unwrap()).collect()
+        };
+        if !shadow_meetings_info.contains(&"meeting_tag".to_string()) {
+            conn.execute("ALTER TABLE shadow_meetings ADD COLUMN meeting_tag TEXT", [])?;
+        }
+
         let logs_info: Vec<String> = {
             let mut stmt = conn.prepare("PRAGMA table_info(status_logs)")?;
             let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
@@ -275,8 +302,8 @@ impl Storage {
 
         // 2. Write to shadow table
         conn.execute(
-            "INSERT OR REPLACE INTO shadow_tasks (id, title, content, review_comment) VALUES (?, ?, ?, ?)",
-            params![task_id, shadow_title, shadow_content, shadow_comment],
+            "INSERT OR REPLACE INTO shadow_tasks (id, title, content, review_comment, task_tag) VALUES (?, ?, ?, ?, ?)",
+            params![task_id, shadow_title, shadow_content, shadow_comment, task.task_tag],
         )?;
 
         Ok(())
@@ -293,9 +320,9 @@ impl Storage {
 
         // 2. Write to shadow
         conn.execute(
-            "INSERT OR REPLACE INTO shadow_meetings (id, title, participants, location, decisions, action_items, memo) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
-            params![meeting_id, s_title, s_participants, s_location, s_decisions, s_action, s_memo],
+            "INSERT OR REPLACE INTO shadow_meetings (id, title, participants, location, decisions, action_items, memo, meeting_tag) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            params![meeting_id, s_title, s_participants, s_location, s_decisions, s_action, s_memo, meeting.meeting_tag],
         )?;
 
         Ok(())
@@ -433,6 +460,7 @@ impl Storage {
                 action_items: Some("1. Update schema.rs, 2. Test dual-write latency".to_string()),
                 memo: Some("Crucial meeting to finalize the Antigravity security layer.".to_string()),
                 created_at: now.clone(),
+                meeting_tag: Some("M20260516-1400-01".to_string()),
             }
         ];
 

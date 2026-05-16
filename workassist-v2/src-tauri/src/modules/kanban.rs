@@ -48,7 +48,7 @@ impl KanbanModule {
 
     pub fn add_task(&self, mut task: Task) -> Result<i64, String> {
         let now_local = Utc::now().with_timezone(&chrono::Local);
-        let date_str = now_local.format("%y%m%d").to_string();
+        let date_str = now_local.format("%Y%m%d").to_string();
         let time_str = now_local.format("%H%M").to_string();
         
         let conn = self.storage.conn.lock().unwrap();

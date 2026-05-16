@@ -72,6 +72,32 @@ const init = () => {
         });
     });
 
+    // Dashboard Card Navigation
+    const cardTasks = document.getElementById('card-tasks');
+    if (cardTasks) cardTasks.onclick = () => loadView('nav-kanban');
+    const cardMeetings = document.getElementById('card-meetings');
+    if (cardMeetings) cardMeetings.onclick = () => loadView('nav-minutes');
+    const cardProjects = document.getElementById('card-projects');
+    if (cardProjects) cardProjects.onclick = () => loadView('nav-pm');
+
+    // Minutes Search logic
+    const minutesSearch = document.getElementById('minutes-search');
+    if (minutesSearch) {
+        minutesSearch.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = currentMeetings.filter(m => 
+                (m.title || '').toLowerCase().includes(query) ||
+                (m.meeting_tag || '').toLowerCase().includes(query) ||
+                (m.memo || '').toLowerCase().includes(query) ||
+                (m.decisions || '').toLowerCase().includes(query) ||
+                (m.action_items || '').toLowerCase().includes(query) ||
+                (m.participants || '').toLowerCase().includes(query) ||
+                (m.location || '').toLowerCase().includes(query)
+            );
+            renderMeetingsList(filtered);
+        });
+    }
+
     setupModals();
     setupSettings();
     setupKanbanTabs();
@@ -182,9 +208,9 @@ function setupAuth() {
     if (btnShowChangePw) {
         btnShowChangePw.onclick = () => {
             modalChangePw.classList.remove('hidden');
-            document.getElementById('change-pw-id').value = '';
+            document.getElementById('change-pw-id').value = currentUser ? currentUser.username : '';
             document.getElementById('change-pw-old').value = '';
-            document.getElementById('change-pw-new').value = '';
+            document.getElementById('change-new-pw').value = '';
             document.getElementById('change-pw-hint').value = '';
         };
     }
@@ -244,7 +270,7 @@ function setupAuth() {
             e.preventDefault();
             const id = document.getElementById('change-pw-id').value;
             const oldPw = document.getElementById('change-pw-old').value;
-            const newPw = document.getElementById('change-pw-new').value;
+            const newPw = document.getElementById('change-new-pw').value;
             const newHint = document.getElementById('change-pw-hint').value;
             try {
                 const success = await invoke('plugin:auth|change_password', { 
@@ -417,7 +443,7 @@ function closeAllModals() {
     closeProject();
     
     // Hide other non-form or simple modals
-    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw'];
+    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-about'];
     others.forEach(id => {
         const m = document.getElementById(id);
         if (m) {
@@ -448,6 +474,72 @@ function setupModals() {
     const btnNewMeeting = document.getElementById('btn-new-meeting');
     const btnCloseMeeting = document.getElementById('btn-close-meeting');
     const formMeeting = document.getElementById('form-meeting');
+
+    const btnExportMd = document.getElementById('btn-export-md');
+    if (btnExportMd) {
+        btnExportMd.onclick = async () => {
+            const meetingData = {
+                id: null,
+                owner_id: null,
+                title: document.getElementById('meeting-title').value,
+                date: document.getElementById('meeting-date').value + ' ' + document.getElementById('meeting-time').value,
+                location: document.getElementById('meeting-location').value,
+                participants: document.getElementById('meeting-participants').value,
+                memo: document.getElementById('meeting-memo').value,
+                decisions: document.getElementById('meeting-decisions').value,
+                action_items: document.getElementById('meeting-actions').value,
+                created_at: "",
+                meeting_tag: document.getElementById('meeting-tag').value || ""
+            };
+
+            if (!meetingData.title) {
+                alert("Please enter a meeting title before exporting.");
+                return;
+            }
+
+            try {
+                // 1. Generate MD content via backend
+                const mdContent = await invoke('plugin:minutes|export_meeting_md', { meeting: meetingData });
+                
+                // 2. Open Save Dialog
+                if (window.__TAURI__ && window.__TAURI__.dialog) {
+                    const savePath = await window.__TAURI__.dialog.save({
+                        filters: [{ name: 'Markdown', extensions: ['md'] }],
+                        defaultPath: `Meeting_${meetingData.meeting_tag || 'Minutes'}.md`
+                    });
+
+                    if (savePath) {
+                        // 3. Write file via backend
+                        await invoke('plugin:minutes|save_text_file', { path: savePath, content: mdContent });
+                        alert("Export Successful!\nSaved to: " + savePath);
+                    }
+                } else {
+                    console.log("Mock Export (No Tauri):", mdContent);
+                    alert("Export logic only works in the desktop app.");
+                }
+            } catch (err) {
+                console.error("Export Error:", err);
+                alert("Failed to export: " + err);
+            }
+        };
+    }
+
+    // About Modal
+    const modalAbout = document.getElementById('modal-about');
+    const btnTypingStatus = document.querySelector('.typing-status');
+    const btnCloseAbout = document.getElementById('btn-close-about');
+
+    if (btnTypingStatus && modalAbout) {
+        btnTypingStatus.onclick = () => {
+            modalAbout.classList.remove('hidden');
+        };
+    }
+
+    if (btnCloseAbout && modalAbout) {
+        btnCloseAbout.onclick = () => {
+            modalAbout.classList.add('hidden');
+        };
+    }
 
     if (btnNewTask) {
         btnNewTask.onclick = () => { 
@@ -542,6 +634,9 @@ function setupModals() {
     if (btnNewMeeting) {
         btnNewMeeting.onclick = () => {
             document.getElementById('meeting-id').value = '';
+            document.getElementById('meeting-tag').value = '';
+            document.getElementById('meeting-tag-display').textContent = '';
+            document.getElementById('meeting-tag-display').classList.add('hidden');
             formMeeting.reset();
             document.getElementById('meeting-modal-title').textContent = 'Create New Minutes';
             modalMeeting.classList.remove('hidden');
@@ -554,9 +649,14 @@ function setupModals() {
             const meetingData = {
                 id: document.getElementById('meeting-id').value ? parseInt(document.getElementById('meeting-id').value) : null,
                 owner_id: currentUser.id, title: document.getElementById('meeting-title').value,
-                date: document.getElementById('meeting-date').value, location: document.getElementById('meeting-location').value,
-                participants: document.getElementById('meeting-participants').value, decisions: "", action_items: "",
-                memo: document.getElementById('meeting-memo').value, created_at: ""
+                date: document.getElementById('meeting-date').value + ' ' + document.getElementById('meeting-time').value, 
+                location: document.getElementById('meeting-location').value,
+                participants: document.getElementById('meeting-participants').value, 
+                decisions: document.getElementById('meeting-decisions').value, 
+                action_items: document.getElementById('meeting-actions').value,
+                memo: document.getElementById('meeting-memo').value, 
+                meeting_tag: document.getElementById('meeting-tag').value || "",
+                created_at: ""
             };
             try {
                 await invoke('plugin:minutes|save_meeting', { meeting: meetingData });
@@ -1009,8 +1109,8 @@ async function loadView(viewId) {
         'nav-dashboard': 'Dashboard',
         'nav-kanban': 'Task Manager',
         'nav-trash': 'Trash Bin',
-        'nav-minutes': 'Meeting Minutes',
-        'nav-pm': 'Project Master'
+        'nav-minutes': 'Minutes Manager',
+        'nav-pm': 'Project Manager'
     };
 
     const pageTitle = document.getElementById('page-title');
@@ -1407,25 +1507,62 @@ function createTaskCard(t) {
 async function refreshMinutes() {
     try {
         currentMeetings = await invoke('plugin:minutes|get_meetings', { ownerId: currentUser.id });
-        const list = document.getElementById('minutes-list');
-        list.innerHTML = '';
-        currentMeetings.forEach(m => {
-            const card = document.createElement('div');
-            card.className = 'meeting-card';
-            card.innerHTML = `<div class="meeting-date-badge">${m.date || 'No Date'}</div><div class="meeting-title">${m.title}</div><div class="meeting-info"><span>📍 ${m.location || 'Remote'}</span><span>👥 ${m.participants || 'N/A'}</span></div>`;
-            card.addEventListener('click', () => {
-                document.getElementById('meeting-id').value = m.id;
-                document.getElementById('meeting-title').value = m.title;
-                document.getElementById('meeting-date').value = m.date;
-                document.getElementById('meeting-location').value = m.location;
-                document.getElementById('meeting-participants').value = m.participants;
-                document.getElementById('meeting-memo').value = m.memo;
-                document.getElementById('meeting-modal-title').textContent = 'Edit Minutes';
-                document.getElementById('modal-meeting').classList.remove('hidden');
-            });
-            list.appendChild(card);
-        });
+        const searchInput = document.getElementById('minutes-search');
+        const query = searchInput ? searchInput.value.toLowerCase() : '';
+        
+        if (query) {
+            const filtered = currentMeetings.filter(m => 
+                (m.title || '').toLowerCase().includes(query) ||
+                (m.meeting_tag || '').toLowerCase().includes(query) ||
+                (m.memo || '').toLowerCase().includes(query) ||
+                (m.decisions || '').toLowerCase().includes(query) ||
+                (m.action_items || '').toLowerCase().includes(query)
+            );
+            renderMeetingsList(filtered);
+        } else {
+            renderMeetingsList(currentMeetings);
+        }
     } catch (err) { console.error("Refresh Minutes Error:", err); }
+}
+
+function renderMeetingsList(meetings) {
+    const list = document.getElementById('minutes-list');
+    if (!list) return;
+    list.innerHTML = '';
+    
+    meetings.forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'meeting-card';
+        const tagBadge = m.meeting_tag ? `<span class="tag-badge-mini">${m.meeting_tag}</span>` : '';
+        card.innerHTML = `<div class="meeting-date-badge">${m.date || 'No Date'}</div> ${tagBadge} <div class="meeting-title">${m.title}</div><div class="meeting-info"><span>📍 ${m.location || 'Remote'}</span><span>👥 ${m.participants || 'N/A'}</span></div>`;
+        card.addEventListener('click', () => {
+            document.getElementById('meeting-id').value = m.id;
+            document.getElementById('meeting-title').value = m.title;
+            const [mDate, mTime] = (m.date || '').split(' ');
+            document.getElementById('meeting-date').value = mDate || '';
+            document.getElementById('meeting-time').value = mTime || '';
+            document.getElementById('meeting-location').value = m.location;
+            document.getElementById('meeting-participants').value = m.participants;
+            document.getElementById('meeting-memo').value = m.memo;
+            document.getElementById('meeting-decisions').value = m.decisions || '';
+            document.getElementById('meeting-actions').value = m.action_items || '';
+            
+            const tagEl = document.getElementById('meeting-tag-display');
+            if (m.meeting_tag) {
+                document.getElementById('meeting-tag').value = m.meeting_tag;
+                tagEl.textContent = m.meeting_tag;
+                tagEl.classList.remove('hidden');
+            } else {
+                document.getElementById('meeting-tag').value = '';
+                tagEl.textContent = '';
+                tagEl.classList.add('hidden');
+            }
+
+            document.getElementById('meeting-modal-title').textContent = 'Edit Minutes';
+            document.getElementById('modal-meeting').classList.remove('hidden');
+        });
+        list.appendChild(card);
+    });
 }
 
 async function refreshProjects() {

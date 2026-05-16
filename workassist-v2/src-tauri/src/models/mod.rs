@@ -38,6 +38,7 @@ pub struct Meeting {
     pub action_items: Option<String>, // JSON string in DB
     pub memo: Option<String>,
     pub created_at: String,
+    pub meeting_tag: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

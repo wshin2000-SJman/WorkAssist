@@ -6333,6 +6333,12 @@
           "markdownDescription": "Enables the save_meeting command without any pre-configured scope."
         },
         {
+          "description": "Enables the save_text_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:allow-save-text-file",
+          "markdownDescription": "Enables the save_text_file command without any pre-configured scope."
+        },
+        {
           "description": "Denies the export_meeting_md command without any pre-configured scope.",
           "type": "string",
           "const": "minutes:deny-export-meeting-md",
@@ -6355,6 +6361,12 @@
           "type": "string",
           "const": "minutes:deny-save-meeting",
           "markdownDescription": "Denies the save_meeting command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_text_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:deny-save-text-file",
+          "markdownDescription": "Denies the save_text_file command without any pre-configured scope."
         },
         {
           "description": "Enables the add_project command without any pre-configured scope.",

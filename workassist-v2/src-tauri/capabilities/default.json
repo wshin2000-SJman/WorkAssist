@@ -22,6 +22,7 @@
     "minutes:allow-get-meetings",
     "minutes:allow-save-meeting",
     "minutes:allow-export-meeting-md",
+    "minutes:allow-save-text-file",
     "pm:allow-get-project-count",
     "pm:allow-get-projects",
     "pm:allow-get-status-logs",

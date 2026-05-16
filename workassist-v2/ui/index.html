@@ -11,7 +11,7 @@
   <div id="view-login" class="login-overlay">
     <div class="login-card">
       <div class="login-header">
-        <span class="login-logo">🚀</span>
+        <img src="assets/icon_3.png" class="login-logo" alt="Logo">
         <h1>WorkAssist v2.0</h1>
         <p>Login to your workspace</p>
       </div>
@@ -35,7 +35,7 @@
   <div class="app-container hidden">
     <aside class="sidebar">
       <div class="logo">
-        <span class="logo-icon">🚀</span>
+        <img src="assets/icon_3.png" class="logo-icon" alt="Logo">
         <span class="logo-text">WorkAssist</span>
       </div>
       <nav class="nav-menu">
@@ -46,10 +46,10 @@
           <span class="nav-icon">📋</span> Task Manager
         </a>
         <a href="#" class="nav-item" id="nav-minutes">
-          <span class="nav-icon">📝</span> Minutes
+          <span class="nav-icon">📝</span> Minutes Manager
         </a>
         <a href="#" class="nav-item" id="nav-pm">
-          <span class="nav-icon">🏗️</span> PM-Master
+          <span class="nav-icon">🏗️</span> Project Manager
         </a>
       </nav>
       <div class="sidebar-footer">
@@ -77,8 +77,7 @@
         <div class="top-actions">
           <button class="btn btn-primary" id="btn-sync">Sync Data</button>
           <div class="status-indicator">
-            <span class="pulse"></span>
-            Engine Ready
+            <img src="assets/typing_2.gif" class="typing-status" alt="Status">
           </div>
         </div>
       </header>
@@ -88,17 +87,17 @@
         <div class="view" id="view-dashboard">
           <div class="welcome-card">
             <h2>Welcome to WorkAssist v2.0</h2>
-            <p>Rust-powered efficiency for your workflow.</p>
+            <p>Systematic work brings tranquility.</p>
             <div class="stats-grid">
-              <div class="stat-card">
+              <div class="stat-card" id="card-tasks">
                 <span class="stat-label">Active Tasks</span>
                 <span class="stat-value" id="stat-tasks">0</span>
               </div>
-              <div class="stat-card">
+              <div class="stat-card" id="card-meetings">
                 <span class="stat-label">Meetings</span>
                 <span class="stat-value" id="stat-meetings">0</span>
               </div>
-              <div class="stat-card">
+              <div class="stat-card" id="card-projects">
                 <span class="stat-label">Projects</span>
                 <span class="stat-value" id="stat-projects">0</span>
               </div>
@@ -200,6 +199,10 @@
         <div class="view hidden" id="view-minutes">
           <div class="view-header">
             <button class="btn btn-primary" id="btn-new-meeting">+ New Minutes</button>
+            <div class="header-search">
+              <input type="text" id="minutes-search" placeholder="Search title, tag, or content...">
+              <span class="search-icon">🔍</span>
+            </div>
           </div>
           <div class="minutes-list" id="minutes-list">
             <!-- Meeting cards will be rendered here -->
@@ -460,34 +463,7 @@
           </div>
         </div>
 
-        <!-- About Section -->
-        <div class="settings-section no-border">
-          <h3>About WorkAssist</h3>
-          <div class="about-card">
-            <div class="about-info">
-              <div class="about-row">
-                <span class="about-label">Author</span>
-                <span class="about-value">Wonseup Shin</span>
-              </div>
-              <div class="about-row">
-                <span class="about-label">Organization</span>
-                <span class="about-value">Samjeong Automation</span>
-              </div>
-              <div class="about-row">
-                <span class="about-label">Website</span>
-                <span class="about-value"><span data-url="https://sjautomation.com/" class="about-link">https://sjautomation.com/</span></span>
-              </div>
-              <div class="about-row">
-                <span class="about-label">Version</span>
-                <span class="about-value highlight">v2.0.0 (Tauri)</span>
-              </div>
-            </div>
-            <div class="about-logo">
-              <img src="assets/glasses_1.gif" alt="WorkAssist" class="about-img">
-              <div class="logo-placeholder">WA</div>
-            </div>
-          </div>
-        </div>
+
       </div>
 
       <div class="modal-actions">
@@ -498,21 +474,29 @@
   <div class="modal hidden" id="modal-meeting">
     <div class="modal-content large">
       <div class="modal-header">
-        <h2 id="meeting-modal-title">Meeting Minutes</h2>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h2 id="meeting-modal-title">Minutes Manager</h2>
+          <span id="meeting-tag-display" class="tag-badge hidden"></span>
+        </div>
         <button class="btn-close" id="btn-close-meeting">&times;</button>
       </div>
       <form id="form-meeting">
         <input type="hidden" id="meeting-id">
+        <input type="hidden" id="meeting-tag">
         <div class="form-group">
           <label for="meeting-title">Meeting Title</label>
           <input type="text" id="meeting-title" placeholder="What was the meeting about?" required>
         </div>
-        <div class="form-row">
-          <div class="form-group">
+        <div class="form-row meeting-meta">
+          <div class="form-group" style="flex: 2">
             <label for="meeting-date">Date</label>
             <input type="date" id="meeting-date">
           </div>
-          <div class="form-group">
+          <div class="form-group" style="flex: 1">
+            <label for="meeting-time">Time</label>
+            <input type="time" id="meeting-time">
+          </div>
+          <div class="form-group" style="flex: 2">
             <label for="meeting-location">Location</label>
             <input type="text" id="meeting-location" placeholder="Conference Room A">
           </div>
@@ -522,8 +506,16 @@
           <input type="text" id="meeting-participants" placeholder="Name 1, Name 2, ...">
         </div>
         <div class="form-group">
-          <label for="meeting-memo">Free Memo / Agenda</label>
-          <textarea id="meeting-memo" rows="8" placeholder="Type meeting details here..."></textarea>
+          <label for="meeting-memo">Agenda</label>
+          <textarea id="meeting-memo" rows="4" placeholder="Meeting goals and topics..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="meeting-decisions">Decisions</label>
+          <textarea id="meeting-decisions" rows="3" placeholder="Key decisions made during the meeting..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="meeting-actions">Action Items</label>
+          <textarea id="meeting-actions" rows="3" placeholder="Who will do what by when?"></textarea>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="btn-export-md">Export to MD</button>
@@ -769,6 +761,37 @@
           </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- About Modal -->
+  <div id="modal-about" class="modal hidden">
+    <div class="modal-content about-card">
+      <img src="assets/title_3.jpg" class="about-banner" alt="WorkAssist">
+      <div class="about-main">
+        <h2 class="brand-title">About WorkAssist</h2>
+        <div class="about-info">
+          <div class="info-row">
+            <span class="info-label">Author</span>
+            <span class="info-value">Wonseup Shin</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Organization</span>
+            <span class="info-value">Samjeong Automation</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Website</span>
+            <span class="info-value"><a href="https://sjautomation.com/" target="_blank">https://sjautomation.com/</a></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Version</span>
+            <span class="info-value accent-text">v2.0.0 (Tauri)</span>
+          </div>
+        </div>
+      </div>
+      <div class="about-footer">
+        <button id="btn-close-about" class="btn btn-primary">Close</button>
+      </div>
     </div>
   </div>
 

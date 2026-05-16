@@ -19,6 +19,7 @@ pub const CREATE_MEETINGS_TABLE: &str = "
         action_items TEXT,
         memo TEXT,
         created_at TEXT NOT NULL,
+        meeting_tag TEXT DEFAULT '',
         FOREIGN KEY (owner_id) REFERENCES users(id)
     );
 ";
@@ -112,7 +113,8 @@ pub const CREATE_SHADOW_MEETINGS_TABLE: &str = "
         location TEXT,
         decisions TEXT,
         action_items TEXT,
-        memo TEXT
+        memo TEXT,
+        meeting_tag TEXT
     );
 ";
 
@@ -121,7 +123,8 @@ pub const CREATE_SHADOW_TASKS_TABLE: &str = "
         id INTEGER PRIMARY KEY, -- Matches original task ID
         title TEXT,
         content TEXT,
-        review_comment TEXT
+        review_comment TEXT,
+        task_tag TEXT
     );
 ";
 
