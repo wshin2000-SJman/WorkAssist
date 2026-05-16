@@ -1383,11 +1383,72 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .login-footer {
-  margin-top: 32px;
+  margin-top: 40px;
   display: flex;
-  flex-direction: row;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   gap: 20px;
+}
+
+.footer-links-main {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  width: 100%;
+}
+
+.footer-legal-links {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.legal-link {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.legal-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--accent-color);
+  transition: width 0.3s ease;
+}
+
+.legal-link:hover {
+  opacity: 1;
+  color: var(--accent-color);
+}
+
+.legal-link:hover::after {
+  width: 100%;
+}
+
+.footer-copyright {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.version-tag {
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  color: var(--accent-color);
+  font-weight: 600;
+  opacity: 0.8;
 }
 
 
