@@ -82,21 +82,28 @@ const init = () => {
 
     // Minutes Search logic
     const minutesSearch = document.getElementById('minutes-search');
-    if (minutesSearch) {
-        minutesSearch.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const filtered = currentMeetings.filter(m => 
-                (m.title || '').toLowerCase().includes(query) ||
-                (m.meeting_tag || '').toLowerCase().includes(query) ||
-                (m.memo || '').toLowerCase().includes(query) ||
-                (m.decisions || '').toLowerCase().includes(query) ||
-                (m.action_items || '').toLowerCase().includes(query) ||
-                (m.participants || '').toLowerCase().includes(query) ||
-                (m.location || '').toLowerCase().includes(query)
-            );
-            renderMeetingsList(filtered);
+    const minutesSearchType = document.getElementById('minutes-search-type');
+    
+    const handleMinutesSearch = () => {
+        const query = (minutesSearch ? minutesSearch.value : '').toLowerCase();
+        const type = minutesSearchType ? minutesSearchType.value : 'all';
+        
+        const filtered = currentMeetings.filter(m => {
+            const title = (m.title || '').toLowerCase();
+            const tag = (m.meeting_tag || '').toLowerCase();
+            const content = ((m.memo || '') + (m.decisions || '') + (m.action_items || '') + (m.location || '')).toLowerCase();
+            const participants = (m.participants || '').toLowerCase();
+            
+            if (type === 'title') return title.includes(query) || tag.includes(query);
+            if (type === 'content') return content.includes(query);
+            if (type === 'participants') return participants.includes(query);
+            return title.includes(query) || tag.includes(query) || content.includes(query) || participants.includes(query);
         });
-    }
+        renderMeetingsList(filtered);
+    };
+
+    if (minutesSearch) minutesSearch.addEventListener('input', handleMinutesSearch);
+    if (minutesSearchType) minutesSearchType.addEventListener('change', handleMinutesSearch);
 
     setupModals();
     setupSettings();
@@ -1558,16 +1565,22 @@ async function refreshMinutes() {
     try {
         currentMeetings = await invoke('plugin:minutes|get_meetings', { ownerId: currentUser.id });
         const searchInput = document.getElementById('minutes-search');
+        const searchType = document.getElementById('minutes-search-type');
         const query = searchInput ? searchInput.value.toLowerCase() : '';
+        const type = searchType ? searchType.value : 'all';
         
         if (query) {
-            const filtered = currentMeetings.filter(m => 
-                (m.title || '').toLowerCase().includes(query) ||
-                (m.meeting_tag || '').toLowerCase().includes(query) ||
-                (m.memo || '').toLowerCase().includes(query) ||
-                (m.decisions || '').toLowerCase().includes(query) ||
-                (m.action_items || '').toLowerCase().includes(query)
-            );
+            const filtered = currentMeetings.filter(m => {
+                const title = (m.title || '').toLowerCase();
+                const tag = (m.meeting_tag || '').toLowerCase();
+                const content = ((m.memo || '') + (m.decisions || '') + (m.action_items || '') + (m.location || '')).toLowerCase();
+                const participants = (m.participants || '').toLowerCase();
+                
+                if (type === 'title') return title.includes(query) || tag.includes(query);
+                if (type === 'content') return content.includes(query);
+                if (type === 'participants') return participants.includes(query);
+                return title.includes(query) || tag.includes(query) || content.includes(query) || participants.includes(query);
+            });
             renderMeetingsList(filtered);
         } else {
             renderMeetingsList(currentMeetings);
