@@ -522,6 +522,7 @@ function setupModals() {
                 alert("Failed to export: " + err);
             }
         };
+    }
     // Privacy Modal
     const modalPrivacy = document.getElementById('modal-privacy');
     const linkPrivacy = document.getElementById('link-privacy');
