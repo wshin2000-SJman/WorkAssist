@@ -1410,7 +1410,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .legal-link {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
   text-decoration: none;
   opacity: 0.6;
@@ -1440,7 +1440,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
 .footer-copyright {
   margin-top: 4px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-secondary);
   opacity: 0.5;
   display: flex;
@@ -1451,6 +1451,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
 .version-tag {
   font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 12px;
   color: var(--accent-color);
   font-weight: 600;
   opacity: 0.8;
