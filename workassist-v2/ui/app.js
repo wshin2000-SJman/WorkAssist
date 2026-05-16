@@ -104,6 +104,13 @@ const init = () => {
 
     if (minutesSearchType) minutesSearchType.addEventListener('change', handleMinutesSearch);
     
+    // Kanban Search logic
+    const kanbanSearch = document.getElementById('kanban-search');
+    const kanbanSearchType = document.getElementById('kanban-search-type');
+    
+    if (kanbanSearch) kanbanSearch.addEventListener('input', () => renderKanban());
+    if (kanbanSearchType) kanbanSearchType.addEventListener('change', () => renderKanban());
+    
     // Minutes Trash Bin Navigation
     const btnMinutesTrash = document.getElementById('btn-minutes-trash');
     if (btnMinutesTrash) {
@@ -1515,6 +1522,9 @@ function openTaskModal(t, readOnly = false) {
 }
 
 function renderKanban() {
+    const query = (document.getElementById('kanban-search')?.value || '').toLowerCase();
+    const type = document.getElementById('kanban-search-type')?.value || 'all';
+
     const cols = document.querySelectorAll('.kanban-column');
     cols.forEach(c => { 
         const list = c.querySelector('.task-list');
@@ -1523,7 +1533,20 @@ function renderKanban() {
         if (count) count.textContent = '0'; 
     });
 
-    currentTasks.forEach(t => {
+    const filteredTasks = currentTasks.filter(t => {
+        if (!query) return true;
+        const title = (t.title || '').toLowerCase();
+        const content = (t.content || '').toLowerCase();
+        const manager = (t.manager || '').toLowerCase();
+        const tag = (t.task_tag || '').toLowerCase();
+
+        if (type === 'title') return title.includes(query) || tag.includes(query);
+        if (type === 'content') return content.includes(query);
+        if (type === 'manager') return manager.includes(query);
+        return title.includes(query) || tag.includes(query) || content.includes(query) || manager.includes(query);
+    });
+
+    filteredTasks.forEach(t => {
         let displayStatus = t.status;
         
         const col = document.querySelector(`.kanban-column[data-status="${displayStatus}"]`);
