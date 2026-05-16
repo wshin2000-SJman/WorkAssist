@@ -20,6 +20,7 @@ pub const CREATE_MEETINGS_TABLE: &str = "
         memo TEXT,
         created_at TEXT NOT NULL,
         meeting_tag TEXT DEFAULT '',
+        is_deleted BOOLEAN NOT NULL DEFAULT 0,
         FOREIGN KEY (owner_id) REFERENCES users(id)
     );
 ";

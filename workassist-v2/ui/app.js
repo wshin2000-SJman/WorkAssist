@@ -102,8 +102,25 @@ const init = () => {
         renderMeetingsList(filtered);
     };
 
-    if (minutesSearch) minutesSearch.addEventListener('input', handleMinutesSearch);
     if (minutesSearchType) minutesSearchType.addEventListener('change', handleMinutesSearch);
+    
+    // Minutes Trash Bin Navigation
+    const btnMinutesTrash = document.getElementById('btn-minutes-trash');
+    if (btnMinutesTrash) {
+        btnMinutesTrash.onclick = () => {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-minutes-trash').classList.remove('hidden');
+            loadDeletedMeetings();
+        };
+    }
+
+    const btnBackMinutes = document.getElementById('btn-back-minutes');
+    if (btnBackMinutes) {
+        btnBackMinutes.onclick = () => {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-minutes').classList.remove('hidden');
+        };
+    }
 
     setupModals();
     setupSettings();
@@ -1596,8 +1613,23 @@ function renderMeetingsList(meetings) {
     meetings.forEach(m => {
         const card = document.createElement('div');
         card.className = 'meeting-card';
+        card.dataset.id = m.id;
         const tagBadge = m.meeting_tag ? `<span class="tag-badge-mini">${m.meeting_tag}</span>` : '';
-        card.innerHTML = `<div class="meeting-date-badge">${m.date || 'No Date'}</div> ${tagBadge} <div class="meeting-title">${m.title}</div><div class="meeting-info"><span>📍 ${m.location || 'Remote'}</span><span>👥 ${m.participants || 'N/A'}</span></div>`;
+        card.innerHTML = `
+            <div class="meeting-date-badge">${m.date || 'No Date'}</div> 
+            ${tagBadge} 
+            <div class="meeting-title">${m.title}</div>
+            <div class="meeting-info">
+                <span>📍 ${m.location || 'Remote'}</span>
+                <span>👥 ${m.participants || 'N/A'}</span>
+            </div>
+            <div class="meeting-actions-mini">
+                <button class="btn-icon delete-meeting-btn" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        
         card.addEventListener('click', () => {
             document.getElementById('meeting-id').value = m.id;
             document.getElementById('meeting-title').value = m.title;
@@ -1610,22 +1642,99 @@ function renderMeetingsList(meetings) {
             document.getElementById('meeting-decisions').value = m.decisions || '';
             document.getElementById('meeting-actions').value = m.action_items || '';
             
+            // Handle tag display
             const tagEl = document.getElementById('meeting-tag-display');
-            if (m.meeting_tag) {
-                document.getElementById('meeting-tag').value = m.meeting_tag;
-                tagEl.textContent = m.meeting_tag;
-                tagEl.classList.remove('hidden');
-            } else {
-                document.getElementById('meeting-tag').value = '';
-                tagEl.textContent = '';
-                tagEl.classList.add('hidden');
+            if (tagEl) {
+                if (m.meeting_tag) {
+                    tagEl.textContent = m.meeting_tag;
+                    tagEl.classList.remove('hidden');
+                } else {
+                    tagEl.textContent = '';
+                    tagEl.classList.add('hidden');
+                }
             }
 
             document.getElementById('meeting-modal-title').textContent = 'Edit Minutes';
             document.getElementById('modal-meeting').classList.remove('hidden');
         });
+
+        const delBtn = card.querySelector('.delete-meeting-btn');
+        if (delBtn) {
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm('Move this meeting to Trash?')) {
+                    deleteMeeting(m.id);
+                }
+            };
+        }
+
         list.appendChild(card);
     });
+}
+
+async function deleteMeeting(meetingId) {
+    try {
+        await invoke('plugin:minutes|delete_meeting', { meetingId });
+        await refreshMinutes();
+    } catch (err) {
+        console.error("Delete Meeting Error:", err);
+    }
+}
+
+async function loadDeletedMeetings() {
+    const body = document.getElementById('minutes-trash-list-body');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+    try {
+        const deletedMeetings = await invoke('plugin:minutes|get_deleted_meetings', { ownerId: currentUser.id });
+        body.innerHTML = '';
+        if (deletedMeetings.length === 0) {
+            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--text-muted)">No deleted meetings found.</td></tr>';
+            return;
+        }
+        deletedMeetings.forEach(m => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span class="tag-badge-mini">${m.meeting_tag || '-'}</span></td>
+                <td>${m.title}</td>
+                <td>${m.date || '-'}</td>
+                <td>
+                    <button class="btn-icon restore-btn" title="Restore">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    <button class="btn-icon hard-delete-btn" title="Delete Permanently">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            `;
+            tr.querySelector('.restore-btn').onclick = () => restoreMeeting(m.id);
+            tr.querySelector('.hard-delete-btn').onclick = () => hardDeleteMeeting(m.id);
+            body.appendChild(tr);
+        });
+    } catch (err) {
+        console.error("Load Deleted Meetings Error:", err);
+    }
+}
+
+async function restoreMeeting(meetingId) {
+    try {
+        await invoke('plugin:minutes|restore_meeting', { meetingId });
+        await loadDeletedMeetings();
+        await refreshMinutes();
+    } catch (err) {
+        console.error("Restore Meeting Error:", err);
+    }
+}
+
+async function hardDeleteMeeting(meetingId) {
+    if (confirm('Permanently delete this meeting? This action cannot be undone.')) {
+        try {
+            await invoke('plugin:minutes|hard_delete_meeting_cmd', { meetingId });
+            await loadDeletedMeetings();
+        } catch (err) {
+            console.error("Hard Delete Meeting Error:", err);
+        }
+    }
 }
 
 async function refreshProjects() {

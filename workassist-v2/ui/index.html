@@ -246,7 +246,10 @@
         <!-- Minutes View -->
         <div class="view hidden" id="view-minutes">
           <div class="view-header">
-            <button class="btn btn-primary" id="btn-new-meeting">+ New Minutes</button>
+            <div class="header-left">
+              <button class="btn btn-primary" id="btn-new-meeting">+ New Minutes</button>
+              <button id="btn-minutes-trash" class="btn btn-secondary"><span>🗑️</span> Trash Bin</button>
+            </div>
             <div class="header-search">
               <select id="minutes-search-type" class="search-type-select">
                 <option value="all">All</option>
@@ -388,6 +391,29 @@
                 </tr>
               </thead>
               <tbody id="trash-list-body">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Minutes Trash View -->
+        <div class="view hidden" id="view-minutes-trash">
+          <div class="view-header">
+            <h2>Deleted Minutes</h2>
+            <button class="btn btn-secondary" id="btn-back-minutes">Back to Minutes Manager</button>
+          </div>
+          <div class="trash-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Tag</th>
+                  <th>Title</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="minutes-trash-list-body">
                 <!-- Loaded via JS -->
               </tbody>
             </table>

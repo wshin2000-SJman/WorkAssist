@@ -17,8 +17,8 @@ impl MinutesModule {
     pub fn get_all_meetings(&self, owner_id: i64) -> Result<Vec<Meeting>> {
         let conn = self.storage.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, owner_id, title, date, participants, location, decisions, action_items, memo, created_at, meeting_tag 
-             FROM meetings WHERE owner_id = ? OR owner_id = 999 ORDER BY date DESC"
+            "SELECT id, owner_id, title, date, participants, location, decisions, action_items, memo, created_at, meeting_tag, is_deleted 
+             FROM meetings WHERE (owner_id = ? OR owner_id = 999) AND is_deleted = 0 ORDER BY date DESC"
         )?;
         
         let meeting_iter = stmt.query_map(params![owner_id], |row| {
@@ -34,6 +34,7 @@ impl MinutesModule {
                 memo: row.get(8)?,
                 created_at: row.get(9)?,
                 meeting_tag: row.get(10)?,
+                is_deleted: row.get(11)?,
             })
         })?;
 
@@ -44,6 +45,55 @@ impl MinutesModule {
         Ok(meetings)
     }
 
+    pub fn delete_meeting(&self, meeting_id: i64) -> Result<()> {
+        let conn = self.storage.conn.lock().unwrap();
+        conn.execute("UPDATE meetings SET is_deleted = 1 WHERE id = ?", params![meeting_id])?;
+        Ok(())
+    }
+
+    pub fn get_deleted_meetings(&self, owner_id: i64) -> Result<Vec<Meeting>> {
+        let conn = self.storage.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, owner_id, title, date, participants, location, decisions, action_items, memo, created_at, meeting_tag, is_deleted 
+             FROM meetings WHERE (owner_id = ? OR owner_id = 999) AND is_deleted = 1 ORDER BY date DESC"
+        )?;
+        
+        let meeting_iter = stmt.query_map(params![owner_id], |row| {
+            Ok(Meeting {
+                id: Some(row.get(0)?),
+                owner_id: Some(row.get(1)?),
+                title: row.get(2)?,
+                date: row.get(3)?,
+                participants: row.get(4)?,
+                location: row.get(5)?,
+                decisions: row.get(6)?,
+                action_items: row.get(7)?,
+                memo: row.get(8)?,
+                created_at: row.get(9)?,
+                meeting_tag: row.get(10)?,
+                is_deleted: row.get(11)?,
+            })
+        })?;
+
+        let mut meetings = Vec::new();
+        for meeting in meeting_iter {
+            meetings.push(meeting?);
+        }
+        Ok(meetings)
+    }
+
+    pub fn restore_meeting(&self, meeting_id: i64) -> Result<()> {
+        let conn = self.storage.conn.lock().unwrap();
+        conn.execute("UPDATE meetings SET is_deleted = 0 WHERE id = ?", params![meeting_id])?;
+        Ok(())
+    }
+
+    pub fn hard_delete_meeting(&self, meeting_id: i64) -> Result<()> {
+        let conn = self.storage.conn.lock().unwrap();
+        conn.execute("DELETE FROM meetings WHERE id = ?", params![meeting_id])?;
+        Ok(())
+    }
+
     pub fn save_meeting(&self, mut meeting: Meeting) -> Result<i64> {
         let now = Utc::now();
         let now_rfc = now.to_rfc3339();
@@ -52,7 +102,7 @@ impl MinutesModule {
         
         if let Some(id) = meeting.id {
             conn.execute(
-                "UPDATE meetings SET title = ?, date = ?, participants = ?, location = ?, decisions = ?, action_items = ?, memo = ?, meeting_tag = ? WHERE id = ?",
+                "UPDATE meetings SET title = ?, date = ?, participants = ?, location = ?, decisions = ?, action_items = ?, memo = ?, meeting_tag = ?, is_deleted = ? WHERE id = ?",
                 params![
                     meeting.title,
                     meeting.date,
@@ -62,6 +112,7 @@ impl MinutesModule {
                     meeting.action_items,
                     meeting.memo,
                     meeting.meeting_tag,
+                    meeting.is_deleted,
                     id
                 ],
             )?;
@@ -83,8 +134,8 @@ impl MinutesModule {
             meeting.meeting_tag = Some(format!("M{}-{}-{:02}", date_str, time_str, sequence));
             meeting.created_at = now_rfc;
             conn.execute(
-                "INSERT INTO meetings (owner_id, title, date, participants, location, decisions, action_items, memo, created_at, meeting_tag)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO meetings (owner_id, title, date, participants, location, decisions, action_items, memo, created_at, meeting_tag, is_deleted)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 params![
                     meeting.owner_id,
                     meeting.title,
@@ -95,7 +146,8 @@ impl MinutesModule {
                     meeting.action_items,
                     meeting.memo,
                     meeting.created_at,
-                    meeting.meeting_tag
+                    meeting.meeting_tag,
+                    meeting.is_deleted
                 ],
             )?;
             let meeting_id = conn.last_insert_rowid();
@@ -170,6 +222,26 @@ pub async fn save_meeting(api: tauri::State<'_, crate::api::Api>, meeting: Meeti
     api.minutes().save_meeting(meeting).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn delete_meeting(api: tauri::State<'_, crate::api::Api>, meeting_id: i64) -> Result<(), String> {
+    api.minutes().delete_meeting(meeting_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_deleted_meetings(api: tauri::State<'_, crate::api::Api>, owner_id: i64) -> Result<Vec<Meeting>, String> {
+    api.minutes().get_deleted_meetings(owner_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn restore_meeting(api: tauri::State<'_, crate::api::Api>, meeting_id: i64) -> Result<(), String> {
+    api.minutes().restore_meeting(meeting_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn hard_delete_meeting_cmd(api: tauri::State<'_, crate::api::Api>, meeting_id: i64) -> Result<(), String> {
+    api.minutes().hard_delete_meeting(meeting_id).map_err(|e| e.to_string())
+}
+
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("minutes")
         .invoke_handler(tauri::generate_handler![
@@ -177,7 +249,11 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             get_meetings,
             save_meeting,
             export_meeting_md,
-            save_text_file
+            save_text_file,
+            delete_meeting,
+            get_deleted_meetings,
+            restore_meeting,
+            hard_delete_meeting_cmd
         ])
         .build()
 }

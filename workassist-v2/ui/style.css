@@ -988,6 +988,12 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   gap: 12px;
 }
 
+.header-left {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .header-search {
   position: relative;
   flex: 1;
@@ -1076,12 +1082,47 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   cursor: pointer;
   transition: all 0.2s;
   backdrop-filter: var(--glass-effect);
+  position: relative;
+  overflow: hidden;
 }
 
 .meeting-card:hover {
   border-color: var(--accent-color);
   transform: translateY(-4px);
   background: rgba(255, 255, 255, 0.05);
+}
+
+.meeting-actions-mini {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.meeting-card:hover .meeting-actions-mini {
+  opacity: 1;
+}
+
+.meeting-actions-mini .btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.meeting-actions-mini .btn-icon:hover {
+  background: #ff4444;
+  color: #fff;
+  transform: scale(1.1);
 }
 
 .meeting-date-badge {

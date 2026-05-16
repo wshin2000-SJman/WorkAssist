@@ -39,6 +39,7 @@ pub struct Meeting {
     pub memo: Option<String>,
     pub created_at: String,
     pub meeting_tag: Option<String>,
+    pub is_deleted: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
