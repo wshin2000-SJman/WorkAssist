@@ -443,7 +443,7 @@ function closeAllModals() {
     closeProject();
     
     // Hide other non-form or simple modals
-    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-about', 'modal-privacy'];
+    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-about', 'modal-privacy', 'modal-terms'];
     others.forEach(id => {
         const m = document.getElementById(id);
         if (m) {
@@ -537,6 +537,23 @@ function setupModals() {
     if (btnClosePrivacy && modalPrivacy) {
         btnClosePrivacy.onclick = () => {
             modalPrivacy.classList.add('hidden');
+        };
+    }
+
+    // Terms Modal
+    const modalTerms = document.getElementById('modal-terms');
+    const linkTerms = document.getElementById('link-terms');
+    const btnCloseTerms = document.getElementById('btn-close-terms');
+
+    if (linkTerms && modalTerms) {
+        linkTerms.onclick = (e) => {
+            e.preventDefault();
+            modalTerms.classList.remove('hidden');
+        };
+    }
+    if (btnCloseTerms && modalTerms) {
+        btnCloseTerms.onclick = () => {
+            modalTerms.classList.add('hidden');
         };
     }
 
