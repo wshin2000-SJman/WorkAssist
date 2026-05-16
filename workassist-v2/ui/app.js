@@ -443,7 +443,7 @@ function closeAllModals() {
     closeProject();
     
     // Hide other non-form or simple modals
-    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-about', 'modal-privacy', 'modal-terms'];
+    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-about', 'modal-privacy', 'modal-terms', 'modal-contact'];
     others.forEach(id => {
         const m = document.getElementById(id);
         if (m) {
@@ -554,6 +554,23 @@ function setupModals() {
     if (btnCloseTerms && modalTerms) {
         btnCloseTerms.onclick = () => {
             modalTerms.classList.add('hidden');
+        };
+    }
+
+    // Contact Modal
+    const modalContact = document.getElementById('modal-contact');
+    const linkContact = document.getElementById('link-contact');
+    const btnCloseContact = document.getElementById('btn-close-contact');
+
+    if (linkContact && modalContact) {
+        linkContact.onclick = (e) => {
+            e.preventDefault();
+            modalContact.classList.remove('hidden');
+        };
+    }
+    if (btnCloseContact && modalContact) {
+        btnCloseContact.onclick = () => {
+            modalContact.classList.add('hidden');
         };
     }
 
