@@ -227,6 +227,9 @@ impl Storage {
         if !meetings_info.contains(&"meeting_tag".to_string()) {
             conn.execute("ALTER TABLE meetings ADD COLUMN meeting_tag TEXT DEFAULT ''", [])?;
         }
+        if !meetings_info.contains(&"is_deleted".to_string()) {
+            conn.execute("ALTER TABLE meetings ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT 0", [])?;
+        }
 
         let shadow_meetings_info: Vec<String> = {
             let mut stmt = conn.prepare("PRAGMA table_info(shadow_meetings)")?;
@@ -512,6 +515,7 @@ impl Storage {
                 memo: Some("Crucial meeting to finalize the Antigravity security layer.".to_string()),
                 created_at: now.clone(),
                 meeting_tag: Some(format!("M{}-1400-01", d_m2.replace("-", ""))),
+                is_deleted: false,
             },
             Meeting {
                 id: None, owner_id: Some(owner_id),
@@ -524,6 +528,7 @@ impl Storage {
                 memo: Some("High-level strategic alignment for the next expansion phase.".to_string()),
                 created_at: now.clone(),
                 meeting_tag: Some(format!("M{}-1000-02", d_today.replace("-", ""))),
+                is_deleted: false,
             }
         ];
 
