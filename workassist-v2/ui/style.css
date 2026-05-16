@@ -123,21 +123,47 @@ textarea::-webkit-scrollbar {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: #0b0e14;
-  background-image: 
-    linear-gradient(115deg, transparent 47%, 
-    var(--brand-blue) 47%, var(--brand-blue) 47.8%, transparent 47.8%, transparent 48.2%,
-    var(--brand-green) 48.2%, var(--brand-green) 49%, transparent 49%, transparent 49.4%,
-    var(--brand-yellow) 49.4%, var(--brand-yellow) 50.2%, transparent 50.2%, transparent 50.6%,
-    var(--brand-orange) 50.6%, var(--brand-orange) 51.4%, transparent 51.4%, transparent 51.8%,
-    var(--brand-red) 51.8%, var(--brand-red) 52.6%, transparent 52.6%);
-  background-size: 300% 300%;
-  animation: bgRise 30s linear infinite;
+  background-color: #080a0f;
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 100000;
   transition: opacity 0.5s ease;
+  overflow: hidden;
+}
+
+.rainbow-bars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.rainbow-bars .bar {
+  position: absolute;
+  width: 12px;
+  height: 250vh;
+  background: var(--color);
+  left: var(--left);
+  top: 100%;
+  transform: rotate(45deg);
+  animation: barSlide 25s linear infinite;
+  animation-delay: var(--delay);
+  box-shadow: 0 0 40px var(--color);
+  opacity: 0.15;
+  border-radius: 10px;
+}
+
+@keyframes barSlide {
+  0% {
+    transform: translate(-50vw, 50vh) rotate(45deg);
+  }
+  100% {
+    transform: translate(150vw, -150vh) rotate(45deg);
+  }
 }
 
 body {
@@ -166,10 +192,7 @@ body {
   z-index: 1000;
 }
 
-@keyframes bgRise {
-  from { background-position: 0% 100%; }
-  to { background-position: 100% 0%; }
-}
+
 
 .logo {
   display: flex;
