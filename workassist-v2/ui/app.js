@@ -443,7 +443,7 @@ function closeAllModals() {
     closeProject();
     
     // Hide other non-form or simple modals
-    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-about'];
+    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-about', 'modal-privacy'];
     others.forEach(id => {
         const m = document.getElementById(id);
         if (m) {
@@ -521,6 +521,21 @@ function setupModals() {
                 console.error("Export Error:", err);
                 alert("Failed to export: " + err);
             }
+        };
+    // Privacy Modal
+    const modalPrivacy = document.getElementById('modal-privacy');
+    const linkPrivacy = document.getElementById('link-privacy');
+    const btnClosePrivacy = document.getElementById('btn-close-privacy');
+
+    if (linkPrivacy && modalPrivacy) {
+        linkPrivacy.onclick = (e) => {
+            e.preventDefault();
+            modalPrivacy.classList.remove('hidden');
+        };
+    }
+    if (btnClosePrivacy && modalPrivacy) {
+        btnClosePrivacy.onclick = () => {
+            modalPrivacy.classList.add('hidden');
         };
     }
 
