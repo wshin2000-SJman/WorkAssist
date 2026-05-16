@@ -144,27 +144,27 @@ textarea::-webkit-scrollbar {
 
 .rainbow-bars .bar {
   position: absolute;
-  width: 15px;
-  height: 200vh;
+  width: 4px;
+  height: 100vh;
   background: var(--color);
   left: var(--left);
-  top: 50%;
-  transform: translate(-120vw, 120vh) rotate(45deg);
-  animation: barSlide 20s linear infinite;
+  top: 100%;
+  transform: translateY(0);
+  animation: barRise 15s linear infinite;
   animation-delay: var(--delay);
-  box-shadow: 0 0 35px var(--color);
-  opacity: 0.25;
-  border-radius: 20px;
-  filter: blur(1px);
+  box-shadow: 0 0 30px var(--color);
+  opacity: 0.35;
+  border-radius: 4px;
+  filter: blur(0.5px);
   will-change: transform;
 }
 
-@keyframes barSlide {
+@keyframes barRise {
   0% {
-    transform: translate(-120vw, 120vh) rotate(45deg);
+    transform: translateY(0);
   }
   100% {
-    transform: translate(120vw, -120vh) rotate(45deg);
+    transform: translateY(-200vh);
   }
 }
 
