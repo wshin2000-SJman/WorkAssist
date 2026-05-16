@@ -144,25 +144,27 @@ textarea::-webkit-scrollbar {
 
 .rainbow-bars .bar {
   position: absolute;
-  width: 12px;
-  height: 250vh;
+  width: 15px;
+  height: 200vh;
   background: var(--color);
   left: var(--left);
-  top: 100%;
-  transform: rotate(45deg);
-  animation: barSlide 25s linear infinite;
+  top: 50%;
+  transform: translate(-120vw, 120vh) rotate(45deg);
+  animation: barSlide 20s linear infinite;
   animation-delay: var(--delay);
-  box-shadow: 0 0 40px var(--color);
+  box-shadow: 0 0 30px var(--color);
   opacity: 0.15;
-  border-radius: 10px;
+  border-radius: 20px;
+  filter: blur(1px);
+  will-change: transform;
 }
 
 @keyframes barSlide {
   0% {
-    transform: translate(-50vw, 50vh) rotate(45deg);
+    transform: translate(-120vw, 120vh) rotate(45deg);
   }
   100% {
-    transform: translate(150vw, -150vh) rotate(45deg);
+    transform: translate(120vw, -120vh) rotate(45deg);
   }
 }
 
