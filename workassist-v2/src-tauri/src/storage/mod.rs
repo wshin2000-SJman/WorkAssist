@@ -355,7 +355,20 @@ impl Storage {
 
     pub fn seed_demo_data(&self) -> Result<()> {
         let owner_id = 999;
-        let now = chrono::Utc::now().to_rfc3339();
+        let now_dt = chrono::Local::now();
+        let now = now_dt.to_rfc3339();
+        
+        // Dynamic dates within +/- 2 weeks
+        let d_m10 = (now_dt - chrono::Duration::days(10)).format("%Y-%m-%d").to_string();
+        let d_m5 = (now_dt - chrono::Duration::days(5)).format("%Y-%m-%d").to_string();
+        let d_m2 = (now_dt - chrono::Duration::days(2)).format("%Y-%m-%d").to_string();
+        let d_today = now_dt.format("%Y-%m-%d").to_string();
+        let d_p1 = (now_dt + chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
+        let d_p3 = (now_dt + chrono::Duration::days(3)).format("%Y-%m-%d").to_string();
+        let d_p5 = (now_dt + chrono::Duration::days(5)).format("%Y-%m-%d").to_string();
+        let d_p8 = (now_dt + chrono::Duration::days(8)).format("%Y-%m-%d").to_string();
+        let d_p14 = (now_dt + chrono::Duration::days(14)).format("%Y-%m-%d").to_string();
+
         let conn = self.conn.lock().unwrap();
 
         // Ensure demo user exists
@@ -442,7 +455,7 @@ impl Storage {
                 title: "Fix Tokenization Bug in GateWay".to_string(),
                 content: Some("Ensure special characters in Wonseup Shin's profile are handled correctly.".to_string()),
                 manager: Some("Wonseup Shin".to_string()),
-                start_date: Some("2026-05-15".to_string()), due_date: Some("2026-05-20".to_string()),
+                start_date: Some(d_m2.clone()), due_date: Some(d_p3.clone()),
                 status: "Doing".to_string(), is_urgent: true, created_at: now.clone(),
                 review_comment: None, task_tag: Some("BUG-101".to_string()), is_deleted: false,
             },
@@ -451,7 +464,7 @@ impl Storage {
                 title: "Prepare SJ-Automation Q3 Report".to_string(),
                 content: Some("Compile financial data and project status for the board meeting.".to_string()),
                 manager: Some("Admin User".to_string()),
-                start_date: Some("2026-05-10".to_string()), due_date: Some("2026-05-25".to_string()),
+                start_date: Some(d_m10.clone()), due_date: Some(d_p8.clone()),
                 status: "Note".to_string(), is_urgent: false, created_at: now.clone(),
                 review_comment: None, task_tag: Some("MGMT-05".to_string()), is_deleted: false,
             },
@@ -460,7 +473,7 @@ impl Storage {
                 title: "Update API Documentation".to_string(),
                 content: Some("Complete Swagger definitions for the new Minutes Search endpoint.".to_string()),
                 manager: Some("Wonseup Shin".to_string()),
-                start_date: Some("2026-05-17".to_string()), due_date: Some("2026-05-22".to_string()),
+                start_date: Some(d_today.clone()), due_date: Some(d_p5.clone()),
                 status: "To-do".to_string(), is_urgent: false, created_at: now.clone(),
                 review_comment: None, task_tag: Some("DOC-42".to_string()), is_deleted: false,
             },
@@ -469,7 +482,7 @@ impl Storage {
                 title: "Performance Profiling".to_string(),
                 content: Some("Analyze SQLite query latency for the new shadow DB sync logic.".to_string()),
                 manager: Some("Perf Lead".to_string()),
-                start_date: Some("2026-05-18".to_string()), due_date: Some("2026-05-19".to_string()),
+                start_date: Some(d_p1.clone()), due_date: Some(d_p3.clone()),
                 status: "Todo".to_string(), is_urgent: true, created_at: now.clone(),
                 review_comment: None, task_tag: Some("PERF-01".to_string()), is_deleted: false,
             }
@@ -491,26 +504,26 @@ impl Storage {
             Meeting {
                 id: None, owner_id: Some(owner_id),
                 title: "SJ-Gimbal Core Security Review".to_string(),
-                date: Some("2026-05-16".to_string()),
+                date: Some(d_m2.clone()),
                 participants: Some("Wonseup Shin, Admin User, Technical Lead".to_string()),
                 location: Some("Conference Room Alpha".to_string()),
                 decisions: Some("Approved the use of regex-based SecurityEngine for PII tokenization.".to_string()),
                 action_items: Some("1. Update schema.rs, 2. Test dual-write latency".to_string()),
                 memo: Some("Crucial meeting to finalize the Antigravity security layer.".to_string()),
                 created_at: now.clone(),
-                meeting_tag: Some("M20260516-1400-01".to_string()),
+                meeting_tag: Some(format!("M{}-1400-01", d_m2.replace("-", ""))),
             },
             Meeting {
                 id: None, owner_id: Some(owner_id),
                 title: "Quarterly Strategy Session".to_string(),
-                date: Some("2026-05-17".to_string()),
+                date: Some(d_today.clone()),
                 participants: Some("Wonseup Shin, C-Level Executives".to_string()),
                 location: Some("Executive Suite".to_string()),
                 decisions: Some("Decided to prioritize the Antigravity v2 deployment across all SJ branches.".to_string()),
                 action_items: Some("1. Draft deployment roadmap, 2. Allocate Q3 budget".to_string()),
                 memo: Some("High-level strategic alignment for the next expansion phase.".to_string()),
                 created_at: now.clone(),
-                meeting_tag: Some("M20260517-1000-02".to_string()),
+                meeting_tag: Some(format!("M{}-1000-02", d_today.replace("-", ""))),
             }
         ];
 
