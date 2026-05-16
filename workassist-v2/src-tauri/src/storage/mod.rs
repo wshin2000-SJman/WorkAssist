@@ -385,6 +385,26 @@ impl Storage {
                 created_at: now.clone(), status: "active".to_string(),
                 dept1_name: "Design".to_string(), dept2_name: "Frontend".to_string(),
                 dept3_name: "Backend".to_string(), dept4_name: "QA".to_string(),
+            },
+            Project {
+                id: None, owner_id: Some(owner_id),
+                name: "Autonomous Navigation Alpha".to_string(),
+                description: Some("Implementing SLAM algorithms for indoor warehouse robots.".to_string()),
+                manager: Some("Wonseup Shin".to_string()),
+                client: Some("Logistics Corp".to_string()),
+                created_at: now.clone(), status: "active".to_string(),
+                dept1_name: "Algorithm".to_string(), dept2_name: "Vision".to_string(),
+                dept3_name: "Control".to_string(), dept4_name: "Integration".to_string(),
+            },
+            Project {
+                id: None, owner_id: Some(owner_id),
+                name: "Cloud Sync Gateway v2".to_string(),
+                description: Some("Next-gen secure synchronization layer for cross-platform data.".to_string()),
+                manager: Some("Cloud Lead".to_string()),
+                client: Some("SJ Global".to_string()),
+                created_at: now.clone(), status: "active".to_string(),
+                dept1_name: "API".to_string(), dept2_name: "Security".to_string(),
+                dept3_name: "DevOps".to_string(), dept4_name: "Monitoring".to_string(),
             }
         ];
 
@@ -434,6 +454,24 @@ impl Storage {
                 start_date: Some("2026-05-10".to_string()), due_date: Some("2026-05-25".to_string()),
                 status: "Note".to_string(), is_urgent: false, created_at: now.clone(),
                 review_comment: None, task_tag: Some("MGMT-05".to_string()), is_deleted: false,
+            },
+            Task {
+                id: None, owner_id: Some(owner_id),
+                title: "Update API Documentation".to_string(),
+                content: Some("Complete Swagger definitions for the new Minutes Search endpoint.".to_string()),
+                manager: Some("Wonseup Shin".to_string()),
+                start_date: Some("2026-05-17".to_string()), due_date: Some("2026-05-22".to_string()),
+                status: "To-do".to_string(), is_urgent: false, created_at: now.clone(),
+                review_comment: None, task_tag: Some("DOC-42".to_string()), is_deleted: false,
+            },
+            Task {
+                id: None, owner_id: Some(owner_id),
+                title: "Performance Profiling".to_string(),
+                content: Some("Analyze SQLite query latency for the new shadow DB sync logic.".to_string()),
+                manager: Some("Perf Lead".to_string()),
+                start_date: Some("2026-05-18".to_string()), due_date: Some("2026-05-19".to_string()),
+                status: "Todo".to_string(), is_urgent: true, created_at: now.clone(),
+                review_comment: None, task_tag: Some("PERF-01".to_string()), is_deleted: false,
             }
         ];
 
@@ -461,14 +499,26 @@ impl Storage {
                 memo: Some("Crucial meeting to finalize the Antigravity security layer.".to_string()),
                 created_at: now.clone(),
                 meeting_tag: Some("M20260516-1400-01".to_string()),
+            },
+            Meeting {
+                id: None, owner_id: Some(owner_id),
+                title: "Quarterly Strategy Session".to_string(),
+                date: Some("2026-05-17".to_string()),
+                participants: Some("Wonseup Shin, C-Level Executives".to_string()),
+                location: Some("Executive Suite".to_string()),
+                decisions: Some("Decided to prioritize the Antigravity v2 deployment across all SJ branches.".to_string()),
+                action_items: Some("1. Draft deployment roadmap, 2. Allocate Q3 budget".to_string()),
+                memo: Some("High-level strategic alignment for the next expansion phase.".to_string()),
+                created_at: now.clone(),
+                meeting_tag: Some("M20260517-1000-02".to_string()),
             }
         ];
 
         for mut m in meetings {
             conn.execute(
-                "INSERT INTO meetings (owner_id, title, date, participants, location, decisions, action_items, memo, created_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                params![m.owner_id, m.title, m.date, m.participants, m.location, m.decisions, m.action_items, m.memo, m.created_at],
+                "INSERT INTO meetings (owner_id, title, date, participants, location, decisions, action_items, memo, created_at, meeting_tag) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![m.owner_id, m.title, m.date, m.participants, m.location, m.decisions, m.action_items, m.memo, m.created_at, m.meeting_tag],
             )?;
             let mid = conn.last_insert_rowid();
             m.id = Some(mid);
