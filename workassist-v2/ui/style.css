@@ -1387,24 +1387,26 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-}
-
-.footer-links-main {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
+  gap: 14px;
   width: 100%;
 }
 
-.footer-legal-links {
+.footer-links-main, .footer-legal-links {
   display: flex;
-  gap: 20px;
-  justify-content: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 330px;
+}
+
+.footer-divider {
+  width: 100%;
+  max-width: 330px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .legal-link {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
   text-decoration: none;
   opacity: 0.6;
@@ -1433,15 +1435,16 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .footer-copyright {
-  margin-top: 10px;
-  font-size: 11px;
+  margin-top: 4px;
+  font-size: 10px;
   color: var(--text-secondary);
   opacity: 0.5;
   display: flex;
   justify-content: space-between;
   width: 100%;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  max-width: 330px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .version-tag {
