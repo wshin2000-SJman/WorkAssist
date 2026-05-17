@@ -4143,41 +4143,6 @@ function generateProjectHtml(project, milestones, logs) {
 </html>`;
 }
 
-        <h3>Project Milestones</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 80px;">Slot</th>
-                    <th>Milestone Name</th>
-                    <th style="width: 150px;">Deadline</th>
-                    <th style="width: 120px;">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${milestoneRowsHtml || '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #94a3b8;">No milestones defined.</td></tr>'}
-            </tbody>
-        </table>
-
-        <h3>Active Status Logs</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 140px;">Slot</th>
-                    <th style="width: 220px;">Title</th>
-                    <th>Details</th>
-                    <th style="width: 120px;">PIC</th>
-                    <th style="width: 160px;">Time</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${logRowsHtml || '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #94a3b8;">No status logs recorded yet.</td></tr>'}
-            </tbody>
-        </table>
-    </div>
-</body>
-</html>`;
-}
-
 function initDragAndDrop() {
     const board = document.querySelector('.kanban-board');
     if (!board) return;
