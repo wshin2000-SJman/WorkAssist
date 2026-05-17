@@ -23,6 +23,7 @@ pub struct Task {
     pub created_at: String,
     pub review_comment: Option<String>,
     pub task_tag: Option<String>,
+    #[serde(default)]
     pub is_deleted: bool,
 }
 
@@ -39,6 +40,7 @@ pub struct Meeting {
     pub memo: Option<String>,
     pub created_at: String,
     pub meeting_tag: Option<String>,
+    #[serde(default)]
     pub is_deleted: bool,
 }
 
@@ -56,6 +58,9 @@ pub struct Project {
     pub dept2_name: String,
     pub dept3_name: String,
     pub dept4_name: String,
+    pub project_tag: Option<String>,
+    #[serde(default)]
+    pub is_deleted: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -84,4 +89,6 @@ pub struct StatusLog {
     pub manager: Option<String>,
     pub start_date: Option<String>,
     pub due_date: Option<String>,
+    #[serde(default)]
+    pub is_deleted: bool,
 }

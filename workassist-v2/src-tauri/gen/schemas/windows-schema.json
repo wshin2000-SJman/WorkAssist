@@ -6429,6 +6429,24 @@
           "markdownDescription": "Enables the add_status_log command without any pre-configured scope."
         },
         {
+          "description": "Enables the delete_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-delete-project",
+          "markdownDescription": "Enables the delete_project command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the delete_status_log_permanent command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-delete-status-log-permanent",
+          "markdownDescription": "Enables the delete_status_log_permanent command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_deleted_projects command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-get-deleted-projects",
+          "markdownDescription": "Enables the get_deleted_projects command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_milestones command without any pre-configured scope.",
           "type": "string",
           "const": "pm:allow-get-milestones",
@@ -6453,10 +6471,40 @@
           "markdownDescription": "Enables the get_status_logs command without any pre-configured scope."
         },
         {
+          "description": "Enables the hard_delete_project_cmd command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-hard-delete-project-cmd",
+          "markdownDescription": "Enables the hard_delete_project_cmd command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the restore_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-restore-project",
+          "markdownDescription": "Enables the restore_project command without any pre-configured scope."
+        },
+        {
           "description": "Enables the save_milestone command without any pre-configured scope.",
           "type": "string",
           "const": "pm:allow-save-milestone",
           "markdownDescription": "Enables the save_milestone command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the update_status_log command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-update-status-log",
+          "markdownDescription": "Enables the update_status_log command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the update_status_log_deleted command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-update-status-log-deleted",
+          "markdownDescription": "Enables the update_status_log_deleted command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the update_status_log_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-update-status-log-status",
+          "markdownDescription": "Enables the update_status_log_status command without any pre-configured scope."
         },
         {
           "description": "Denies the add_project command without any pre-configured scope.",
@@ -6469,6 +6517,24 @@
           "type": "string",
           "const": "pm:deny-add-status-log",
           "markdownDescription": "Denies the add_status_log command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the delete_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-delete-project",
+          "markdownDescription": "Denies the delete_project command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the delete_status_log_permanent command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-delete-status-log-permanent",
+          "markdownDescription": "Denies the delete_status_log_permanent command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_deleted_projects command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-get-deleted-projects",
+          "markdownDescription": "Denies the get_deleted_projects command without any pre-configured scope."
         },
         {
           "description": "Denies the get_milestones command without any pre-configured scope.",
@@ -6495,10 +6561,40 @@
           "markdownDescription": "Denies the get_status_logs command without any pre-configured scope."
         },
         {
+          "description": "Denies the hard_delete_project_cmd command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-hard-delete-project-cmd",
+          "markdownDescription": "Denies the hard_delete_project_cmd command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the restore_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-restore-project",
+          "markdownDescription": "Denies the restore_project command without any pre-configured scope."
+        },
+        {
           "description": "Denies the save_milestone command without any pre-configured scope.",
           "type": "string",
           "const": "pm:deny-save-milestone",
           "markdownDescription": "Denies the save_milestone command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the update_status_log command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-update-status-log",
+          "markdownDescription": "Denies the update_status_log command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the update_status_log_deleted command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-update-status-log-deleted",
+          "markdownDescription": "Denies the update_status_log_deleted command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the update_status_log_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-update-status-log-status",
+          "markdownDescription": "Denies the update_status_log_status command without any pre-configured scope."
         },
         {
           "description": "This permission set configures which\nshell functionality is exposed by default.\n\n#### Granted Permissions\n\nIt allows to use the `open` functionality with a reasonable\nscope pre-configured. It will allow opening `http(s)://`,\n`tel:` and `mailto:` links.\n\n#### This default permission set includes:\n\n- `allow-open`",

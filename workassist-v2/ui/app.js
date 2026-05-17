@@ -115,17 +115,29 @@ const init = () => {
     const btnMinutesTrash = document.getElementById('btn-minutes-trash');
     if (btnMinutesTrash) {
         btnMinutesTrash.onclick = () => {
-            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-            document.getElementById('view-minutes-trash').classList.remove('hidden');
-            loadDeletedMeetings();
+            loadView('nav-minutes-trash');
         };
     }
 
     const btnBackMinutes = document.getElementById('btn-back-minutes');
     if (btnBackMinutes) {
         btnBackMinutes.onclick = () => {
-            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-            document.getElementById('view-minutes').classList.remove('hidden');
+            loadView('nav-minutes');
+        };
+    }
+
+    // Project Trash Bin Navigation
+    const btnProjectTrash = document.getElementById('btn-project-trash');
+    if (btnProjectTrash) {
+        btnProjectTrash.onclick = () => {
+            loadView('nav-pm-trash');
+        };
+    }
+
+    const btnBackProject = document.getElementById('btn-back-project');
+    if (btnBackProject) {
+        btnBackProject.onclick = () => {
+            loadView('nav-pm');
         };
     }
 
@@ -447,6 +459,97 @@ function closeMeeting() {
 
     modalMeeting.classList.add('hidden'); 
     formMeeting.reset();
+
+    // Reset read-only state
+    const inputs = formMeeting.querySelectorAll('input, textarea');
+    inputs.forEach(input => input.disabled = false);
+
+    const submitBtn = formMeeting.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.style.display = 'block';
+
+    const cancelBtn = document.getElementById('btn-cancel-meeting');
+    if (cancelBtn) cancelBtn.textContent = 'Cancel';
+
+    document.getElementById('meeting-id').value = '';
+    document.getElementById('meeting-tag').value = '';
+    const tagDisplay = document.getElementById('meeting-tag-display');
+    if (tagDisplay) {
+        tagDisplay.textContent = '';
+        tagDisplay.classList.add('hidden');
+    }
+    const modalTitle = document.getElementById('meeting-modal-title');
+    if (modalTitle) modalTitle.textContent = 'Create New Minutes';
+
+    const btnDelMeetingModal = document.getElementById('btn-delete-meeting-modal');
+    if (btnDelMeetingModal) {
+        btnDelMeetingModal.classList.add('hidden');
+        btnDelMeetingModal.onclick = null;
+    }
+}
+
+function openMeetingModal(m, readOnly = false) {
+    document.getElementById('meeting-id').value = m.id || '';
+    document.getElementById('meeting-tag').value = m.meeting_tag || '';
+    document.getElementById('meeting-title').value = m.title || '';
+    const [mDate, mTime] = (m.date || '').split(' ');
+    document.getElementById('meeting-date').value = mDate || '';
+    document.getElementById('meeting-time').value = mTime || '';
+    document.getElementById('meeting-location').value = m.location || '';
+    document.getElementById('meeting-participants').value = m.participants || '';
+    document.getElementById('meeting-memo').value = m.memo || '';
+    document.getElementById('meeting-decisions').value = m.decisions || '';
+    document.getElementById('meeting-actions').value = m.action_items || '';
+    
+    // Handle tag display
+    const tagEl = document.getElementById('meeting-tag-display');
+    if (tagEl) {
+        if (m.meeting_tag) {
+            tagEl.textContent = m.meeting_tag;
+            tagEl.classList.remove('hidden');
+        } else {
+            tagEl.textContent = '';
+            tagEl.classList.add('hidden');
+        }
+    }
+
+    document.getElementById('meeting-modal-title').textContent = readOnly ? 'Minutes Details (Read Only)' : 'Edit Minutes';
+    
+    const submitBtn = document.querySelector('#modal-meeting button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.style.display = readOnly ? 'none' : 'block';
+    }
+
+    const cancelBtn = document.getElementById('btn-cancel-meeting');
+    if (cancelBtn) {
+        cancelBtn.textContent = readOnly ? 'Close' : 'Cancel';
+    }
+
+    // Handle read-only state for inputs
+    const formMeeting = document.getElementById('form-meeting');
+    const inputs = formMeeting.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        input.disabled = readOnly;
+    });
+
+    const btnDelMeetingModal = document.getElementById('btn-delete-meeting-modal');
+    if (btnDelMeetingModal) {
+        if (readOnly) {
+            btnDelMeetingModal.classList.add('hidden');
+        } else if (m.id) {
+            btnDelMeetingModal.classList.remove('hidden');
+            btnDelMeetingModal.onclick = async () => {
+                if (await askConfirm('Move these minutes to Trash?')) {
+                    await deleteMeeting(m.id);
+                    closeMeeting();
+                }
+            };
+        } else {
+            btnDelMeetingModal.classList.add('hidden');
+        }
+    }
+
+    const modalMeeting = document.getElementById('modal-meeting');
+    if (modalMeeting) modalMeeting.classList.remove('hidden');
 }
 
 function closeReview() {
@@ -463,7 +566,30 @@ function closeProject() {
     const formProject = document.getElementById('form-project');
     if (modalProject) {
         modalProject.classList.add('hidden');
-        if (formProject) formProject.reset();
+        if (formProject) {
+            formProject.reset();
+            const inputs = formProject.querySelectorAll('input, textarea');
+            inputs.forEach(input => {
+                input.disabled = false;
+            });
+        }
+    }
+    const btnDelProjectModal = document.getElementById('btn-delete-project-modal');
+    if (btnDelProjectModal) {
+        btnDelProjectModal.classList.add('hidden');
+        btnDelProjectModal.onclick = null;
+    }
+    const titleEl = document.getElementById('project-modal-title');
+    if (titleEl) titleEl.textContent = 'Register New Project';
+
+    const submitBtn = document.querySelector('#modal-project button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.style.display = 'block';
+    }
+
+    const cancelBtn = document.getElementById('btn-cancel-project');
+    if (cancelBtn) {
+        cancelBtn.textContent = 'Cancel';
     }
 }
 
@@ -737,7 +863,8 @@ function setupModals() {
                 action_items: document.getElementById('meeting-actions').value,
                 memo: document.getElementById('meeting-memo').value, 
                 meeting_tag: document.getElementById('meeting-tag').value || "",
-                created_at: ""
+                created_at: "",
+                is_deleted: false
             };
             try {
                 await invoke('plugin:minutes|save_meeting', { meeting: meetingData });
@@ -820,12 +947,77 @@ function setupModals() {
     const btnCloseProject = document.getElementById('btn-close-project');
     const btnCancelProject = document.getElementById('btn-cancel-project');
 
+    window.openProjectModal = function(p, readOnly = false) {
+        const modalProject = document.getElementById('modal-project');
+        const formProject = document.getElementById('form-project');
+        if (!modalProject) return;
+
+        document.getElementById('project-id').value = p.id || '';
+        document.getElementById('project-name').value = p.name || '';
+        document.getElementById('project-desc').value = p.description || '';
+        document.getElementById('project-manager').value = p.manager || '';
+        document.getElementById('project-client').value = p.client || '';
+        document.getElementById('project-dept1').value = p.dept1_name || 'SALES';
+        document.getElementById('project-dept2').value = p.dept2_name || 'DESIGN';
+        document.getElementById('project-dept3').value = p.dept3_name || 'PROCUREMENT';
+        document.getElementById('project-dept4').value = p.dept4_name || 'ASSEMBLY';
+
+        const titleEl = document.getElementById('project-modal-title');
+        if (titleEl) {
+            titleEl.textContent = readOnly ? 'Project Details (Read Only)' : (p.id ? 'Edit Project' : 'Register New Project');
+        }
+
+        const submitBtn = formProject.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.style.display = readOnly ? 'none' : 'block';
+            submitBtn.textContent = p.id ? 'Save Project' : 'Create Project';
+        }
+
+        const cancelBtn = document.getElementById('btn-cancel-project');
+        if (cancelBtn) {
+            cancelBtn.textContent = readOnly ? 'Close' : 'Cancel';
+        }
+
+        const inputs = formProject.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            input.disabled = readOnly;
+        });
+
+        const btnDelProjectModal = document.getElementById('btn-delete-project-modal');
+        if (btnDelProjectModal) {
+            if (p.id && !readOnly) {
+                btnDelProjectModal.classList.remove('hidden');
+                btnDelProjectModal.onclick = async () => {
+                    if (await askConfirm('Move this project and all its milestones/logs to Trash?')) {
+                        try {
+                            await invoke('plugin:pm|delete_project', { projectId: p.id });
+                            closeProject();
+                            
+                            // Clear current selected project display
+                            document.getElementById('detail-project-name').textContent = 'Select a Project';
+                            document.getElementById('detail-project-meta').textContent = 'Client: - | Manager: -';
+                            document.getElementById('detail-project-desc').textContent = 'No description available.';
+                            document.getElementById('detail-project-tag').classList.add('hidden');
+                            const btnEditProject = document.getElementById('btn-edit-project');
+                            if (btnEditProject) btnEditProject.classList.add('hidden');
+
+                            await refreshProjects();
+                        } catch (err) {
+                            console.error("Delete Project Error:", err);
+                        }
+                    }
+                };
+            } else {
+                btnDelProjectModal.classList.add('hidden');
+            }
+        }
+
+        modalProject.classList.remove('hidden');
+    };
+
     if (btnNewProject) {
         btnNewProject.onclick = () => {
-            document.getElementById('project-id').value = '';
-            formProject.reset();
-            document.getElementById('project-modal-title').textContent = 'Register New Project';
-            modalProject.classList.remove('hidden');
+            openProjectModal({});
         };
     }
 
@@ -835,8 +1027,9 @@ function setupModals() {
     if (formProject) {
         formProject.onsubmit = async (e) => {
             e.preventDefault();
+            const idVal = document.getElementById('project-id').value;
             const projectData = {
-                id: null,
+                id: idVal ? parseInt(idVal) : null,
                 owner_id: currentUser.id,
                 name: document.getElementById('project-name').value,
                 description: document.getElementById('project-desc').value,
@@ -847,13 +1040,19 @@ function setupModals() {
                 dept1_name: document.getElementById('project-dept1').value,
                 dept2_name: document.getElementById('project-dept2').value,
                 dept3_name: document.getElementById('project-dept3').value,
-                dept4_name: document.getElementById('project-dept4').value
+                dept4_name: document.getElementById('project-dept4').value,
+                project_tag: idVal ? (currentProjects.find(p => p.id === parseInt(idVal))?.project_tag || null) : null
             };
             try {
-                await invoke('plugin:pm|add_project', { project: projectData });
+                const newId = await invoke('plugin:pm|add_project', { project: projectData });
                 closeProject();
                 await refreshProjects();
-            } catch (err) { console.error("Add Project Error:", err); }
+                if (projectData.id) {
+                    await loadProjectDetails(projectData.id);
+                } else if (newId) {
+                    await loadProjectDetails(newId);
+                }
+            } catch (err) { console.error("Save Project Error:", err); }
         };
     }
 
@@ -895,26 +1094,101 @@ function setupModals() {
     if (formLog) {
         formLog.onsubmit = async (e) => {
             e.preventDefault();
+            const logIdVal = document.getElementById('log-id').value;
             const log = {
-                id: null,
+                id: logIdVal ? parseInt(logIdVal) : null,
                 project_id: parseInt(document.getElementById('log-project-id').value),
                 owner_id: currentUser.id,
                 department: document.getElementById('log-department').value,
                 text_content: document.getElementById('log-content').value,
-                image_path: "",
+                image_path: document.getElementById('log-image-path').value || "",
                 timestamp: "",
                 status: 'active',
                 tag: "",
                 title: document.getElementById('log-title').value,
                 manager: document.getElementById('log-manager').value,
-                start_date: "",
-                due_date: ""
+                start_date: document.getElementById('log-start-date').value || "",
+                due_date: document.getElementById('log-due-date').value || ""
             };
             try {
-                await invoke('plugin:pm|add_status_log', { log });
+                if (log.id) {
+                    await invoke('plugin:pm|update_status_log', { log });
+                } else {
+                    await invoke('plugin:pm|add_status_log', { log });
+                }
                 document.getElementById('modal-log').classList.add('hidden');
-                loadProjectDetails(log.project_id); // Refresh
-            } catch (err) { console.error("Add Log Error:", err); }
+                loadProjectDetails(log.project_id); // Refresh project details
+            } catch (err) { console.error("Add/Update Log Error:", err); }
+        };
+    }
+
+    // Timetable Controls navigation listeners
+    const pmTimetablePrev = document.getElementById('pm-timetable-prev');
+    if (pmTimetablePrev) {
+        pmTimetablePrev.onclick = () => {
+            const scale = document.getElementById('pm-timetable-scale').value;
+            if (scale === 'weekly') timetableBaseDate.setDate(timetableBaseDate.getDate() - 1);
+            else timetableBaseDate.setMonth(timetableBaseDate.getMonth() - 1);
+            renderTimeTable();
+        };
+    }
+    const pmTimetableNext = document.getElementById('pm-timetable-next');
+    if (pmTimetableNext) {
+        pmTimetableNext.onclick = () => {
+            const scale = document.getElementById('pm-timetable-scale').value;
+            if (scale === 'weekly') timetableBaseDate.setDate(timetableBaseDate.getDate() + 1);
+            else timetableBaseDate.setMonth(timetableBaseDate.getMonth() + 1);
+            renderTimeTable();
+        };
+    }
+    const pmTimetableScale = document.getElementById('pm-timetable-scale');
+    if (pmTimetableScale) {
+        pmTimetableScale.onchange = () => {
+            renderTimeTable();
+        };
+    }
+    const pmTimetableShowDeleted = document.getElementById('pm-timetable-show-deleted');
+    if (pmTimetableShowDeleted) {
+        pmTimetableShowDeleted.onchange = () => {
+            renderTimeTable();
+        };
+    }
+
+    const btnExportHtml = document.getElementById('pm-timetable-export-html');
+    if (btnExportHtml) {
+        btnExportHtml.onclick = async () => {
+            if (!currentProjectId) {
+                alert("Please select a project before exporting.");
+                return;
+            }
+
+            const project = currentProjects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            try {
+                const logs = await invoke('plugin:pm|get_status_logs', { projectId: currentProjectId });
+                const milestones = await invoke('plugin:pm|get_milestones', { projectId: currentProjectId });
+
+                const htmlContent = generateProjectHtml(project, milestones, logs);
+
+                if (window.__TAURI__ && window.__TAURI__.dialog) {
+                    const savePath = await window.__TAURI__.dialog.save({
+                        filters: [{ name: 'HTML Document', extensions: ['html'] }],
+                        defaultPath: `Project_Report_${project.name}.html`
+                    });
+
+                    if (savePath) {
+                        await invoke('plugin:minutes|save_text_file', { path: savePath, content: htmlContent });
+                        alert("Project HTML Export Successful!\nSaved to: " + savePath);
+                    }
+                } else {
+                    console.log("Mock Export (No Tauri):", htmlContent);
+                    alert("Export feature only works in the desktop Tauri application.");
+                }
+            } catch (err) {
+                console.error("Export HTML Error:", err);
+                alert("Failed to export HTML: " + err);
+            }
         };
     }
 
@@ -928,6 +1202,51 @@ function setupModals() {
             document.querySelectorAll('.pm-tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById(`tab-${targetTab}`).classList.add('active');
         };
+    });
+
+    // Done & Deleted Logs Real-time Search & Filter listeners
+    ['search-done-logs', 'filter-done-dept'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener(id.includes('search') ? 'input' : 'change', renderDoneLogsList);
+        }
+    });
+
+    ['search-deleted-logs', 'filter-deleted-dept'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener(id.includes('search') ? 'input' : 'change', renderDeletedLogsList);
+        }
+    });
+
+    // Real-time Department Slot Configuration change listeners
+    ['project-dept1-name', 'project-dept2-name', 'project-dept3-name', 'project-dept4-name'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('change', saveProjectSlotsDirectly);
+        }
+    });
+
+    // Global ESC key listener to close all open modals and details drawers
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const modals = [
+                'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-task',
+                'modal-meeting', 'modal-review', 'modal-project', 'modal-privacy',
+                'modal-terms', 'modal-contact', 'modal-about', 'modal-milestone',
+                'modal-log', 'modal-settings'
+            ];
+            modals.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+
+            const detailDrawer = document.getElementById('pm-timetable-log-detail');
+            if (detailDrawer) {
+                detailDrawer.style.display = 'none';
+                timetableDetailLogId = null;
+            }
+        }
     });
 }
 
@@ -1190,6 +1509,8 @@ async function loadView(viewId) {
         'nav-dashboard': 'Dashboard',
         'nav-kanban': 'Task Manager',
         'nav-trash': 'Trash Bin',
+        'nav-minutes-trash': 'Trash Bin',
+        'nav-pm-trash': 'Trash Bin',
         'nav-minutes': 'Minutes Manager',
         'nav-pm': 'Project Manager'
     };
@@ -1201,11 +1522,14 @@ async function loadView(viewId) {
 
     // Update active sidebar item
     document.querySelectorAll('.nav-item').forEach(nav => {
-        nav.classList.toggle('active', nav.id === viewId);
+        const isActive = nav.id === viewId || 
+            (viewId === 'nav-minutes-trash' && nav.id === 'nav-minutes') ||
+            (viewId === 'nav-pm-trash' && nav.id === 'nav-pm');
+        nav.classList.toggle('active', isActive);
     });
 
     // Toggle view visibility
-    const targetViewId = `view-${viewId.replace('nav-', '')}`;
+    const targetViewId = viewId === 'nav-pm-trash' ? 'view-project-trash' : `view-${viewId.replace('nav-', '')}`;
     document.querySelectorAll('.view').forEach(v => {
         v.classList.toggle('hidden', v.id !== targetViewId);
     });
@@ -1221,6 +1545,10 @@ async function loadView(viewId) {
         initDragAndDrop();
     } else if (viewId === 'nav-trash') {
         await loadDeletedTasks();
+    } else if (viewId === 'nav-minutes-trash') {
+        await loadDeletedMeetings();
+    } else if (viewId === 'nav-pm-trash') {
+        await loadDeletedProjects();
     }
     else if (viewId === 'nav-minutes') await refreshMinutes();
     else if (viewId === 'nav-pm') await refreshProjects();
@@ -1648,44 +1976,20 @@ function renderMeetingsList(meetings) {
             </div>
             <div class="meeting-actions-mini">
                 <button class="btn-icon delete-meeting-btn" title="Delete">
-                    <i class="fas fa-trash"></i>
+                    🗑️
                 </button>
             </div>
         `;
         
         card.addEventListener('click', () => {
-            document.getElementById('meeting-id').value = m.id;
-            document.getElementById('meeting-title').value = m.title;
-            const [mDate, mTime] = (m.date || '').split(' ');
-            document.getElementById('meeting-date').value = mDate || '';
-            document.getElementById('meeting-time').value = mTime || '';
-            document.getElementById('meeting-location').value = m.location;
-            document.getElementById('meeting-participants').value = m.participants;
-            document.getElementById('meeting-memo').value = m.memo;
-            document.getElementById('meeting-decisions').value = m.decisions || '';
-            document.getElementById('meeting-actions').value = m.action_items || '';
-            
-            // Handle tag display
-            const tagEl = document.getElementById('meeting-tag-display');
-            if (tagEl) {
-                if (m.meeting_tag) {
-                    tagEl.textContent = m.meeting_tag;
-                    tagEl.classList.remove('hidden');
-                } else {
-                    tagEl.textContent = '';
-                    tagEl.classList.add('hidden');
-                }
-            }
-
-            document.getElementById('meeting-modal-title').textContent = 'Edit Minutes';
-            document.getElementById('modal-meeting').classList.remove('hidden');
+            openMeetingModal(m, false);
         });
 
         const delBtn = card.querySelector('.delete-meeting-btn');
         if (delBtn) {
-            delBtn.onclick = (e) => {
+            delBtn.onclick = async (e) => {
                 e.stopPropagation();
-                if (confirm('Move this meeting to Trash?')) {
+                if (await askConfirm('Move this meeting to Trash?')) {
                     deleteMeeting(m.id);
                 }
             };
@@ -1707,32 +2011,54 @@ async function deleteMeeting(meetingId) {
 async function loadDeletedMeetings() {
     const body = document.getElementById('minutes-trash-list-body');
     if (!body) return;
-    body.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+    body.innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
     try {
         const deletedMeetings = await invoke('plugin:minutes|get_deleted_meetings', { ownerId: currentUser.id });
         body.innerHTML = '';
         if (deletedMeetings.length === 0) {
-            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--text-muted)">No deleted meetings found.</td></tr>';
+            body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted)">No deleted meetings found.</td></tr>';
             return;
         }
         deletedMeetings.forEach(m => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><span class="tag-badge-mini">${m.meeting_tag || '-'}</span></td>
-                <td>${m.title}</td>
-                <td>${m.date || '-'}</td>
+            const row = document.createElement('tr');
+            row.style.cursor = 'pointer';
+            row.onclick = () => openMeetingModal(m, true);
+
+            row.innerHTML = `
+                <td style="font-family: monospace; font-size: 12px; color: var(--accent-color)">${m.meeting_tag || '-'}</td>
                 <td>
-                    <button class="btn-icon restore-btn" title="Restore">
-                        <i class="fas fa-undo"></i>
-                    </button>
-                    <button class="btn-icon hard-delete-btn" title="Delete Permanently">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>🗑️</span>
+                        <span>${m.title}</span>
+                    </div>
+                </td>
+                <td>${m.date || '-'}</td>
+                <td>📍 ${m.location || 'Remote'}</td>
+                <td>👥 ${m.participants || '-'}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-restore" data-id="${m.id}">🔄 Restore</button>
+                        <button class="btn-hard-del" data-id="${m.id}">🔥 Permanent</button>
+                    </div>
                 </td>
             `;
-            tr.querySelector('.restore-btn').onclick = () => restoreMeeting(m.id);
-            tr.querySelector('.hard-delete-btn').onclick = () => hardDeleteMeeting(m.id);
-            body.appendChild(tr);
+            body.appendChild(row);
+        });
+
+        // Add listeners
+        body.querySelectorAll('.btn-restore').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                restoreMeeting(Number(btn.dataset.id));
+            };
+        });
+        body.querySelectorAll('.btn-hard-del').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                if (await askConfirm('Permanently delete this meeting? This cannot be undone.')) {
+                    hardDeleteMeeting(Number(btn.dataset.id));
+                }
+            };
         });
     } catch (err) {
         console.error("Load Deleted Meetings Error:", err);
@@ -1750,13 +2076,118 @@ async function restoreMeeting(meetingId) {
 }
 
 async function hardDeleteMeeting(meetingId) {
-    if (confirm('Permanently delete this meeting? This action cannot be undone.')) {
-        try {
-            await invoke('plugin:minutes|hard_delete_meeting_cmd', { meetingId });
-            await loadDeletedMeetings();
-        } catch (err) {
-            console.error("Hard Delete Meeting Error:", err);
+    try {
+        await invoke('plugin:minutes|hard_delete_meeting_cmd', { meetingId });
+        await loadDeletedMeetings();
+    } catch (err) {
+        console.error("Hard Delete Meeting Error:", err);
+    }
+}
+
+async function loadDeletedProjects() {
+    const body = document.getElementById('project-trash-list-body');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
+    try {
+        const deletedProjects = await invoke('plugin:pm|get_deleted_projects', { ownerId: currentUser.id });
+        body.innerHTML = '';
+        if (deletedProjects.length === 0) {
+            body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted)">No deleted projects found.</td></tr>';
+            return;
         }
+        deletedProjects.forEach(p => {
+            const row = document.createElement('tr');
+            row.style.cursor = 'pointer';
+            row.onclick = () => openProjectModal(p, true);
+
+            row.innerHTML = `
+                <td style="font-family: monospace; font-size: 12px; color: var(--accent-color)">${p.project_tag || '-'}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>🗑️</span>
+                        <span>${p.name}</span>
+                    </div>
+                </td>
+                <td>${p.description || '-'}</td>
+                <td>${p.manager || '-'}</td>
+                <td>${p.client || '-'}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-restore" data-id="${p.id}">🔄 Restore</button>
+                        <button class="btn-hard-del" data-id="${p.id}">🔥 Permanent</button>
+                    </div>
+                </td>
+            `;
+            body.appendChild(row);
+        });
+
+        // Add listeners
+        body.querySelectorAll('.btn-restore').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                restoreProject(Number(btn.dataset.id));
+            };
+        });
+        body.querySelectorAll('.btn-hard-del').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                if (await askConfirm('Permanently delete this project? This cannot be undone.')) {
+                    hardDeleteProject(Number(btn.dataset.id));
+                }
+            };
+        });
+    } catch (err) {
+        console.error("Load Deleted Projects Error:", err);
+    }
+}
+
+async function restoreProject(projectId) {
+    try {
+        await invoke('plugin:pm|restore_project', { projectId });
+        await loadDeletedProjects();
+        await refreshProjects();
+    } catch (err) {
+        console.error("Restore Project Error:", err);
+    }
+}
+
+async function hardDeleteProject(projectId) {
+    try {
+        await invoke('plugin:pm|hard_delete_project_cmd', { projectId });
+        await loadDeletedProjects();
+    } catch (err) {
+        console.error("Hard Delete Project Error:", err);
+    }
+}
+
+let currentProjectId = null;
+let currentStatusLogs = [];
+let currentProjectMilestones = [];
+
+async function saveProjectSlotsDirectly() {
+    if (!currentProjectId) return;
+    const project = currentProjects.find(p => p.id === currentProjectId);
+    if (!project) return;
+
+    const newDept1 = document.getElementById('project-dept1-name').value.trim();
+    const newDept2 = document.getElementById('project-dept2-name').value.trim();
+    const newDept3 = document.getElementById('project-dept3-name').value.trim();
+    const newDept4 = document.getElementById('project-dept4-name').value.trim();
+
+    const updatedProject = {
+        ...project,
+        dept1_name: newDept1 || 'Mech',
+        dept2_name: newDept2 || 'Control',
+        dept3_name: newDept3 || 'Elec',
+        dept4_name: newDept4 || 'Sales'
+    };
+
+    try {
+        await invoke('plugin:pm|add_project', { project: updatedProject });
+        await refreshProjects();
+        await loadProjectDetails(currentProjectId);
+    } catch (err) {
+        console.error("Save Project Slots Directly Error:", err);
     }
 }
 
@@ -1768,8 +2199,50 @@ async function refreshProjects() {
         currentProjects.forEach(p => {
             const item = document.createElement('div');
             item.className = 'project-item';
-            item.innerHTML = `<h4>${p.name}</h4><div class="client">${p.client || 'Internal Project'}</div>`;
+            
+            // Render Tag Badge if exists
+            const tagBadge = p.project_tag ? `<span class="tag-badge-mini" style="margin-left: 0; margin-bottom: 6px; display: inline-block;">${p.project_tag}</span>` : '';
+            
+            item.innerHTML = `
+                ${tagBadge}
+                <h4>${p.name}</h4>
+                <div class="client">${p.client || 'Internal Project'}</div>
+                <div class="project-actions-mini">
+                    <button class="btn-icon delete-project-btn" title="Delete">
+                        🗑️
+                    </button>
+                </div>
+            `;
             item.addEventListener('click', () => loadProjectDetails(p.id));
+
+            const delBtn = item.querySelector('.delete-project-btn');
+            if (delBtn) {
+                delBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (await askConfirm('Move this project and all its milestones/logs to Trash?')) {
+                        try {
+                            await invoke('plugin:pm|delete_project', { projectId: p.id });
+                            
+                            // If the deleted project was the currently selected one, clear detail panel
+                            const activeItem = document.querySelector('.project-item.active');
+                            const isActiveSelected = activeItem && activeItem.querySelector('h4').textContent === p.name;
+                            if (isActiveSelected) {
+                                document.getElementById('detail-project-name').textContent = 'Select a Project';
+                                document.getElementById('detail-project-meta').textContent = 'Client: - | Manager: -';
+                                document.getElementById('detail-project-desc').textContent = 'No description available.';
+                                document.getElementById('detail-project-tag').classList.add('hidden');
+                                const btnEditProject = document.getElementById('btn-edit-project');
+                                if (btnEditProject) btnEditProject.classList.add('hidden');
+                            }
+                            
+                            await refreshProjects();
+                        } catch (err) {
+                            console.error("Delete Project Error:", err);
+                        }
+                    }
+                };
+            }
+
             list.appendChild(item);
         });
         
@@ -1784,6 +2257,8 @@ async function loadProjectDetails(projectId) {
     const project = currentProjects.find(p => p.id === projectId);
     if (!project) return;
 
+    currentProjectId = projectId;
+
     // Highlight active item
     document.querySelectorAll('.project-item').forEach(item => {
         const title = item.querySelector('h4').textContent;
@@ -1792,15 +2267,46 @@ async function loadProjectDetails(projectId) {
     });
 
     // Update Header Info
+    const detailTag = document.getElementById('detail-project-tag');
+    if (detailTag) {
+        if (project.project_tag) {
+            detailTag.textContent = project.project_tag;
+            detailTag.classList.remove('hidden');
+        } else {
+            detailTag.textContent = '';
+            detailTag.classList.add('hidden');
+        }
+    }
     document.getElementById('detail-project-name').textContent = project.name;
+    const btnEditProject = document.getElementById('btn-edit-project');
+    if (btnEditProject) {
+        btnEditProject.classList.remove('hidden');
+        btnEditProject.onclick = () => openProjectModal(project);
+    }
     document.getElementById('detail-project-meta').textContent = `Client: ${project.client || '-'} | Manager: ${project.manager || '-'}`;
 
     // Update Status Tab
     document.getElementById('detail-project-desc').textContent = project.description || 'No description available.';
-    document.getElementById('detail-dept1').textContent = `Slot 1: ${project.dept1_name || 'N/A'}`;
-    document.getElementById('detail-dept2').textContent = `Slot 2: ${project.dept2_name || 'N/A'}`;
-    document.getElementById('detail-dept3').textContent = `Slot 3: ${project.dept3_name || 'N/A'}`;
-    document.getElementById('detail-dept4').textContent = `Slot 4: ${project.dept4_name || 'N/A'}`;
+    
+    // Fill Department Slot Configuration Inputs
+    const dept1Input = document.getElementById('project-dept1-name');
+    const dept2Input = document.getElementById('project-dept2-name');
+    const dept3Input = document.getElementById('project-dept3-name');
+    const dept4Input = document.getElementById('project-dept4-name');
+    if (dept1Input) dept1Input.value = project.dept1_name || 'Mech';
+    if (dept2Input) dept2Input.value = project.dept2_name || 'Control';
+    if (dept3Input) dept3Input.value = project.dept3_name || 'Elec';
+    if (dept4Input) dept4Input.value = project.dept4_name || 'Sales';
+
+    // Rename Columns on Kanban Board
+    const col1 = document.getElementById('col-header-dept1');
+    const col2 = document.getElementById('col-header-dept2');
+    const col3 = document.getElementById('col-header-dept3');
+    const col4 = document.getElementById('col-header-dept4');
+    if (col1) col1.textContent = project.dept1_name || 'Mech';
+    if (col2) col2.textContent = project.dept2_name || 'Control';
+    if (col3) col3.textContent = project.dept3_name || 'Elec';
+    if (col4) col4.textContent = project.dept4_name || 'Sales';
 
     // Update Log Modal Department Select
     const logDeptSelect = document.getElementById('log-department');
@@ -1816,14 +2322,35 @@ async function loadProjectDetails(projectId) {
         });
     }
 
+    // Update Done & Deleted Logs filter dropdowns with dynamic custom slot names
+    const filterDoneDept = document.getElementById('filter-done-dept');
+    const filterDeletedDept = document.getElementById('filter-deleted-dept');
+    const customDepts = [
+        project.dept1_name || 'Mech',
+        project.dept2_name || 'Control',
+        project.dept3_name || 'Elec',
+        project.dept4_name || 'Sales'
+    ];
+
+    [filterDoneDept, filterDeletedDept].forEach(select => {
+        if (select) {
+            select.innerHTML = '<option value="">All Departments</option>';
+            customDepts.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                select.appendChild(opt);
+            });
+        }
+    });
+
     try {
         // Load Milestones
         const milestones = await invoke('plugin:pm|get_milestones', { projectId: project.id });
         renderMilestones(project.id, milestones);
 
         // Load Status Logs
-        const logs = await invoke('plugin:pm|get_status_logs', { projectId: project.id });
-        renderStatusLogs(logs);
+        await renderTimeTable();
 
         // Update Log Form Hidden Field
         document.getElementById('log-project-id').value = project.id;
@@ -1834,40 +2361,70 @@ async function loadProjectDetails(projectId) {
             btnAddLog.onclick = () => {
                 document.getElementById('form-log').reset();
                 document.getElementById('log-project-id').value = project.id;
+                document.getElementById('log-id').value = '';
+                document.getElementById('log-modal-title').textContent = 'Add Status Log';
+                prepareStatusLogModalButtons('', 'active');
                 document.getElementById('modal-log').classList.remove('hidden');
             };
         }
+
+        // Add Log Column Buttons Listener (Prefill Department and Open)
+        document.querySelectorAll('.btn-add-log-col').forEach(btn => {
+            btn.onclick = () => {
+                document.getElementById('form-log').reset();
+                document.getElementById('log-project-id').value = project.id;
+                document.getElementById('log-id').value = '';
+                document.getElementById('log-modal-title').textContent = 'Add Status Log';
+                
+                const rawDept = btn.getAttribute('data-dept');
+                let customDeptName = '';
+                if (rawDept === 'Mech') customDeptName = project.dept1_name || 'Mech';
+                else if (rawDept === 'Control') customDeptName = project.dept2_name || 'Control';
+                else if (rawDept === 'Elec') customDeptName = project.dept3_name || 'Elec';
+                else if (rawDept === 'Sales') customDeptName = project.dept4_name || 'Sales';
+                
+                const logDeptSelect = document.getElementById('log-department');
+                if (logDeptSelect && customDeptName) {
+                    logDeptSelect.value = customDeptName;
+                }
+                
+                prepareStatusLogModalButtons('', 'active');
+                document.getElementById('modal-log').classList.remove('hidden');
+            };
+        });
 
     } catch (err) { console.error("Load Project Details Error:", err); }
 }
 
 function renderMilestones(projectId, milestones) {
-    const slots = document.querySelectorAll('.milestone-slot');
-    slots.forEach(slot => {
-        const slotNum = parseInt(slot.getAttribute('data-slot'));
-        const ms = milestones.find(m => m.slot_number === slotNum);
-        
-        const nameEl = slot.querySelector('.slot-name');
-        const dateEl = slot.querySelector('.slot-date');
-        const statusEl = slot.querySelector('.slot-status');
-        
-        if (ms) {
-            nameEl.textContent = ms.name || '---';
-            dateEl.textContent = ms.deadline || 'YYYY-MM-DD';
-            statusEl.textContent = ms.is_done ? 'Done' : 'Pending';
-            if (ms.is_done) slot.classList.add('done');
-            else slot.classList.remove('done');
-        } else {
-            nameEl.textContent = '---';
-            dateEl.textContent = 'YYYY-MM-DD';
-            statusEl.textContent = 'Pending';
-            slot.classList.remove('done');
-        }
+    const grid = document.getElementById('milestones-grid');
+    if (!grid) return;
 
-        // Click to edit
-        slot.onclick = () => {
+    grid.innerHTML = ''; // Clear existing dynamically
+
+    for (let slotNum = 1; slotNum <= 20; slotNum++) {
+        const ms = milestones.find(m => m.slot_number === slotNum);
+        const card = document.createElement('div');
+        card.className = `milestone-slot${(ms && ms.is_done) ? ' done' : ''}`;
+        card.setAttribute('data-slot', slotNum);
+
+        const displayNum = slotNum < 10 ? '0' + slotNum : slotNum;
+        const name = (ms && ms.name) ? ms.name : '---';
+        const deadline = (ms && ms.deadline) ? ms.deadline : 'YYYY-MM-DD';
+        const status = (ms && ms.is_done) ? 'Done' : 'Pending';
+
+        card.innerHTML = `
+            <div class="slot-num">${displayNum}</div>
+            <div class="slot-content">
+                <div class="slot-name">${name}</div>
+                <div class="slot-date">${deadline}</div>
+            </div>
+            <div class="slot-status">${status}</div>
+        `;
+
+        card.onclick = () => {
             document.getElementById('form-milestone').reset();
-            document.getElementById('ms-slot-num').textContent = `#0${slotNum}`;
+            document.getElementById('ms-slot-num').textContent = `#${displayNum}`;
             document.getElementById('ms-project-id').value = projectId;
             document.getElementById('ms-slot-number').value = slotNum;
             
@@ -1883,35 +2440,1742 @@ function renderMilestones(projectId, milestones) {
             
             document.getElementById('modal-milestone').classList.remove('hidden');
         };
-    });
+
+        grid.appendChild(card);
+    }
 }
 
-function renderStatusLogs(logs) {
-    const timeline = document.getElementById('log-timeline');
-    timeline.innerHTML = '';
-    
-    if (logs.length === 0) {
-        timeline.innerHTML = '<p style="text-align: center; padding: 20px; color: var(--text-secondary);">No status logs yet.</p>';
+let timetableBaseDate = new Date();
+let timetableDetailLogId = null;
+
+async function renderTimeTable() {
+    if (!currentProjectId) return;
+    const container = document.getElementById('pm-timetable-container');
+    const scaleSelect = document.getElementById('pm-timetable-scale');
+    if (!scaleSelect || !container) return;
+    const scale = scaleSelect.value;
+
+    container.innerHTML = '';
+
+    // Fetch live data from backend
+    let logs = [];
+    let milestones = [];
+    try {
+        logs = await invoke('plugin:pm|get_status_logs', { projectId: currentProjectId });
+        milestones = await invoke('plugin:pm|get_milestones', { projectId: currentProjectId });
+        currentStatusLogs = logs;
+        currentProjectMilestones = milestones;
+
+        // Render Done and Deleted logs lists
+        renderDoneLogsList();
+        renderDeletedLogsList();
+
+        // Render Kanban Status Board columns
+        const project = currentProjects.find(p => p.id === currentProjectId);
+        if (project) {
+            renderStatusGrid(project);
+        }
+    } catch (err) {
+        console.error("Fetch live timetable data error:", err);
         return;
     }
 
-    // Sort logs by timestamp descending (newest first)
-    const sortedLogs = [...logs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    // Determine date range and scale
+    const now = new Date();
+    let startDate, days;
 
-    sortedLogs.forEach(log => {
-        const item = document.createElement('div');
-        item.className = 'log-item';
-        item.innerHTML = `
-            <div class="log-header">
-                <span class="log-dept">${log.department}</span>
-                <span class="log-time">${new Date(log.timestamp).toLocaleString()}</span>
-            </div>
-            <div class="log-title">${log.title}</div>
-            <div class="log-content">${log.text_content || ''}</div>
-            ${log.manager ? `<div class="log-manager">PIC: ${log.manager}</div>` : ''}
-        `;
-        timeline.appendChild(item);
+    if (scale === 'weekly') {
+        startDate = new Date(timetableBaseDate);
+        startDate.setDate(startDate.getDate() - 3); // Center around base date (3 days before, 3 days after, today at center)
+        startDate.setHours(0, 0, 0, 0);
+        days = 7;
+    } else {
+        // Monthly view = 12 months centered around the base date's year
+        startDate = new Date(timetableBaseDate.getFullYear(), timetableBaseDate.getMonth() - 5, 1);
+        days = 12; // Show 12 months
+    }
+
+    // Set standard grid count custom variable for dotted lines
+    container.style.setProperty('--day-count', days);
+
+    // Update current range header label
+    const rangeLabel = document.getElementById('pm-timetable-current-range');
+    if (rangeLabel) {
+        if (scale === 'weekly') {
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            rangeLabel.textContent = `${getLocalDateString(startDate)} ~ ${getLocalDateString(endDate)}`;
+        } else {
+            const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 11, 1);
+            rangeLabel.textContent = `${startDate.getFullYear()}.${String(startDate.getMonth() + 1).padStart(2, '0')} ~ ${endDate.getFullYear()}.${String(endDate.getMonth() + 1).padStart(2, '0')}`;
+        }
+    }
+
+    function calculatePct(date) {
+        if (scale === 'weekly') {
+            const diffTime = date.getTime() - startDate.getTime();
+            const diffDays = diffTime / (1000 * 3600 * 24);
+            if (diffDays >= -1 && diffDays <= 8) { // buffer allowance
+                return (diffDays / 7) * 100;
+            }
+        } else {
+            const monthDiff = (date.getFullYear() - startDate.getFullYear()) * 12 + (date.getMonth() - startDate.getMonth());
+            if (monthDiff >= -1 && monthDiff <= 13) {
+                const day = date.getDate();
+                const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+                return ((monthDiff + (day / daysInMonth)) / 12) * 100;
+            }
+        }
+        return -1;
+    }
+
+    // Header layout
+    const header = document.createElement('div');
+    header.className = 'timetable-header';
+
+    const yHeader = document.createElement('div');
+    yHeader.className = 'timetable-y-axis-header';
+    header.appendChild(yHeader);
+
+    const xAxis = document.createElement('div');
+    xAxis.className = 'timetable-x-axis';
+    xAxis.style.position = 'relative';
+
+    // Create milestone lines container for full-height vertical lines
+    const msContainer = document.createElement('div');
+    msContainer.className = 'milestone-lines-container';
+    msContainer.style.position = 'absolute';
+    msContainer.style.left = '140px';
+    msContainer.style.right = '0';
+    msContainer.style.top = '0';
+    msContainer.style.bottom = '0';
+    msContainer.style.pointerEvents = 'none';
+    msContainer.style.zIndex = '10';
+    container.appendChild(msContainer);
+
+    // Draw Milestone vertical line indicators
+    if (milestones.length > 0) {
+        const sorted = [...milestones].filter(m => m.deadline).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+        sorted.forEach((m, idx) => {
+            const mDate = new Date(m.deadline);
+            const pct = calculatePct(mDate);
+            if (pct >= 0 && pct <= 100) {
+                const line = document.createElement('div');
+                line.className = 'milestone-line';
+                if (m.is_done) line.classList.add('is-done');
+                line.style.left = pct + '%';
+
+                const label = document.createElement('div');
+                label.className = 'milestone-line-label';
+                label.textContent = `📌 ${m.name} (${m.deadline.substring(5)})`;
+                label.style.top = (4 + (idx % 3) * 22) + 'px'; // Stagger to avoid label overlap
+                line.appendChild(label);
+
+                msContainer.appendChild(line);
+            }
+        });
+    }
+
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    for (let i = 0; i < days; i++) {
+        const dayCol = document.createElement('div');
+        dayCol.className = 'timetable-day-col';
+
+        if (scale === 'weekly') {
+            const d = new Date(startDate);
+            d.setDate(startDate.getDate() + i);
+            if (d.toDateString() === now.toDateString()) dayCol.classList.add('today');
+            const m = d.getMonth() + 1;
+            const day = d.getDate();
+            const dayName = dayNames[d.getDay()];
+            dayCol.textContent = `${m}/${day} (${dayName})`;
+
+            // Highlight col if a milestone deadline falls on this day
+            const dStr = getLocalDateString(d);
+            const dayMilestones = milestones.filter(ms => ms.deadline === dStr);
+            if (dayMilestones.length > 0) {
+                dayCol.classList.add('milestone-highlight');
+                if (dayMilestones.every(ms => ms.is_done)) {
+                    dayCol.classList.add('is-done');
+                }
+            }
+        } else {
+            // Monthly view
+            const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+            const y = d.getFullYear();
+            const m = d.getMonth();
+            dayCol.textContent = `${y} ${monthNames[m]}`;
+            if (y === now.getFullYear() && m === now.getMonth()) dayCol.classList.add('today');
+        }
+        xAxis.appendChild(dayCol);
+    }
+    header.appendChild(xAxis);
+    container.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'timetable-body';
+
+    // Retrieve live department names from the project object
+    const project = currentProjects.find(p => p.id === currentProjectId);
+    if (!project) return;
+
+    const depts = [
+        { key: 'Slot 1', name: project.dept1_name || 'Mech', color: 'rgba(59, 130, 246, 0.45)' },
+        { key: 'Slot 2', name: project.dept2_name || 'Control', color: 'rgba(245, 158, 11, 0.45)' },
+        { key: 'Slot 3', name: project.dept3_name || 'Elec', color: 'rgba(16, 185, 129, 0.45)' },
+        { key: 'Slot 4', name: project.dept4_name || 'Sales', color: 'rgba(239, 68, 68, 0.45)' }
+    ];
+
+    depts.forEach(dept => {
+        const track = document.createElement('div');
+        track.className = 'timetable-track';
+
+        const label = document.createElement('div');
+        label.className = 'timetable-track-label';
+        label.textContent = `[ ${dept.name.toUpperCase()} ]`;
+        label.style.color = dept.color;
+        track.appendChild(label);
+
+        const content = document.createElement('div');
+        content.className = 'timetable-track-content';
+        content.style.backgroundSize = `${(100 / days)}% 100%`;
+
+        const showDeleted = document.getElementById('pm-timetable-show-deleted')?.checked;
+
+        // Filter status logs by matching the department value
+        let deptLogs = logs.filter(l => l.department === dept.name);
+        if (!showDeleted) {
+            deptLogs = deptLogs.filter(l => !l.is_deleted);
+        }
+
+        // Sort by timestamp ascending
+        deptLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        const placedMarkers = [];
+
+        deptLogs.forEach(log => {
+            let leftPct = -1;
+            let widthPct = -1;
+
+            const sDateStr = log.start_date;
+            const dDateStr = log.due_date;
+            const logDate = new Date(log.timestamp);
+
+            if (sDateStr && dDateStr && sDateStr !== dDateStr) {
+                // Range display
+                const s = new Date(sDateStr);
+                const d = new Date(dDateStr);
+                d.setHours(23, 59, 59, 999);
+
+                leftPct = calculatePct(s);
+                const rightPct = calculatePct(d);
+                if (leftPct !== -1 && rightPct !== -1) {
+                    widthPct = rightPct - leftPct;
+                    if (widthPct < 1.0) widthPct = 1.0; // Min visibility
+                } else if (leftPct !== -1) {
+                    widthPct = 100 - leftPct; // Overflow right
+                } else if (rightPct !== -1) {
+                    widthPct = rightPct; // Overflow left
+                    leftPct = 0;
+                }
+            } else {
+                // Point display
+                const targetDate = sDateStr ? new Date(sDateStr) : logDate;
+                leftPct = calculatePct(targetDate);
+            }
+
+            if (leftPct !== -1) {
+                // Overlap prevention (vertical lane stacking)
+                let lane = 0;
+                const minDistance = 2.5; // percent distance to stack markers
+                const spanEnd = widthPct !== -1 ? leftPct + widthPct : leftPct;
+
+                while (placedMarkers.some(m => {
+                    const mEnd = m.width !== -1 ? m.left + m.width : m.left;
+                    const overlap = Math.max(m.left, leftPct) < Math.min(mEnd, spanEnd);
+                    const touch = Math.abs(m.left - leftPct) < minDistance;
+                    return (overlap || touch) && m.lane === lane;
+                })) {
+                    lane++;
+                }
+
+                placedMarkers.push({ left: leftPct, width: widthPct, lane: lane });
+
+                const laneOffsets = [0, -18, 18, -26, 26];
+                const finalOffset = laneOffsets[lane % laneOffsets.length];
+
+                const marker = document.createElement('div');
+                marker.className = widthPct !== -1 ? 'timetable-log-range' : 'timetable-log-marker';
+                
+                // Add status class for styling
+                if (log.status) marker.classList.add(log.status);
+                else marker.classList.add('doing'); // fallback
+
+                marker.style.left = leftPct + '%';
+                if (widthPct !== -1) {
+                    marker.style.width = widthPct + '%';
+                    marker.textContent = log.title;
+                }
+                marker.style.top = (40 + finalOffset) + 'px'; // Lane spacing offset
+
+                const tooltipEl = document.getElementById('global-timetable-tooltip');
+                let logText = log.text_content || '[ No content ]';
+                let tooltipContent = `<strong>[${log.timestamp}]</strong><br><strong>${log.title}</strong><br>${logText.replace(/\n/g, '<br>')}`;
+
+                if (log.is_deleted) {
+                    marker.classList.add('deleted');
+                    tooltipContent = `<span style="text-decoration: line-through; opacity: 0.6;">${tooltipContent}</span>`;
+                } else if (log.status === 'done') {
+                    tooltipContent = `<span style="color: #10b981; font-weight:bold;">[DONE]</span><br>${tooltipContent}`;
+                }
+
+                // Interactive Mouse Follow Tooltip
+                marker.onmouseenter = (e) => {
+                    tooltipEl.innerHTML = tooltipContent;
+                    tooltipEl.style.display = 'block';
+                    tooltipEl.style.left = (e.clientX + 15) + 'px';
+                    tooltipEl.style.top = (e.clientY + 15) + 'px';
+                };
+
+                marker.onmousemove = (e) => {
+                    tooltipEl.style.left = (e.clientX + 15) + 'px';
+                    tooltipEl.style.top = (e.clientY + 15) + 'px';
+                };
+
+                marker.onmouseleave = () => {
+                    tooltipEl.style.display = 'none';
+                };
+
+                marker.onclick = () => {
+                    refreshPMTimetableLogDetail(log.id, logs);
+                };
+
+                content.appendChild(marker);
+            }
+        });
+
+        track.appendChild(content);
+        body.appendChild(track);
     });
+
+    container.appendChild(body);
+}
+
+function getLocalDateString(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+async function refreshPMTimetableLogDetail(logId, preloadedLogs) {
+    if (!logId) return;
+    timetableDetailLogId = logId;
+
+    let logs = preloadedLogs;
+    if (!logs) {
+        logs = await invoke('plugin:pm|get_status_logs', { projectId: currentProjectId });
+    }
+
+    const log = logs.find(l => l.id === logId);
+    if (!log) {
+        document.getElementById('pm-timetable-log-detail').style.display = 'none';
+        timetableDetailLogId = null;
+        return;
+    }
+
+    const detailArea = document.getElementById('pm-timetable-log-detail');
+    const header = document.getElementById('pm-timetable-detail-header');
+    const contentArea = document.getElementById('pm-timetable-detail-content');
+    const imgContainer = document.getElementById('pm-timetable-detail-image');
+
+    detailArea.style.display = 'flex';
+
+    let statusTag = '';
+    if (log.status === 'done') statusTag = ' [DONE]';
+    else if (log.is_deleted) statusTag = ' [DELETED]';
+
+    header.textContent = `[${log.department.toUpperCase()}] ${log.tag || ''} - ${formatLogTimestamp(log.timestamp)}${statusTag}`;
+
+    let html = '';
+    if (log.title) html += `<div style="font-weight: 700; color: var(--accent-color); font-size: 15px; margin-bottom: 6px;">${log.title}</div>`;
+    if (log.manager) html += `<div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;"><strong>PIC:</strong> ${log.manager}</div>`;
+    if (log.start_date || log.due_date) html += `<div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;"><strong>Schedule:</strong> ${log.start_date || '?'} ~ ${log.due_date || '?'}</div>`;
+    if (log.text_content) html += `<div style="margin-top: 10px; font-size: 13px; line-height: 1.6; color: var(--text-color);">${log.text_content}</div>`;
+
+    contentArea.innerHTML = html;
+
+    // Base64 or standard file image previews
+    imgContainer.innerHTML = '';
+    if (log.image_path) {
+        const img = document.createElement('img');
+        img.style.height = '120px';
+        img.style.borderRadius = '8px';
+        img.style.border = '1px solid var(--card-border)';
+        img.style.cursor = 'pointer';
+        img.style.objectFit = 'cover';
+        img.style.transition = 'transform 0.2s';
+        
+        img.onmouseenter = () => img.style.transform = 'scale(1.05)';
+        img.onmouseleave = () => img.style.transform = 'scale(1.0)';
+        
+        let src = log.image_path;
+        if (window.__TAURI__) {
+            src = window.__TAURI__.core.convertFileSrc(log.image_path);
+        }
+        img.src = src;
+
+        img.onclick = () => {
+            window.open(src, '_blank');
+        };
+        imgContainer.appendChild(img);
+    }
+
+    // Configure Action Buttons inside Detail Panel
+    const btnEdit = document.getElementById('pm-timetable-detail-edit');
+    const btnDone = document.getElementById('pm-timetable-detail-done');
+    const btnRestore = document.getElementById('pm-timetable-detail-restore');
+    const btnDelete = document.getElementById('pm-timetable-detail-delete');
+
+    if (log.is_deleted) {
+        if (btnDone) btnDone.style.display = 'none';
+        if (btnRestore) btnRestore.style.display = 'inline-block';
+        if (btnDelete) btnDelete.textContent = 'Hard Delete';
+    } else {
+        if (btnDone) {
+            btnDone.style.display = 'inline-block';
+            btnDone.textContent = log.status === 'done' ? 'Set Active' : 'Done';
+        }
+        if (btnRestore) btnRestore.style.display = 'none';
+        if (btnDelete) btnDelete.textContent = 'Delete';
+    }
+
+    // Edit button opens modal-log with prefilled fields
+    if (btnEdit) {
+        btnEdit.onclick = () => {
+            document.getElementById('form-log').reset();
+            document.getElementById('log-project-id').value = log.project_id;
+            document.getElementById('log-id').value = log.id;
+            document.getElementById('log-department').value = log.department;
+            document.getElementById('log-title').value = log.title || '';
+            document.getElementById('log-content').value = log.text_content || '';
+            document.getElementById('log-start-date').value = log.start_date || '';
+            document.getElementById('log-due-date').value = log.due_date || '';
+            document.getElementById('log-image-path').value = log.image_path || '';
+            document.getElementById('log-manager').value = log.manager || '';
+
+            // Update modal title
+            document.getElementById('log-modal-title').textContent = 'Edit Status Log';
+            prepareStatusLogModalButtons(log.id, log.status);
+            document.getElementById('modal-log').classList.remove('hidden');
+        };
+    }
+
+    // Done button (Done/Active toggle)
+    if (btnDone) {
+        btnDone.onclick = async () => {
+            const nextStatus = log.status === 'done' ? 'active' : 'done';
+            try {
+                await invoke('plugin:pm|update_status_log_status', { logId: log.id, status: nextStatus });
+                detailArea.style.display = 'none';
+                await renderTimeTable();
+            } catch (err) {
+                console.error("Update Status Log Done toggle error:", err);
+            }
+        };
+    }
+
+    // Restore button (soft-deleted back to active)
+    if (btnRestore) {
+        btnRestore.onclick = async () => {
+            try {
+                await invoke('plugin:pm|update_status_log_deleted', { logId: log.id, isDeleted: false });
+                detailArea.style.display = 'none';
+                await renderTimeTable();
+            } catch (err) {
+                console.error("Restore Status Log error:", err);
+            }
+        };
+    }
+
+    // Delete button (soft-delete / hard-delete)
+    if (btnDelete) {
+        btnDelete.onclick = async () => {
+            if (log.is_deleted) {
+                // Hard delete permanent
+                const confirmHard = await askConfirm("Are you sure you want to permanently delete this status log? This cannot be undone.", "Permanent Delete");
+                if (!confirmHard) return;
+                try {
+                    await invoke('plugin:pm|delete_status_log_permanent', { logId: log.id });
+                    detailArea.style.display = 'none';
+                    await renderTimeTable();
+                } catch (err) {
+                    console.error("Hard Delete Status Log error:", err);
+                }
+            } else {
+                // Soft delete
+                try {
+                    await invoke('plugin:pm|update_status_log_deleted', { logId: log.id, isDeleted: true });
+                    detailArea.style.display = 'none';
+                    await renderTimeTable();
+                } catch (err) {
+                    console.error("Soft Delete Status Log error:", err);
+                }
+            }
+        };
+    }
+}
+
+function renderDoneLogsList() {
+    const listBody = document.getElementById('done-logs-list-body');
+    if (!listBody) return;
+    listBody.innerHTML = '';
+
+    const searchQuery = (document.getElementById('search-done-logs')?.value || '').toLowerCase();
+    const selectedDept = document.getElementById('filter-done-dept')?.value || '';
+
+    const filtered = currentStatusLogs.filter(log => {
+        if (log.is_deleted || log.status !== 'done') return false;
+        if (selectedDept && log.department !== selectedDept) return false;
+        if (searchQuery) {
+            const title = (log.title || '').toLowerCase();
+            const content = (log.text_content || '').toLowerCase();
+            const manager = (log.manager || '').toLowerCase();
+            const tag = (log.tag || '').toLowerCase();
+            if (!title.includes(searchQuery) && !content.includes(searchQuery) && !manager.includes(searchQuery) && !tag.includes(searchQuery)) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        listBody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--text-secondary);">No done status logs found.</td></tr>`;
+        return;
+    }
+
+    filtered.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--card-border)';
+        tr.style.background = 'rgba(255, 255, 255, 0.005)';
+
+        tr.innerHTML = `
+            <td style="padding: 14px 16px; font-weight: 700; color: var(--accent-color); font-size: 13px;">${log.tag || '-'}</td>
+            <td style="padding: 14px 16px; color: #94a3b8; font-weight: 600; font-size: 13px;">[${log.department.toUpperCase()}]</td>
+            <td style="padding: 14px 16px; font-weight: 600; color: #fff; font-size: 13px;">${log.title || '-'}</td>
+            <td style="padding: 14px 16px; color: #cbd5e1; font-size: 13px;">${log.manager || '-'}</td>
+            <td style="padding: 14px 16px; color: #888; font-size: 12px;">${formatLogTimestamp(log.timestamp)}</td>
+            <td style="padding: 14px 16px; text-align: center;">
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button class="btn btn-sm btn-secondary btn-reopen-log" style="color: #3b82f6; border-color: rgba(59,130,246,0.3); padding: 4px 10px; font-size: 12px;">Reopen</button>
+                    <button class="btn btn-sm btn-secondary btn-delete-log" style="color: #f87171; border-color: rgba(248,113,113,0.3); padding: 4px 10px; font-size: 12px;">Delete</button>
+                </div>
+            </td>
+        `;
+
+        tr.querySelector('.btn-reopen-log').onclick = async () => {
+            try {
+                await invoke('plugin:pm|update_status_log_status', { logId: log.id, status: 'active' });
+                await renderTimeTable();
+            } catch (err) {
+                console.error("Reopen done log error:", err);
+            }
+        };
+
+        tr.querySelector('.btn-delete-log').onclick = async () => {
+            try {
+                await invoke('plugin:pm|update_status_log_deleted', { logId: log.id, isDeleted: true });
+                await renderTimeTable();
+            } catch (err) {
+                console.error("Delete done log error:", err);
+            }
+        };
+
+        listBody.appendChild(tr);
+    });
+}
+
+function renderDeletedLogsList() {
+    const listBody = document.getElementById('deleted-logs-list-body');
+    if (!listBody) return;
+    listBody.innerHTML = '';
+
+    const searchQuery = (document.getElementById('search-deleted-logs')?.value || '').toLowerCase();
+    const selectedDept = document.getElementById('filter-deleted-dept')?.value || '';
+
+    const filtered = currentStatusLogs.filter(log => {
+        if (!log.is_deleted) return false;
+        if (selectedDept && log.department !== selectedDept) return false;
+        if (searchQuery) {
+            const title = (log.title || '').toLowerCase();
+            const content = (log.text_content || '').toLowerCase();
+            const manager = (log.manager || '').toLowerCase();
+            const tag = (log.tag || '').toLowerCase();
+            if (!title.includes(searchQuery) && !content.includes(searchQuery) && !manager.includes(searchQuery) && !tag.includes(searchQuery)) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        listBody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--text-secondary);">No deleted status logs found.</td></tr>`;
+        return;
+    }
+
+    filtered.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--card-border)';
+        tr.style.background = 'rgba(255, 255, 255, 0.005)';
+
+        tr.innerHTML = `
+            <td style="padding: 14px 16px; font-weight: 700; color: var(--accent-color); font-size: 13px;">${log.tag || '-'}</td>
+            <td style="padding: 14px 16px; color: #94a3b8; font-weight: 600; font-size: 13px;">[${log.department.toUpperCase()}]</td>
+            <td style="padding: 14px 16px; font-weight: 600; color: #fff; font-size: 13px;">${log.title || '-'}</td>
+            <td style="padding: 14px 16px; color: #cbd5e1; font-size: 13px;">${log.manager || '-'}</td>
+            <td style="padding: 14px 16px; color: #888; font-size: 12px;">${formatLogTimestamp(log.timestamp)}</td>
+            <td style="padding: 14px 16px; text-align: center;">
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button class="btn btn-sm btn-secondary btn-restore-log" style="color: #10b981; border-color: rgba(16,185,129,0.3); padding: 4px 10px; font-size: 12px;">Restore</button>
+                    <button class="btn btn-sm btn-secondary btn-permanent-delete-log" style="color: #ef4444; border-color: rgba(239,68,68,0.3); padding: 4px 10px; font-size: 12px;">Hard Delete</button>
+                </div>
+            </td>
+        `;
+
+        tr.querySelector('.btn-restore-log').onclick = async () => {
+            try {
+                await invoke('plugin:pm|update_status_log_deleted', { logId: log.id, isDeleted: false });
+                await renderTimeTable();
+            } catch (err) {
+                console.error("Restore deleted log error:", err);
+            }
+        };
+
+        tr.querySelector('.btn-permanent-delete-log').onclick = async () => {
+            const confirmHard = await askConfirm("Are you sure you want to permanently delete this status log? This cannot be undone.", "Permanent Delete");
+            if (!confirmHard) return;
+            try {
+                await invoke('plugin:pm|delete_status_log_permanent', { logId: log.id });
+                await renderTimeTable();
+            } catch (err) {
+                console.error("Permanent delete log error:", err);
+            }
+        };
+
+        listBody.appendChild(tr);
+    });
+}
+
+function formatLogTimestamp(ts) {
+    if (!ts) return '';
+    try {
+        const date = new Date(ts);
+        if (isNaN(date.getTime())) return ts;
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        const hh = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+    } catch (e) {
+        return ts;
+    }
+}
+
+function formatLogTimeOnly(ts) {
+    if (!ts) return '';
+    try {
+        const date = new Date(ts);
+        if (isNaN(date.getTime())) return ts;
+        const hh = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        return `${hh}:${min}`;
+    } catch (e) {
+        return ts;
+    }
+}
+
+function prepareStatusLogModalButtons(logId, logStatus) {
+    const btnDone = document.getElementById('btn-done-log-modal');
+    const btnDel = document.getElementById('btn-delete-log-modal');
+    const btnSubmit = document.getElementById('btn-submit-log');
+
+    if (!btnDone || !btnDel) return;
+
+    if (!logId) {
+        // New log
+        btnDone.classList.add('hidden');
+        btnDel.classList.add('hidden');
+        if (btnSubmit) btnSubmit.textContent = 'Add Log';
+    } else {
+        // Existing log
+        btnDone.classList.remove('hidden');
+        btnDel.classList.remove('hidden');
+        if (btnSubmit) btnSubmit.textContent = 'Update Log';
+
+        // Configure Done button
+        if (logStatus === 'done') {
+            btnDone.textContent = 'Reopen';
+            btnDone.className = 'btn btn-secondary-outline';
+        } else {
+            btnDone.textContent = 'Done';
+            btnDone.className = 'btn btn-success-outline';
+        }
+
+        // Action when clicking Done button in modal
+        btnDone.onclick = async () => {
+            const nextStatus = logStatus === 'done' ? 'active' : 'done';
+            try {
+                await invoke('plugin:pm|update_status_log_status', { logId, status: nextStatus });
+                
+                // Close the detail drawer if it's currently showing this log
+                const detailArea = document.getElementById('pm-timetable-log-detail');
+                if (detailArea && timetableDetailLogId === logId) {
+                    detailArea.style.display = 'none';
+                    timetableDetailLogId = null;
+                }
+                
+                document.getElementById('modal-log').classList.add('hidden');
+                await renderTimeTable();
+            } catch (err) {
+                console.error("Done toggle in modal error:", err);
+            }
+        };
+
+        // Action when clicking Delete button in modal
+        btnDel.onclick = async () => {
+            const confirmDel = await askConfirm("Are you sure you want to move this status log to Deleted Logs?", "Delete Status Log");
+            if (!confirmDel) return;
+            try {
+                await invoke('plugin:pm|update_status_log_deleted', { logId, isDeleted: true });
+                
+                // Close the detail drawer if it's currently showing this log
+                const detailArea = document.getElementById('pm-timetable-log-detail');
+                if (detailArea && timetableDetailLogId === logId) {
+                    detailArea.style.display = 'none';
+                    timetableDetailLogId = null;
+                }
+                
+                document.getElementById('modal-log').classList.add('hidden');
+                await renderTimeTable();
+            } catch (err) {
+                console.error("Delete in modal error:", err);
+            }
+        };
+    }
+}
+
+function renderStatusGrid(project) {
+    const colListMech = document.getElementById('log-list-Mech');
+    const colListControl = document.getElementById('log-list-Control');
+    const colListElec = document.getElementById('log-list-Elec');
+    const colListSales = document.getElementById('log-list-Sales');
+
+    if (!colListMech || !colListControl || !colListElec || !colListSales) return;
+
+    // Clear lists
+    [colListMech, colListControl, colListElec, colListSales].forEach(el => el.innerHTML = '');
+
+    const slot1 = project.dept1_name || 'Mech';
+    const slot2 = project.dept2_name || 'Control';
+    const slot3 = project.dept3_name || 'Elec';
+    const slot4 = project.dept4_name || 'Sales';
+
+    // Group logs by department slot
+    currentStatusLogs.forEach(log => {
+        if (log.is_deleted || log.status === 'done') return;
+
+        let targetEl = null;
+        if (log.department === slot1) targetEl = colListMech;
+        else if (log.department === slot2) targetEl = colListControl;
+        else if (log.department === slot3) targetEl = colListElec;
+        else if (log.department === slot4) targetEl = colListSales;
+
+        if (!targetEl) return;
+
+        // Render premium log card
+        const card = document.createElement('div');
+        card.className = 'status-log-card';
+        card.style.background = 'rgba(255, 255, 255, 0.03)';
+        card.style.border = '1px solid var(--card-border)';
+        card.style.borderRadius = '12px';
+        card.style.padding = '12px';
+        card.style.cursor = 'pointer';
+        card.style.transition = 'all 0.2s ease';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.gap = '8px';
+
+        card.onmouseenter = () => {
+            card.style.background = 'rgba(255, 255, 255, 0.06)';
+            card.style.borderColor = 'var(--accent-color)';
+            card.style.transform = 'translateY(-2px)';
+        };
+        card.onmouseleave = () => {
+            card.style.background = 'rgba(255, 255, 255, 0.03)';
+            card.style.borderColor = 'var(--card-border)';
+            card.style.transform = 'none';
+        };
+
+        let imgHtml = '';
+        if (log.image_path) {
+            let src = log.image_path;
+            if (window.__TAURI__) {
+                src = window.__TAURI__.core.convertFileSrc(log.image_path);
+            }
+            imgHtml = `<img src="${src}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid var(--card-border);" />`;
+        }
+
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <span class="tag-badge-mini" style="font-size: 10px; margin: 0; background: rgba(249, 115, 22, 0.15); color: var(--accent-color); border: 1px solid rgba(249, 115, 22, 0.3); padding: 2px 6px; border-radius: 4px;">${log.tag || 'LOG'}</span>
+                <span style="font-size: 11px; color: #888; font-weight: 600;">${formatLogTimeOnly(log.timestamp)}</span>
+            </div>
+            
+            <!-- Hover action buttons consistent with task manager -->
+            <div class="status-log-actions">
+                <button class="btn-status-log-done" title="Mark as Done">✔️</button>
+                <button class="btn-status-log-del" title="Delete Log">🗑️</button>
+            </div>
+
+            <div style="font-weight: 700; color: #fff; font-size: 13px; line-height: 1.4;">${log.title || 'Untitled Update'}</div>
+            ${log.text_content ? `<div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${log.text_content}</div>` : ''}
+            ${imgHtml}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 11px; color: #aaa;">
+                <span><strong>PIC:</strong> ${log.manager || '-'}</span>
+                ${log.due_date ? `<span style="color: var(--accent-color); font-weight: 600;">📅 ${log.due_date}</span>` : ''}
+            </div>
+        `;
+
+        // Action button listeners
+        const btnDone = card.querySelector('.btn-status-log-done');
+        const btnDel = card.querySelector('.btn-status-log-del');
+
+        if (btnDone) {
+            btnDone.onclick = async (e) => {
+                e.stopPropagation(); // Prevent card detailed popup click
+                try {
+                    await invoke('plugin:pm|update_status_log_status', { logId: log.id, status: 'done' });
+                    
+                    // Close the detail drawer if it's currently showing this log
+                    const detailArea = document.getElementById('pm-timetable-log-detail');
+                    if (detailArea && timetableDetailLogId === log.id) {
+                        detailArea.style.display = 'none';
+                        timetableDetailLogId = null;
+                    }
+                    await renderTimeTable();
+                } catch (err) {
+                    console.error("Mark log as done error:", err);
+                }
+            };
+        }
+
+        if (btnDel) {
+            btnDel.onclick = async (e) => {
+                e.stopPropagation(); // Prevent card detailed popup click
+                const confirmDel = await askConfirm("Are you sure you want to move this status log to Deleted Logs?", "Delete Status Log");
+                if (!confirmDel) return;
+                try {
+                    await invoke('plugin:pm|update_status_log_deleted', { logId: log.id, isDeleted: true });
+                    
+                    // Close the detail drawer if it's currently showing this log
+                    const detailArea = document.getElementById('pm-timetable-log-detail');
+                    if (detailArea && timetableDetailLogId === log.id) {
+                        detailArea.style.display = 'none';
+                        timetableDetailLogId = null;
+                    }
+                    await renderTimeTable();
+                } catch (err) {
+                    console.error("Delete status log error:", err);
+                }
+            };
+        }
+
+        card.onclick = (e) => {
+            e.preventDefault();
+            // Pre-fill and show the log edit/details modal
+            document.getElementById('form-log').reset();
+            document.getElementById('log-project-id').value = log.project_id;
+            document.getElementById('log-id').value = log.id;
+            document.getElementById('log-department').value = log.department;
+            document.getElementById('log-title').value = log.title || '';
+            document.getElementById('log-content').value = log.text_content || '';
+            document.getElementById('log-start-date').value = log.start_date || '';
+            document.getElementById('log-due-date').value = log.due_date || '';
+            document.getElementById('log-image-path').value = log.image_path || '';
+            document.getElementById('log-manager').value = log.manager || '';
+
+            // Update modal title to show detailed status log
+            document.getElementById('log-modal-title').textContent = 'Edit Status Log';
+            prepareStatusLogModalButtons(log.id, log.status);
+            document.getElementById('modal-log').classList.remove('hidden');
+        };
+
+        targetEl.appendChild(card);
+    });
+}
+
+function generateProjectHtml(project, milestones, logs) {
+    const sortedMilestones = [...milestones].sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
+    const sortedLogs = [...logs].filter(l => !l.is_deleted).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    const formatTimestamp = (tsString) => {
+        if (!tsString) return '';
+        try {
+            const date = new Date(tsString);
+            if (isNaN(date.getTime())) return tsString;
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            const h = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            const s = String(date.getSeconds()).padStart(2, '0');
+            return `${y}-${m}-${d} ${h}:${min}:${s}`;
+        } catch (e) {
+            return tsString;
+        }
+    };
+
+    let milestoneRowsHtml = sortedMilestones.map((m, idx) => `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <td style="padding: 12px; color: #3b82f6; font-weight: bold;">${(idx+1) < 10 ? '0' + (idx+1) : (idx+1)}</td>
+            <td style="padding: 12px; color: #fff; font-weight: bold;">${m.name}</td>
+            <td style="padding: 12px; color: #aaa;">${m.deadline || 'YYYY-MM-DD'}</td>
+            <td style="padding: 12px; color: ${m.is_done ? '#10b981' : '#f59e0b'}; font-weight: bold;">${m.is_done ? '✓ Done' : '⏳ Pending'}</td>
+        </tr>
+    `).join('');
+
+    let logRowsHtml = sortedLogs.map(l => `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <td style="padding: 12px; color: #3b82f6; font-weight: bold;">[${l.department.toUpperCase()}]</td>
+            <td style="padding: 12px; color: #fff; font-weight: bold;">${l.title}</td>
+            <td style="padding: 12px; color: #ddd; font-size: 13px;">${(l.text_content || '').replace(/\n/g, '<br>')}</td>
+            <td style="padding: 12px; color: #aaa; font-size: 12px;">${l.manager || '-'}</td>
+            <td style="padding: 12px; color: #888; font-size: 12px;">${formatTimestamp(l.timestamp)}</td>
+        </tr>
+    `).join('');
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Project Report - ${project.name}</title>
+    <style>
+        :root {
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-color: #3b82f6;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0b0b0f;
+            color: #e2e8f0;
+            padding: 40px;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        .header {
+            border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .project-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #3b82f6;
+            margin: 0 0 10px 0;
+            letter-spacing: -0.5px;
+        }
+        .meta-text {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        h3 {
+            color: #fff;
+            border-left: 4px solid #3b82f6;
+            padding-left: 12px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-bottom: 30px;
+        }
+        th {
+            background: rgba(255, 255, 255, 0.04);
+            color: #94a3b8;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            padding: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Gantt Chart Exported Styles */
+        .timetable-container {
+            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 40px;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            max-height: none !important;
+            min-height: none !important;
+            width: 100%;
+        }
+        /* Custom scrollbar design */
+        .timetable-container::-webkit-scrollbar {
+            height: 10px;
+        }
+        .timetable-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        .timetable-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            transition: background 0.3s;
+        }
+        .timetable-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+        .timetable-container {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.12) rgba(0, 0, 0, 0.3);
+        }
+        .timetable-header, .timetable-body {
+            min-width: 800px;
+        }
+        .timetable-header {
+            display: flex;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(20, 20, 28, 0.85);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+        .timetable-y-axis-header {
+            width: 140px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(20, 20, 28, 0.95);
+            border-top-left-radius: 20px;
+        }
+        .timetable-x-axis {
+            display: flex;
+            flex: 1;
+            position: relative;
+        }
+        .timetable-day-col {
+            flex: 1;
+            text-align: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 12px 0;
+            font-size: 12px;
+            font-weight: 700;
+            color: #94a3b8;
+            min-width: 80px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .timetable-day-col.today {
+            background: rgba(79, 70, 229, 0.08);
+            color: #3b82f6;
+            font-weight: bold;
+        }
+        .timetable-body {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        .timetable-track {
+            display: flex;
+            min-height: 80px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            position: relative;
+        }
+        .timetable-track:last-child {
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+        }
+        .timetable-track-label {
+            width: 140px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 16px;
+            font-size: 13px;
+            font-weight: 800;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(15, 15, 22, 0.9);
+            color: #e2e8f0;
+            position: relative;
+            z-index: 8;
+            letter-spacing: 0.5px;
+        }
+        .timetable-track-content {
+            flex: 1;
+            position: relative;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+        .timetable-log-marker {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+            z-index: 5;
+            cursor: pointer;
+        }
+        .timetable-log-range {
+            position: absolute;
+            height: 16px;
+            border-radius: 8px;
+            transform: translateY(-50%);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            z-index: 4;
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 8px;
+            font-size: 9px;
+            font-weight: bold;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+        .timetable-log-marker.todo,
+        .timetable-log-range.todo {
+            background: rgba(59, 130, 246, 0.6) !important;
+            border-color: rgba(59, 130, 246, 0.8);
+        }
+        .timetable-log-marker.doing,
+        .timetable-log-range.doing {
+            background: rgba(245, 158, 11, 0.6) !important;
+            border-color: rgba(245, 158, 11, 0.8);
+        }
+        .timetable-log-marker.done,
+        .timetable-log-range.done {
+            background: rgba(16, 185, 129, 0.65) !important;
+            border-color: rgba(16, 185, 129, 0.8);
+        }
+        .timetable-log-marker.note,
+        .timetable-log-range.note {
+            background: rgba(148, 163, 184, 0.6) !important;
+            border-color: rgba(148, 163, 184, 0.8);
+        }
+        .timetable-log-marker.review,
+        .timetable-log-range.review {
+            background: rgba(139, 92, 246, 0.6) !important;
+            border-color: rgba(139, 92, 246, 0.8);
+        }
+        .timetable-log-marker.deleted,
+        .timetable-log-range.deleted {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+            opacity: 0.25 !important;
+            border-style: dashed;
+        }
+        .milestone-line {
+            position: absolute;
+            width: 0;
+            border-left: 2px dashed rgba(239, 68, 68, 0.45);
+            z-index: 10;
+            pointer-events: none;
+            height: 100%;
+            top: 0;
+        }
+        .milestone-line.is-done {
+            border-left: 2px dashed rgba(16, 185, 129, 0.5);
+        }
+        .milestone-line-label {
+            position: absolute;
+            transform: translateX(-50%);
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 11;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        .milestone-line.is-done .milestone-line-label {
+            background: #10b981;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .badge.todo { background: rgba(59, 130, 246, 0.6); }
+        .badge.doing { background: rgba(245, 158, 11, 0.6); }
+        .badge.done { background: rgba(16, 185, 129, 0.65); }
+        .badge.review { background: rgba(139, 92, 246, 0.6); }
+        .badge.note { background: rgba(148, 163, 184, 0.6); }
+
+        @media print {
+            .timetable-controls, #global-timetable-tooltip, #pm-timetable-log-detail {
+                display: none !important;
+            }
+            body {
+                background: #fff !important;
+                color: #000 !important;
+                padding: 0 !important;
+            }
+            .container {
+                max-width: 100% !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                background: transparent !important;
+            }
+            h3, .project-title {
+                color: #000 !important;
+            }
+            .meta-text {
+                color: #555 !important;
+            }
+            .timetable-container {
+                border: 1px solid #ccc !important;
+                background: transparent !important;
+            }
+            .timetable-header {
+                background: #eee !important;
+                border-bottom: 1px solid #ccc !important;
+            }
+            .timetable-track-label {
+                background: #f9f9f9 !important;
+                color: #333 !important;
+                border-right: 1px solid #ccc !important;
+            }
+            .timetable-day-col {
+                color: #333 !important;
+                border-right: 1px solid #eee !important;
+            }
+            .timetable-day-col.today {
+                background: #eee !important;
+            }
+            table th {
+                background: #eee !important;
+                color: #000 !important;
+                border-bottom: 1px solid #ccc !important;
+            }
+            tr {
+                border-bottom: 1px solid #eee !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="global-timetable-tooltip" style="display: none; position: fixed; background: rgba(15, 15, 22, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px; border-radius: 12px; font-size: 12px; color: #e2e8f0; z-index: 9999; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8); max-width: 320px; line-height: 1.5; backdrop-filter: blur(8px);"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="project-title">${project.name}</h1>
+            <div class="meta-text">
+                Client: <strong>${project.client || '-'}</strong> | 
+                Manager: <strong>${project.manager || '-'}</strong> | 
+                Generated: <strong>${new Date().toLocaleString()}</strong>
+            </div>
+            <p style="margin-top: 15px; color: #cbd5e1; font-size: 15px;">${project.description || 'No description available.'}</p>
+        </div>
+
+        <h3>Project Timetable (Gantt Chart)</h3>
+        
+        <!-- Interactive Controls -->
+        <div class="timetable-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button id="pm-timetable-prev" style="padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 8px; cursor: pointer;">&lt;</button>
+                <div id="pm-timetable-current-range" style="font-weight: 700; font-size: 14px; color: #3b82f6; min-width: 150px; text-align: center; user-select: none;"></div>
+                <button id="pm-timetable-next" style="padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 8px; cursor: pointer;">&gt;</button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="pm-timetable-show-deleted" style="width: 16px; height: 16px; cursor: pointer;">
+                    <label for="pm-timetable-show-deleted" style="font-size: 13px; color: #94a3b8; cursor: pointer; user-select: none;">Show Deleted LOGs</label>
+                </div>
+                
+                <select id="pm-timetable-scale" style="width: 110px; height: 36px; padding: 6px 12px; font-size: 13px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer;">
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly" selected>Monthly</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="pm-timetable-container" class="timetable-container">
+            <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Detail Panel -->
+        <div id="pm-timetable-log-detail" style="display: none; flex-direction: column; gap: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 20px; border-radius: 16px; margin-bottom: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px;">
+                <div id="pm-timetable-detail-header" style="font-weight: 700; color: #3b82f6; font-size: 14px;">[DEPARTMENT] Details</div>
+                <div>
+                    <button style="font-size: 12px; padding: 4px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 6px; cursor: pointer;" onclick="document.getElementById('pm-timetable-log-detail').style.display='none'">Close</button>
+                </div>
+            </div>
+            <div id="pm-timetable-detail-content" style="white-space: pre-wrap; font-size: 13px; color: #94a3b8; line-height: 1.6;"></div>
+        </div>
+
+        <h3>Project Milestones</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Slot</th>
+                    <th>Milestone Name</th>
+                    <th style="width: 150px;">Deadline</th>
+                    <th style="width: 120px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${milestoneRowsHtml || '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #94a3b8;">No milestones defined.</td></tr>'}
+            </tbody>
+        </table>
+
+        <h3>Active Status Logs</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 140px;">Slot</th>
+                    <th style="width: 220px;">Title</th>
+                    <th>Details</th>
+                    <th style="width: 120px;">PIC</th>
+                    <th style="width: 160px;">Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${logRowsHtml || '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #94a3b8;">No status logs recorded yet.</td></tr>'}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Standalone Interactive Gantt Chart Engine -->
+    <script>
+        const project = ${JSON.stringify(project)};
+        const milestones = ${JSON.stringify(milestones)};
+        const logs = ${JSON.stringify(logs)};
+        let timetableBaseDate = new Date();
+
+        function formatTimestamp(tsString) {
+            if (!tsString) return '';
+            try {
+                const date = new Date(tsString);
+                if (isNaN(date.getTime())) return tsString;
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                const h = String(date.getHours()).padStart(2, '0');
+                const min = String(date.getMinutes()).padStart(2, '0');
+                const s = String(date.getSeconds()).padStart(2, '0');
+                return \`\${y}-\${m}-\${d} \${h}:\${min}:\${s}\`;
+            } catch (e) {
+                return tsString;
+            }
+        }
+
+        function getLocalDateString(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return \`\${y}-\\${m}-\\${d}\`;
+        }
+
+        function calculatePct(date, startDate, scale) {
+            if (scale === 'weekly') {
+                const diffTime = date.getTime() - startDate.getTime();
+                const diffDays = diffTime / (1000 * 3600 * 24);
+                if (diffDays >= -1 && diffDays <= 8) {
+                    return (diffDays / 7) * 100;
+                }
+            } else {
+                const monthDiff = (date.getFullYear() - startDate.getFullYear()) * 12 + (date.getMonth() - startDate.getMonth());
+                if (monthDiff >= -1 && monthDiff <= 13) {
+                    const day = date.getDate();
+                    const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+                    return ((monthDiff + (day / daysInMonth)) / 12) * 100;
+                }
+            }
+            return -1;
+        }
+
+        function renderTimeTable() {
+            const container = document.getElementById('pm-timetable-container');
+            const scale = document.getElementById('pm-timetable-scale').value;
+            const showDeleted = document.getElementById('pm-timetable-show-deleted').checked;
+
+            container.innerHTML = '';
+
+            const now = new Date();
+            let startDate, days;
+
+            if (scale === 'weekly') {
+                startDate = new Date(timetableBaseDate);
+                startDate.setDate(startDate.getDate() - 3);
+                startDate.setHours(0, 0, 0, 0);
+                days = 7;
+            } else {
+                startDate = new Date(timetableBaseDate.getFullYear(), timetableBaseDate.getMonth() - 5, 1);
+                days = 12;
+            }
+
+            container.style.setProperty('--day-count', days);
+
+            // Update current range header label
+            const rangeLabel = document.getElementById('pm-timetable-current-range');
+            if (rangeLabel) {
+                if (scale === 'weekly') {
+                    const endDate = new Date(startDate);
+                    endDate.setDate(startDate.getDate() + 6);
+                    rangeLabel.textContent = \`\${getLocalDateString(startDate)} ~ \${getLocalDateString(endDate)}\`;
+                } else {
+                    const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 11, 1);
+                    rangeLabel.textContent = \`\${startDate.getFullYear()}.\${String(startDate.getMonth() + 1).padStart(2, '0')} ~ \${endDate.getFullYear()}.\${String(endDate.getMonth() + 1).padStart(2, '0')}\`;
+                }
+            }
+
+            // Header layout
+            const header = document.createElement('div');
+            header.className = 'timetable-header';
+
+            const yHeader = document.createElement('div');
+            yHeader.className = 'timetable-y-axis-header';
+            header.appendChild(yHeader);
+
+            const xAxis = document.createElement('div');
+            xAxis.className = 'timetable-x-axis';
+            xAxis.style.position = 'relative';
+
+            // Create milestone lines container for full-height vertical lines
+            const msContainer = document.createElement('div');
+            msContainer.className = 'milestone-lines-container';
+            msContainer.style.position = 'absolute';
+            msContainer.style.left = '140px';
+            msContainer.style.right = '0';
+            msContainer.style.top = '0';
+            msContainer.style.bottom = '0';
+            msContainer.style.pointerEvents = 'none';
+            msContainer.style.zIndex = '10';
+            container.appendChild(msContainer);
+
+            // Draw Milestone vertical line indicators
+            if (milestones.length > 0) {
+                const sorted = [...milestones].filter(m => m.deadline).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+                sorted.forEach((m, idx) => {
+                    const mDate = new Date(m.deadline);
+                    const pct = calculatePct(mDate, startDate, scale);
+                    if (pct >= 0 && pct <= 100) {
+                        const line = document.createElement('div');
+                        line.className = 'milestone-line';
+                        if (m.is_done) line.classList.add('is-done');
+                        line.style.left = pct + '%';
+
+                        const label = document.createElement('div');
+                        label.className = 'milestone-line-label';
+                        label.textContent = \`📌 \${m.name} (\${m.deadline.substring(5)})\`;
+                        label.style.top = (4 + (idx % 3) * 22) + 'px';
+                        line.appendChild(label);
+
+                        msContainer.appendChild(line);
+                    }
+                });
+            }
+
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            for (let i = 0; i < days; i++) {
+                const dayCol = document.createElement('div');
+                dayCol.className = 'timetable-day-col';
+
+                if (scale === 'weekly') {
+                    const d = new Date(startDate);
+                    d.setDate(startDate.getDate() + i);
+                    if (d.toDateString() === now.toDateString()) dayCol.classList.add('today');
+                    const m = d.getMonth() + 1;
+                    const day = d.getDate();
+                    const dayName = dayNames[d.getDay()];
+                    dayCol.textContent = \`\${m}/\${day} (\${dayName})\`;
+
+                    const dStr = getLocalDateString(d);
+                    const dayMilestones = milestones.filter(ms => ms.deadline === dStr);
+                    if (dayMilestones.length > 0) {
+                        dayCol.classList.add('milestone-highlight');
+                        if (dayMilestones.every(ms => ms.is_done)) {
+                            dayCol.classList.add('is-done');
+                        }
+                    }
+                } else {
+                    const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+                    const y = d.getFullYear();
+                    const m = d.getMonth();
+                    dayCol.textContent = \`\${y} \${monthNames[m]}\`;
+                    if (y === now.getFullYear() && m === now.getMonth()) dayCol.classList.add('today');
+                }
+                xAxis.appendChild(dayCol);
+            }
+            header.appendChild(xAxis);
+            container.appendChild(header);
+
+            const body = document.createElement('div');
+            body.className = 'timetable-body';
+
+            const depts = [
+                { key: 'Slot 1', name: project.dept1_name || 'Mech', color: 'rgba(59, 130, 246, 0.45)' },
+                { key: 'Slot 2', name: project.dept2_name || 'Control', color: 'rgba(245, 158, 11, 0.45)' },
+                { key: 'Slot 3', name: project.dept3_name || 'Elec', color: 'rgba(16, 185, 129, 0.45)' },
+                { key: 'Slot 4', name: project.dept4_name || 'Sales', color: 'rgba(239, 68, 68, 0.45)' }
+            ];
+
+            depts.forEach(dept => {
+                const track = document.createElement('div');
+                track.className = 'timetable-track';
+
+                const label = document.createElement('div');
+                label.className = 'timetable-track-label';
+                label.textContent = \`[ \${dept.name.toUpperCase()} ]\`;
+                label.style.color = dept.color;
+                track.appendChild(label);
+
+                const content = document.createElement('div');
+                content.className = 'timetable-track-content';
+                content.style.backgroundSize = \`\${(100 / days)}% 100%\`;
+
+                let deptLogs = logs.filter(l => l.department === dept.name);
+                if (!showDeleted) {
+                    deptLogs = deptLogs.filter(l => !l.is_deleted);
+                }
+
+                deptLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                const placedMarkers = [];
+
+                deptLogs.forEach(log => {
+                    let leftPct = -1;
+                    let widthPct = -1;
+
+                    const sDateStr = log.start_date;
+                    const dDateStr = log.due_date;
+                    const logDate = new Date(log.timestamp);
+
+                    if (sDateStr && dDateStr && sDateStr !== dDateStr) {
+                        const s = new Date(sDateStr);
+                        const d = new Date(dDateStr);
+                        d.setHours(23, 59, 59, 999);
+
+                        leftPct = calculatePct(s, startDate, scale);
+                        const rightPct = calculatePct(d, startDate, scale);
+                        if (leftPct !== -1 && rightPct !== -1) {
+                            widthPct = rightPct - leftPct;
+                            if (widthPct < 1.0) widthPct = 1.0;
+                        } else if (leftPct !== -1) {
+                            widthPct = 100 - leftPct;
+                        } else if (rightPct !== -1) {
+                            widthPct = rightPct;
+                            leftPct = 0;
+                        }
+                    } else {
+                        const targetDate = sDateStr ? new Date(sDateStr) : logDate;
+                        leftPct = calculatePct(targetDate, startDate, scale);
+                    }
+
+                    if (leftPct !== -1) {
+                        let lane = 0;
+                        const minDistance = 2.5;
+                        const spanEnd = widthPct !== -1 ? leftPct + widthPct : leftPct;
+
+                        while (placedMarkers.some(m => {
+                            const mEnd = m.width !== -1 ? m.left + m.width : m.left;
+                            const overlap = Math.max(m.left, leftPct) < Math.min(mEnd, spanEnd);
+                            const touch = Math.abs(m.left - leftPct) < minDistance;
+                            return (overlap || touch) && m.lane === lane;
+                        })) {
+                            lane++;
+                        }
+
+                        placedMarkers.push({ left: leftPct, width: widthPct, lane: lane });
+
+                        const laneOffsets = [0, -18, 18, -26, 26];
+                        const finalOffset = laneOffsets[lane % laneOffsets.length];
+
+                        const marker = document.createElement('div');
+                        marker.className = widthPct !== -1 ? 'timetable-log-range' : 'timetable-log-marker';
+                        
+                        if (log.status) marker.classList.add(log.status);
+                        else marker.classList.add('doing');
+
+                        marker.style.left = leftPct + '%';
+                        if (widthPct !== -1) {
+                            marker.style.width = widthPct + '%';
+                            marker.textContent = log.title;
+                        }
+                        marker.style.top = (40 + finalOffset) + 'px';
+
+                        const tooltipEl = document.getElementById('global-timetable-tooltip');
+                        let logText = log.text_content || '[ No content ]';
+                        let tooltipContent = \`<strong>[\${formatTimestamp(log.timestamp)}]</strong><br><strong>\${log.title}</strong><br>\${logText.replace(/\\n/g, '<br>')}\`;
+
+                        if (log.is_deleted) {
+                            marker.classList.add('deleted');
+                            tooltipContent = \`<span style="text-decoration: line-through; opacity: 0.6;">\${tooltipContent}</span>\`;
+                        } else if (log.status === 'done') {
+                            tooltipContent = \`<span style="color: #10b981; font-weight:bold;">[DONE]</span><br>\${tooltipContent}\`;
+                        }
+
+                        marker.onmouseenter = (e) => {
+                            tooltipEl.innerHTML = tooltipContent;
+                            tooltipEl.style.display = 'block';
+                            tooltipEl.style.left = (e.clientX + 15) + 'px';
+                            tooltipEl.style.top = (e.clientY + 15) + 'px';
+                        };
+
+                        marker.onmousemove = (e) => {
+                            tooltipEl.style.left = (e.clientX + 15) + 'px';
+                            tooltipEl.style.top = (e.clientY + 15) + 'px';
+                        };
+
+                        marker.onmouseleave = () => {
+                            tooltipEl.style.display = 'none';
+                        };
+
+                        marker.onclick = () => {
+                            const detailPanel = document.getElementById('pm-timetable-log-detail');
+                            const detailHeader = document.getElementById('pm-timetable-detail-header');
+                            const detailContent = document.getElementById('pm-timetable-detail-content');
+
+                            detailHeader.textContent = \`[\${log.department.toUpperCase()}] \${log.title}\`;
+                            detailContent.innerHTML = \`
+                                <strong>Manager/PIC:</strong> \${log.manager || '-'}<br>
+                                <strong>Time:</strong> \${formatTimestamp(log.timestamp)}<br>
+                                <strong>Duration:</strong> \${log.start_date || '-'} ~ \${log.due_date || '-'}<br>
+                                <strong>Status:</strong> <span class="badge \${log.status}">\${(log.status || 'doing').toUpperCase()}</span><br>
+                                <hr style="border-color: rgba(255,255,255,0.05); margin: 12px 0;">
+                                \${logText.replace(/\\n/g, '<br>')}
+                            \`;
+                            detailPanel.style.display = 'flex';
+                        };
+
+                        content.appendChild(marker);
+                    }
+                });
+
+                track.appendChild(content);
+                body.appendChild(track);
+            });
+
+            container.appendChild(body);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const scaleSelect = document.getElementById('pm-timetable-scale');
+            const showDeletedCheckbox = document.getElementById('pm-timetable-show-deleted');
+            const prevBtn = document.getElementById('pm-timetable-prev');
+            const nextBtn = document.getElementById('pm-timetable-next');
+
+            scaleSelect.onchange = () => renderTimeTable();
+            showDeletedCheckbox.onchange = () => renderTimeTable();
+
+            prevBtn.onclick = () => {
+                const scale = scaleSelect.value;
+                if (scale === 'weekly') {
+                    timetableBaseDate.setDate(timetableBaseDate.getDate() - 7);
+                } else {
+                    timetableBaseDate.setMonth(timetableBaseDate.getMonth() - 12);
+                }
+                renderTimeTable();
+            };
+
+            nextBtn.onclick = () => {
+                const scale = scaleSelect.value;
+                if (scale === 'weekly') {
+                    timetableBaseDate.setDate(timetableBaseDate.getDate() + 7);
+                } else {
+                    timetableBaseDate.setMonth(timetableBaseDate.getMonth() + 12);
+                }
+                renderTimeTable();
+            };
+
+            renderTimeTable();
+        });
+    </script>
+</body>
+</html>`;
+}
+
+        <h3>Project Milestones</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Slot</th>
+                    <th>Milestone Name</th>
+                    <th style="width: 150px;">Deadline</th>
+                    <th style="width: 120px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${milestoneRowsHtml || '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #94a3b8;">No milestones defined.</td></tr>'}
+            </tbody>
+        </table>
+
+        <h3>Active Status Logs</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 140px;">Slot</th>
+                    <th style="width: 220px;">Title</th>
+                    <th>Details</th>
+                    <th style="width: 120px;">PIC</th>
+                    <th style="width: 160px;">Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${logRowsHtml || '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #94a3b8;">No status logs recorded yet.</td></tr>'}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>`;
 }
 
 function initDragAndDrop() {

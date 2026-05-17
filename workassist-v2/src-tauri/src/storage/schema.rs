@@ -58,6 +58,8 @@ pub const CREATE_PROJECTS_TABLE: &str = "
         dept2_name TEXT DEFAULT '[DPT. 2]',
         dept3_name TEXT DEFAULT '[DPT. 3]',
         dept4_name TEXT DEFAULT '[DPT. 4]',
+        project_tag TEXT DEFAULT '',
+        is_deleted BOOLEAN NOT NULL DEFAULT 0,
         FOREIGN KEY (owner_id) REFERENCES users(id)
     );
 ";
@@ -92,6 +94,7 @@ pub const CREATE_STATUS_LOGS_TABLE: &str = "
         manager TEXT,
         start_date TEXT,
         due_date TEXT,
+        is_deleted BOOLEAN NOT NULL DEFAULT 0,
         FOREIGN KEY (project_id) REFERENCES projects(id),
         FOREIGN KEY (owner_id) REFERENCES users(id)
     );
@@ -133,7 +136,8 @@ pub const CREATE_SHADOW_PROJECTS_TABLE: &str = "
     CREATE TABLE IF NOT EXISTS shadow_projects (
         id INTEGER PRIMARY KEY, -- Matches original project ID
         name TEXT,
-        description TEXT
+        description TEXT,
+        project_tag TEXT
     );
 ";
 

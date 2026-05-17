@@ -47,7 +47,7 @@
     <div class="login-card">
       <div class="login-header">
         <img src="assets/icon_3.png" class="login-logo" alt="Logo">
-        <h1>WorkAssist v2.1.0</h1>
+        <h1>WorkAssist</h1>
         <p>Login to your workspace</p>
       </div>
       <form id="form-login" autocomplete="off">
@@ -266,7 +266,7 @@
                 <option value="content">Content</option>
                 <option value="participants">Participants</option>
               </select>
-              <input type="text" id="minutes-search" placeholder="검색어를 입력하세요...">
+              <input type="text" id="minutes-search" placeholder="Search minutes...">
               <span class="search-icon">🔍</span>
             </div>
           </div>
@@ -278,7 +278,10 @@
         <!-- PM View -->
         <div class="view hidden" id="view-pm">
           <div class="view-header">
-            <button class="btn btn-primary" id="btn-new-project">+ New Project</button>
+            <div class="header-left">
+              <button class="btn btn-primary" id="btn-new-project">+ New Project</button>
+              <button id="btn-project-trash" class="btn btn-secondary"><span>🗑️</span> Trash Bin</button>
+            </div>
           </div>
           <div class="pm-container">
             <div class="pm-sidebar">
@@ -291,89 +294,211 @@
             </div>
             <div class="pm-details" id="pm-details">
               <div class="pm-details-header">
-                <div class="project-info-main">
-                  <h2 id="detail-project-name">Select a Project</h2>
-                  <p id="detail-project-meta">Client: - | Manager: -</p>
+                <div class="project-info-main" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%;">
+                  <span id="detail-project-tag" class="tag-badge hidden"></span>
+                  <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                    <h2 id="detail-project-name" style="margin: 0;">Select a Project</h2>
+                    <button id="btn-edit-project" class="btn btn-secondary btn-sm hidden" style="padding: 4px 8px; font-size: 12px;">✏️ Edit</button>
+                  </div>
+                  <p id="detail-project-meta" style="margin: 0;">Client: - | Manager: -</p>
                 </div>
                 <div class="pm-tabs">
                   <button class="pm-tab active" data-tab="status">STATUS</button>
                   <button class="pm-tab" data-tab="timetable">TIME TABLE</button>
+                  <button class="pm-tab" data-tab="done-logs">DONE LOGS</button>
+                  <button class="pm-tab" data-tab="deleted-logs">DELETED LOGS</button>
                 </div>
               </div>
 
               <div class="pm-tab-content active" id="tab-status">
-                <div class="project-overview-grid">
+                <div class="project-overview-grid" style="grid-template-columns: 1fr; margin-bottom: 20px;">
                   <div class="overview-card">
                     <h4>Description</h4>
                     <p id="detail-project-desc">No project selected.</p>
                   </div>
-                  <div class="overview-card">
-                    <h4>Department Slot Names</h4>
-                    <ul class="dept-list">
-                      <li id="detail-dept1">Slot 1: -</li>
-                      <li id="detail-dept2">Slot 2: -</li>
-                      <li id="detail-dept3">Slot 3: -</li>
-                      <li id="detail-dept4">Slot 4: -</li>
-                    </ul>
+                </div>
+
+                <div class="slot-config-container" style="margin-bottom: 24px;">
+                  <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px; letter-spacing: 1px;">Department Slot Configuration</h4>
+                  <div class="slot-config-bar" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <input type="text" id="project-dept1-name" placeholder="[Slot 1: Mech]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <input type="text" id="project-dept2-name" placeholder="[Slot 2: Control]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <input type="text" id="project-dept3-name" placeholder="[Slot 3: Elec]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <input type="text" id="project-dept4-name" placeholder="[Slot 4: Sales]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="status-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; min-height: 450px;">
+                  <div class="status-col mech" data-dept="Mech" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept1" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Mech</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Mech" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Mech" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col control" data-dept="Control" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept2" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Control</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Control" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Control" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col elec" data-dept="Elec" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept3" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Elec</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Elec" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Elec" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col sales" data-dept="Sales" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept4" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Sales</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Sales" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Sales" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
                   </div>
                 </div>
               </div>
 
+              <div class="pm-tab-content" id="tab-done-logs">
+                <div class="table-search-header" style="display: flex; gap: 16px; margin-bottom: 20px;">
+                  <input type="text" id="search-done-logs" placeholder="Search done status logs..." class="pm-search-input">
+                  <select id="filter-done-dept" class="pm-search-select">
+                    <option value="">All Departments</option>
+                    <option value="Mech">Slot 1: Mech</option>
+                    <option value="Control">Slot 2: Control</option>
+                    <option value="Elec">Slot 3: Elec</option>
+                    <option value="Sales">Slot 4: Sales</option>
+                  </select>
+                </div>
+                <div class="table-wrapper" style="overflow-x: auto; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 12px;">
+                  <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                      <tr style="border-bottom: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.02);">
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 140px;">Tag</th>
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 140px;">Department</th>
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary);">Title</th>
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 120px;">Manager</th>
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 180px;">Log Time</th>
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 140px; text-align: center;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="done-logs-list-body">
+                      <!-- Loaded via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="pm-tab-content" id="tab-deleted-logs">
+                <div class="table-search-header" style="display: flex; gap: 16px; margin-bottom: 20px;">
+                  <input type="text" id="search-deleted-logs" placeholder="Search deleted status logs..." class="pm-search-input">
+                  <select id="filter-deleted-dept" class="pm-search-select">
+                    <option value="">All Departments</option>
+                    <option value="Mech">Slot 1: Mech</option>
+                    <option value="Control">Slot 2: Control</option>
+                    <option value="Elec">Slot 3: Elec</option>
+                    <option value="Sales">Slot 4: Sales</option>
+                  </select>
+                </div>
+                <div class="table-wrapper" style="overflow-x: auto; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 12px;">
+                  <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                      <tr style="border-bottom: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.02);">
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 140px;">Tag</th>
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 140px;">Department</th>
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary);">Title</th>
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 120px;">Manager</th>
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 180px;">Log Time</th>
+                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 200px; text-align: center;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="deleted-logs-list-body">
+                      <!-- Loaded via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               <div class="pm-tab-content" id="tab-timetable">
-                <div class="timetable-layout">
-                  <!-- Milestones Section -->
-                  <div class="milestones-container">
-                    <div class="section-title">
-                      <h4>Milestones</h4>
-                      <span class="hint">Click slots to edit</span>
+                <div class="timetable-layout" style="display: flex; flex-direction: column; gap: 24px;">
+                  
+                  <!-- Timetable Controls -->
+                  <div class="timetable-controls" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 16px 20px; border-radius: 16px;">
+                    <!-- Left: Navigation -->
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <button id="pm-timetable-prev" class="btn btn-sm btn-secondary" style="padding: 6px 12px;">&lt;</button>
+                      <div id="pm-timetable-current-range" style="font-weight: 700; font-size: 14px; color: var(--accent-color); min-width: 150px; text-align: center;">YYYY-MM-DD ~ YYYY-MM-DD</div>
+                      <button id="pm-timetable-next" class="btn btn-sm btn-secondary" style="padding: 6px 12px;">&gt;</button>
                     </div>
-                    <div class="milestones-grid">
-                      <!-- 4 Milestone Slots -->
-                      <div class="milestone-slot" data-slot="1">
-                        <div class="slot-num">01</div>
-                        <div class="slot-content">
-                          <div class="slot-name">---</div>
-                          <div class="slot-date">YYYY-MM-DD</div>
-                        </div>
-                        <div class="slot-status">Pending</div>
+
+                    <!-- Right: Scale, Show Deleted, Export -->
+                    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="pm-timetable-show-deleted" style="width: 16px; height: 16px; cursor: pointer;">
+                        <label for="pm-timetable-show-deleted" style="font-size: 13px; color: var(--text-secondary); cursor: pointer;">Show Deleted LOGs</label>
                       </div>
-                      <div class="milestone-slot" data-slot="2">
-                        <div class="slot-num">02</div>
-                        <div class="slot-content">
-                          <div class="slot-name">---</div>
-                          <div class="slot-date">YYYY-MM-DD</div>
-                        </div>
-                        <div class="slot-status">Pending</div>
+                      
+                      <select id="pm-timetable-scale" class="form-select" style="width: 110px; height: 36px; padding: 6px 12px; font-size: 13px; background: rgba(0,0,0,0.2);">
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
+
+                      <button id="pm-timetable-export-html" class="btn btn-sm btn-secondary" style="padding: 6px 16px; font-size: 13px; border: 1px solid var(--accent-color); color: var(--accent-color); background: transparent;">Export HTML</button>
+                    </div>
+                  </div>
+
+                  <!-- Horizontal Timetable Gantt Container -->
+                  <div id="pm-timetable-container" class="timetable-container" style="flex: 1; min-height: 320px; max-height: 400px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); border-radius: 20px; overflow: auto; position: relative; display: flex; flex-direction: column;">
+                    <!-- Rendered via JS -->
+                  </div>
+
+                  <!-- Dynamic Detail Panel for Clicked Log -->
+                  <div id="pm-timetable-log-detail" style="display: none; flex-direction: column; gap: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border); padding: 20px; border-radius: 16px; animation: fadeIn 0.2s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">
+                      <div id="pm-timetable-detail-header" style="font-weight: 700; color: var(--accent-color); font-size: 14px;">[DEPARTMENT] Details</div>
+                      <div style="display: flex; gap: 8px;">
+                        <button id="pm-timetable-detail-edit" class="btn btn-sm btn-secondary" style="color: var(--accent-color); font-size: 12px; padding: 4px 10px;">Edit</button>
+                        <button id="pm-timetable-detail-done" class="btn btn-sm btn-secondary" style="color: #10b981; font-size: 12px; padding: 4px 10px;">Done</button>
+                        <button id="pm-timetable-detail-restore" class="btn btn-sm btn-secondary" style="color: #8b5cf6; font-size: 12px; padding: 4px 10px; display: none;">Restore</button>
+                        <button id="pm-timetable-detail-delete" class="btn btn-sm btn-secondary" style="color: #f87171; font-size: 12px; padding: 4px 10px;">Delete</button>
+                        <button class="btn btn-sm btn-secondary" style="font-size: 12px; padding: 4px 10px;" onclick="document.getElementById('pm-timetable-log-detail').style.display='none'">Close</button>
                       </div>
-                      <div class="milestone-slot" data-slot="3">
-                        <div class="slot-num">03</div>
-                        <div class="slot-content">
-                          <div class="slot-name">---</div>
-                          <div class="slot-date">YYYY-MM-DD</div>
-                        </div>
-                        <div class="slot-status">Pending</div>
+                    </div>
+                    <div id="pm-timetable-detail-content" style="white-space: pre-wrap; font-size: 13px; color: var(--text-secondary); line-height: 1.6;"></div>
+                    <div id="pm-timetable-detail-image" style="display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap;"></div>
+                  </div>
+
+                  <!-- Add Log Control Button -->
+                  <div style="display: flex; justify-content: flex-end; margin-top: 16px; margin-bottom: 12px;">
+                    <button class="btn btn-primary" id="btn-add-log">+ Add Status Log</button>
+                  </div>
+
+                  <!-- Milestones Container Row -->
+                  <div style="display: grid; grid-template-columns: 1fr; gap: 24px;">
+                    <!-- Milestones Container -->
+                    <div class="milestones-container" style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 20px; padding: 20px;">
+                      <div class="section-title" style="margin-bottom: 16px;">
+                        <h4>Milestones</h4>
+                        <span class="hint">Click slots to edit</span>
                       </div>
-                      <div class="milestone-slot" data-slot="4">
-                        <div class="slot-num">04</div>
-                        <div class="slot-content">
-                          <div class="slot-name">---</div>
-                          <div class="slot-date">YYYY-MM-DD</div>
-                        </div>
-                        <div class="slot-status">Pending</div>
+                      <div class="milestones-grid" id="milestones-grid">
+                        <!-- Populated dynamically via JS up to 20 slots -->
                       </div>
                     </div>
                   </div>
 
-                  <!-- Status Logs Section -->
-                  <div class="logs-container">
-                    <div class="section-title">
-                      <h4>Status Logs</h4>
-                      <button class="btn btn-sm btn-primary" id="btn-add-log">+ Add Log</button>
-                    </div>
-                    <div class="log-timeline" id="log-timeline">
-                      <!-- Status logs rendered here -->
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -419,10 +544,37 @@
                   <th>Tag</th>
                   <th>Title</th>
                   <th>Date</th>
+                  <th>Location</th>
+                  <th>Participants</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="minutes-trash-list-body">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Project Trash View -->
+        <div class="view hidden" id="view-project-trash">
+          <div class="view-header">
+            <h2>Deleted Projects</h2>
+            <button class="btn btn-secondary" id="btn-back-project">Back to Project Manager</button>
+          </div>
+          <div class="trash-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Tag</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Manager</th>
+                  <th>Client</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="project-trash-list-body">
                 <!-- Loaded via JS -->
               </tbody>
             </table>
@@ -608,6 +760,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="btn-export-md">Export to MD</button>
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-meeting-modal" style="margin-left: 8px;">Delete Minutes</button>
           <div style="flex: 1"></div>
           <button type="button" class="btn btn-ghost" id="btn-cancel-meeting">Cancel</button>
           <button type="submit" class="btn btn-primary">Save Minutes</button>
@@ -762,6 +915,7 @@
           </div>
         </div>
         <div class="modal-footer">
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-project-modal">Delete Project</button>
           <div class="footer-right">
             <button type="button" class="btn btn-ghost" id="btn-cancel-project">Cancel</button>
             <button type="submit" class="btn btn-primary">Create Project</button>
@@ -820,11 +974,12 @@
   <div id="modal-log" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Add Status Log</h2>
+        <h2 id="log-modal-title">Add Status Log</h2>
         <button class="btn-close" id="btn-close-log-modal">&times;</button>
       </div>
       <form id="form-log">
         <input type="hidden" id="log-project-id">
+        <input type="hidden" id="log-id">
         <div class="form-group">
           <label>Select Department / Slot</label>
           <select id="log-department" class="form-select">
@@ -839,14 +994,32 @@
           <label>Content / Details</label>
           <textarea id="log-content" rows="4" placeholder="Detailed update..."></textarea>
         </div>
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Start Date (Optional)</label>
+            <input type="date" id="log-start-date" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Due Date (Optional)</label>
+            <input type="date" id="log-due-date" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Image Path (Optional)</label>
+          <input type="text" id="log-image-path" placeholder="Path to status image (e.g. D:\images\part.png)">
+        </div>
         <div class="form-group">
           <label>Manager (Optional)</label>
           <input type="text" id="log-manager" placeholder="Person in charge">
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div class="footer-left" style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-success-outline hidden" id="btn-done-log-modal">Done</button>
+            <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-log-modal">Delete Log</button>
+          </div>
           <div class="footer-right">
             <button type="button" class="btn btn-ghost" id="btn-cancel-log">Cancel</button>
-            <button type="submit" class="btn btn-primary">Add Log</button>
+            <button type="submit" class="btn btn-primary" id="btn-submit-log">Add Log</button>
           </div>
         </div>
       </form>
@@ -959,6 +1132,7 @@
     </div>
   </div>
 
+  <div id="global-timetable-tooltip" class="timetable-tooltip"></div>
   <script src="app.js"></script>
 </body>
 </html>

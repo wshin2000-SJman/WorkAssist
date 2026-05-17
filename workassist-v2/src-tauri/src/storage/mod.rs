@@ -248,6 +248,31 @@ impl Storage {
         if !logs_info.contains(&"owner_id".to_string()) {
             conn.execute("ALTER TABLE status_logs ADD COLUMN owner_id INTEGER", [])?;
         }
+        if !logs_info.contains(&"is_deleted".to_string()) {
+            conn.execute("ALTER TABLE status_logs ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT 0", [])?;
+        }
+
+        let projects_info: Vec<String> = {
+            let mut stmt = conn.prepare("PRAGMA table_info(projects)")?;
+            let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+            rows.map(|r| r.unwrap()).collect()
+        };
+        if !projects_info.contains(&"project_tag".to_string()) {
+            conn.execute("ALTER TABLE projects ADD COLUMN project_tag TEXT DEFAULT ''", [])?;
+        }
+        if !projects_info.contains(&"is_deleted".to_string()) {
+            conn.execute("ALTER TABLE projects ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT 0", [])?;
+        }
+
+        let shadow_projects_info: Vec<String> = {
+            let mut stmt = conn.prepare("PRAGMA table_info(shadow_projects)")?;
+            let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+            rows.map(|r| r.unwrap()).collect()
+        };
+        if !shadow_projects_info.contains(&"project_tag".to_string()) {
+            conn.execute("ALTER TABLE shadow_projects ADD COLUMN project_tag TEXT", [])?;
+        }
+
         Ok(())
     }
 
@@ -336,8 +361,8 @@ impl Storage {
         let s_desc = SecurityEngine::tokenize(conn, project.description.as_deref().unwrap_or(""));
 
         conn.execute(
-            "INSERT OR REPLACE INTO shadow_projects (id, name, description) VALUES (?, ?, ?)",
-            params![project_id, s_name, s_desc],
+            "INSERT OR REPLACE INTO shadow_projects (id, name, description, project_tag) VALUES (?, ?, ?, ?)",
+            params![project_id, s_name, s_desc, project.project_tag],
         )?;
 
         Ok(())
@@ -374,13 +399,24 @@ impl Storage {
 
         let conn = self.conn.lock().unwrap();
 
+        // Clear existing demo data first to ensure idempotency and prevent duplicates
+        conn.execute("DELETE FROM shadow_tasks WHERE id IN (SELECT id FROM tasks WHERE owner_id = ?)", [owner_id])?;
+        conn.execute("DELETE FROM shadow_meetings WHERE id IN (SELECT id FROM meetings WHERE owner_id = ?)", [owner_id])?;
+        conn.execute("DELETE FROM shadow_projects WHERE id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
+        conn.execute("DELETE FROM shadow_status_logs WHERE id IN (SELECT id FROM status_logs WHERE owner_id = ?)", [owner_id])?;
+
+        conn.execute("DELETE FROM status_logs WHERE owner_id = ?", [owner_id])?;
+        conn.execute("DELETE FROM milestones WHERE project_id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
+        conn.execute("DELETE FROM projects WHERE owner_id = ?", [owner_id])?;
+        conn.execute("DELETE FROM tasks WHERE owner_id = ?", [owner_id])?;
+        conn.execute("DELETE FROM meetings WHERE owner_id = ?", [owner_id])?;
+
         // Ensure demo user exists
         conn.execute(
             "INSERT OR IGNORE INTO users (id, username, password_hash, password_hint) VALUES (?, ?, ?, ?)",
             params![owner_id, "demo_user", "demo", "demo"],
         )?;
 
-        // 1. Demo Projects
         let projects = vec![
             Project {
                 id: None, owner_id: Some(owner_id),
@@ -388,9 +424,11 @@ impl Storage {
                 description: Some("Developing high-precision gimbal stabilization for industrial drones.".to_string()),
                 manager: Some("Wonseup Shin".to_string()),
                 client: Some("SJ Global".to_string()),
-                created_at: now.clone(), status: "active".to_string(),
+                created_at: format!("{}T09:00:00Z", d_m10), status: "active".to_string(),
                 dept1_name: "Control".to_string(), dept2_name: "Hardware".to_string(),
                 dept3_name: "Software".to_string(), dept4_name: "Testing".to_string(),
+                project_tag: Some(format!("P{}-0900-01", d_m10.replace("-", ""))),
+                is_deleted: false,
             },
             Project {
                 id: None, owner_id: Some(owner_id),
@@ -398,9 +436,11 @@ impl Storage {
                 description: Some("Premium UI/UX overhaul for the core WorkAssist engine.".to_string()),
                 manager: Some("Admin User".to_string()),
                 client: Some("Internal".to_string()),
-                created_at: now.clone(), status: "active".to_string(),
+                created_at: format!("{}T10:00:00Z", d_m5), status: "active".to_string(),
                 dept1_name: "Design".to_string(), dept2_name: "Frontend".to_string(),
                 dept3_name: "Backend".to_string(), dept4_name: "QA".to_string(),
+                project_tag: Some(format!("P{}-1000-02", d_m5.replace("-", ""))),
+                is_deleted: false,
             },
             Project {
                 id: None, owner_id: Some(owner_id),
@@ -408,9 +448,11 @@ impl Storage {
                 description: Some("Implementing SLAM algorithms for indoor warehouse robots.".to_string()),
                 manager: Some("Wonseup Shin".to_string()),
                 client: Some("Logistics Corp".to_string()),
-                created_at: now.clone(), status: "active".to_string(),
+                created_at: format!("{}T11:00:00Z", d_today), status: "active".to_string(),
                 dept1_name: "Algorithm".to_string(), dept2_name: "Vision".to_string(),
                 dept3_name: "Control".to_string(), dept4_name: "Integration".to_string(),
+                project_tag: Some(format!("P{}-1100-03", d_today.replace("-", ""))),
+                is_deleted: false,
             },
             Project {
                 id: None, owner_id: Some(owner_id),
@@ -418,17 +460,19 @@ impl Storage {
                 description: Some("Next-gen secure synchronization layer for cross-platform data.".to_string()),
                 manager: Some("Cloud Lead".to_string()),
                 client: Some("SJ Global".to_string()),
-                created_at: now.clone(), status: "active".to_string(),
+                created_at: format!("{}T14:00:00Z", d_today), status: "active".to_string(),
                 dept1_name: "API".to_string(), dept2_name: "Security".to_string(),
                 dept3_name: "DevOps".to_string(), dept4_name: "Monitoring".to_string(),
+                project_tag: Some(format!("P{}-1400-04", d_today.replace("-", ""))),
+                is_deleted: false,
             }
         ];
 
         for mut p in projects {
             conn.execute(
-                "INSERT INTO projects (owner_id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                params![p.owner_id, p.name, p.description, p.manager, p.client, p.created_at, p.status, p.dept1_name, p.dept2_name, p.dept3_name, p.dept4_name],
+                "INSERT INTO projects (owner_id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![p.owner_id, p.name, p.description, p.manager, p.client, p.created_at, p.status, p.dept1_name, p.dept2_name, p.dept3_name, p.dept4_name, p.project_tag, p.is_deleted],
             )?;
             let pid = conn.last_insert_rowid();
             p.id = Some(pid);
@@ -441,11 +485,12 @@ impl Storage {
                 image_path: None, timestamp: now.clone(), status: "completed".to_string(),
                 tag: Some("Security".to_string()), title: Some("Security Gateway Update".to_string()),
                 manager: Some("Wonseup Shin".to_string()), start_date: None, due_date: None,
+                is_deleted: false,
             };
             conn.execute(
-                "INSERT INTO status_logs (project_id, owner_id, department, text_content, timestamp, status, tag, title, manager) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                params![log.project_id, owner_id, log.department, log.text_content, log.timestamp, log.status, log.tag, log.title, log.manager],
+                "INSERT INTO status_logs (project_id, owner_id, department, text_content, timestamp, status, tag, title, manager, is_deleted) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![log.project_id, owner_id, log.department, log.text_content, log.timestamp, log.status, log.tag, log.title, log.manager, log.is_deleted],
             )?;
             let lid = conn.last_insert_rowid();
             self.save_status_log_dual(&conn, &log, lid)?;
@@ -563,5 +608,153 @@ impl Storage {
         conn.execute("DELETE FROM meetings WHERE owner_id = ?", [owner_id])?;
         
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::Project;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_project_tag_flow() {
+        // Create a temporary test database file in the workspace
+        let test_db_dir = PathBuf::from("d:/Antigravity/scripts");
+        std::fs::create_dir_all(&test_db_dir).ok();
+        let test_db_path = test_db_dir.join("test_workassist.db");
+        if test_db_path.exists() {
+            std::fs::remove_file(&test_db_path).ok();
+        }
+
+        // 1. Initialize storage and verify tables & schemas are created
+        let storage = Storage::new(test_db_path.clone()).expect("Failed to create test storage");
+        
+        // Connect to verify schema directly
+        let conn = rusqlite::Connection::open(&test_db_path).expect("Failed to open test connection");
+        
+        let mut stmt = conn.prepare("PRAGMA table_info(projects)").unwrap();
+        let columns: Vec<String> = stmt.query_map([], |row| row.get::<_, String>(1)).unwrap().map(|r| r.unwrap()).collect();
+        assert!(columns.contains(&"project_tag".to_string()), "projects table should contain project_tag column");
+
+        let mut stmt_s = conn.prepare("PRAGMA table_info(shadow_projects)").unwrap();
+        let s_columns: Vec<String> = stmt_s.query_map([], |row| row.get::<_, String>(1)).unwrap().map(|r| r.unwrap()).collect();
+        assert!(s_columns.contains(&"project_tag".to_string()), "shadow_projects table should contain project_tag column");
+
+        // 2. Seed demo data and verify tagged projects
+        storage.seed_demo_data().expect("Failed to seed demo data");
+
+        let mut stmt_p = conn.prepare("SELECT name, project_tag FROM projects WHERE owner_id = 999").unwrap();
+        let seeded_projects: Vec<(String, String)> = stmt_p.query_map([], |row| {
+            Ok((row.get::<_, String>(0).unwrap(), row.get::<_, String>(1).unwrap()))
+        }).unwrap().map(|r| r.unwrap()).collect();
+
+        assert!(!seeded_projects.is_empty(), "Seeded projects should not be empty");
+        for (name, tag) in &seeded_projects {
+            assert!(tag.starts_with('P'), "Demo project {} tag '{}' should start with 'P'", name, tag);
+            assert_eq!(tag.len(), 17, "Demo project {} tag '{}' length should be 17", name, tag);
+            println!("Demo project seeded tag verified: {} -> {}", name, tag);
+        }
+
+        // 3. Test dynamic project tag generation inside add_project
+        let pm = crate::modules::pm::PmModule::new(std::sync::Arc::new(storage));
+        let new_project = Project {
+            id: None,
+            owner_id: Some(1),
+            name: "Test Dynamic Tag Project".to_string(),
+            description: Some("Verification of sequential tags".to_string()),
+            manager: Some("Tester".to_string()),
+            client: Some("QA".to_string()),
+            created_at: "".to_string(),
+            status: "active".to_string(),
+            dept1_name: "".to_string(),
+            dept2_name: "".to_string(),
+            dept3_name: "".to_string(),
+            dept4_name: "".to_string(),
+            project_tag: None,
+            is_deleted: false,
+        };
+
+        let project_id = pm.add_project(new_project).expect("Failed to add project");
+        
+        // Query the added project to verify tag
+        let mut stmt_new = conn.prepare("SELECT project_tag FROM projects WHERE id = ?").unwrap();
+        let generated_tag: String = stmt_new.query_row([project_id], |row| row.get(0)).unwrap();
+        
+        assert!(generated_tag.starts_with('P'), "Generated tag '{}' should start with 'P'", generated_tag);
+        assert_eq!(generated_tag.len(), 17, "Generated tag '{}' length should be 17", generated_tag);
+        assert!(generated_tag.ends_with("-01"), "Generated tag '{}' should end with -01 sequence number", generated_tag);
+        println!("Dynamically generated project tag verified: {}", generated_tag);
+
+        // Clean up test DB
+        std::fs::remove_file(&test_db_path).ok();
+    }
+
+    #[test]
+    fn test_project_trash_flow() {
+        let test_db_dir = PathBuf::from("d:/Antigravity/scripts");
+        std::fs::create_dir_all(&test_db_dir).ok();
+        let test_db_path = test_db_dir.join("test_workassist_trash.db");
+        if test_db_path.exists() {
+            std::fs::remove_file(&test_db_path).ok();
+        }
+
+        // Initialize storage
+        let storage = Storage::new(test_db_path.clone()).expect("Failed to create test storage");
+        let conn = rusqlite::Connection::open(&test_db_path).expect("Failed to open test connection");
+
+        // Verify columns inside schema
+        let mut stmt = conn.prepare("PRAGMA table_info(projects)").unwrap();
+        let columns: Vec<String> = stmt.query_map([], |row| row.get::<_, String>(1)).unwrap().map(|r| r.unwrap()).collect();
+        assert!(columns.contains(&"is_deleted".to_string()), "projects table should contain is_deleted column");
+
+        // Seed demo data
+        storage.seed_demo_data().expect("Failed to seed demo data");
+
+        // PM Module instance
+        let pm = crate::modules::pm::PmModule::new(std::sync::Arc::new(storage));
+
+        // Retrieve active projects and verify count
+        let owner_id = 1;
+        let active_projects = pm.get_active_projects(owner_id).unwrap();
+        assert!(!active_projects.is_empty(), "Active projects list should not be empty initially");
+        let initial_count = active_projects.len();
+
+        // 1. Soft delete project
+        let target_project = &active_projects[0];
+        let target_id = target_project.id.unwrap();
+        pm.delete_project(target_id).unwrap();
+
+        // Retrieve active projects after deletion
+        let active_projects_after = pm.get_active_projects(owner_id).unwrap();
+        assert_eq!(active_projects_after.len(), initial_count - 1, "Active count should decrease by 1");
+
+        // Retrieve deleted projects list
+        let deleted_projects = pm.get_deleted_projects(owner_id).unwrap();
+        assert!(deleted_projects.iter().any(|p| p.id.unwrap() == target_id), "Deleted project should show in get_deleted_projects");
+
+        // 2. Restore project
+        pm.restore_project(target_id).unwrap();
+
+        // Retrieve active projects after restore
+        let active_projects_restored = pm.get_active_projects(owner_id).unwrap();
+        assert_eq!(active_projects_restored.len(), initial_count, "Active count should return to initial count");
+
+        // Verify it is not in deleted list anymore
+        let deleted_projects_after = pm.get_deleted_projects(owner_id).unwrap();
+        assert!(!deleted_projects_after.iter().any(|p| p.id.unwrap() == target_id), "Project should be removed from get_deleted_projects");
+
+        // 3. Hard delete project
+        pm.hard_delete_project(target_id).unwrap();
+
+        // Verify it is completely gone
+        let active_projects_final = pm.get_active_projects(owner_id).unwrap();
+        assert_eq!(active_projects_final.len(), initial_count - 1, "Active count should decrease by 1 since project was hard deleted");
+        
+        let deleted_projects_final = pm.get_deleted_projects(owner_id).unwrap();
+        assert!(!deleted_projects_final.iter().any(|p| p.id.unwrap() == target_id), "Project should not exist in deleted list");
+
+        // Clean up test DB
+        std::fs::remove_file(&test_db_path).ok();
     }
 }

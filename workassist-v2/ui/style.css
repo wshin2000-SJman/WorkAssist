@@ -1193,6 +1193,41 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.2s;
+  position: relative;
+}
+
+/* Hover Delete Button for Project Cards */
+.project-actions-mini {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.project-item:hover .project-actions-mini {
+  opacity: 1;
+}
+
+.project-actions-mini .btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.project-actions-mini .btn-icon:hover {
+  background: #ff4444;
+  color: #fff;
+  transform: scale(1.1);
 }
 
 .project-item:hover, .project-item.active {
@@ -1441,6 +1476,10 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .login-header p {
   color: var(--text-secondary);
   margin-bottom: 32px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
 }
 
 #form-login {
@@ -2128,14 +2167,39 @@ tr:has(.status-review) {
 
 .form-select {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--card-border);
   border-radius: 10px;
-  padding: 10px 14px;
+  padding: 10px 36px 10px 14px;
   height: 44px;
   color: var(--text-primary);
   font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  transition: all 0.3s ease;
+}
+
+.form-select:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.form-select:focus {
+  border-color: var(--accent-color);
+  outline: none;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.form-select option {
+  background-color: #1a1e26;
+  color: white;
+  padding: 8px;
 }
 
 /* Kanban Tabs */
@@ -2560,5 +2624,575 @@ tr:has(.status-review) {
   padding: 0 48px 48px;
 }
 }
+
+/* PM Overhaul Styles */
+.slot-rename-input:focus {
+  border-color: var(--accent-color) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  outline: none;
+  box-shadow: 0 0 10px rgba(167, 139, 250, 0.2);
+}
+
+.btn-add-log-col:hover {
+  border-color: var(--accent-color) !important;
+  color: var(--accent-color) !important;
+  background: rgba(167, 139, 250, 0.05) !important;
+}
+
+.pm-details-log-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+  overflow: hidden;
+}
+
+.pm-details-log-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(167, 139, 250, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.pm-details-log-card .log-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.pm-details-log-card .log-card-tag {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
+.pm-details-log-card .log-card-time {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.pm-details-log-card .log-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+
+.pm-details-log-card .log-card-content {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.pm-details-log-card .log-card-manager {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pm-details-log-card .log-card-dates {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--accent-color);
+  opacity: 0.8;
+}
+
+.pm-details-log-card .log-card-image-thumb {
+  width: 100%;
+  max-height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-top: 8px;
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+}
+
+.pm-details-log-card .log-card-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(10, 10, 15, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;
+  backdrop-filter: blur(2px);
+}
+
+.pm-details-log-card:hover .log-card-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pm-details-log-card .log-card-actions .action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  color: var(--text-color);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pm-details-log-card .log-card-actions .action-btn:hover {
+  background: var(--accent-color);
+  color: white;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.pm-details-log-card .log-card-actions .action-btn.btn-card-delete:hover {
+  background: #ef4444;
+  color: white;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.pm-details-log-card .log-card-actions .action-btn.btn-card-done:hover {
+  background: #10b981;
+  color: white;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+/* --- Horizontal Time Table Gantt Chart Premium Glassmorphic Styles --- */
+.timetable-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  backdrop-filter: blur(8px);
+}
+
+.timetable-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.timetable-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.timetable-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+
+.timetable-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.timetable-header {
+  display: flex;
+  border-bottom: 1px solid var(--card-border);
+  background: rgba(20, 20, 28, 0.85);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.timetable-y-axis-header {
+  width: 140px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--card-border);
+  background: rgba(20, 20, 28, 0.95);
+}
+
+.timetable-x-axis {
+  display: flex;
+  flex: 1;
+}
+
+.timetable-day-col {
+  flex: 1;
+  text-align: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 12px 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  min-width: 80px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timetable-day-col.today {
+  background: rgba(79, 70, 229, 0.08);
+  color: var(--accent-color);
+  font-weight: bold;
+}
+
+.timetable-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.timetable-track {
+  display: flex;
+  min-height: 80px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  position: relative;
+  transition: background 0.2s;
+}
+
+.timetable-track:hover {
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.timetable-track-label {
+  width: 140px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 800;
+  border-right: 1px solid var(--card-border);
+  background: rgba(15, 15, 22, 0.9);
+  color: var(--text-primary);
+  position: relative;
+  z-index: 8;
+  letter-spacing: 0.5px;
+}
+
+.timetable-track-content {
+  flex: 1;
+  position: relative;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: calc(100% / var(--day-count, 7)) 100%;
+}
+
+/* Glassmorphic Log Markers & Ranges */
+.timetable-log-marker {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  top: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+  z-index: 5;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
+}
+
+.timetable-log-marker:hover {
+  transform: translate(-50%, -50%) scale(1.4);
+  z-index: 15;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+.timetable-log-range {
+  position: absolute;
+  height: 16px;
+  border-radius: 8px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 4;
+  backdrop-filter: blur(4px);
+  transition: height 0.2s ease, box-shadow 0.2s, background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  font-size: 9px;
+  font-weight: bold;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timetable-log-range:hover {
+  height: 22px;
+  z-index: 15;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Status colors with Glass & HSL glow */
+.timetable-log-marker.todo,
+.timetable-log-range.todo {
+  background: rgba(59, 130, 246, 0.4) !important;
+  border-color: rgba(59, 130, 246, 0.8);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+.timetable-log-marker.doing,
+.timetable-log-range.doing {
+  background: rgba(245, 158, 11, 0.4) !important;
+  border-color: rgba(245, 158, 11, 0.8);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+.timetable-log-marker.done,
+.timetable-log-range.done {
+  background: rgba(16, 185, 129, 0.45) !important;
+  border-color: rgba(16, 185, 129, 0.8);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+.timetable-log-marker.note,
+.timetable-log-range.note {
+  background: rgba(148, 163, 184, 0.4) !important;
+  border-color: rgba(148, 163, 184, 0.8);
+  box-shadow: 0 0 8px rgba(148, 163, 184, 0.2);
+}
+.timetable-log-marker.review,
+.timetable-log-range.review {
+  background: rgba(139, 92, 246, 0.4) !important;
+  border-color: rgba(139, 92, 246, 0.8);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+}
+
+/* Soft Styling for Deleted items */
+.timetable-log-marker.deleted,
+.timetable-log-range.deleted {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: none !important;
+  opacity: 0.25 !important;
+  border-style: dashed;
+}
+
+.timetable-log-marker.done {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+.timetable-log-marker.done::after {
+  content: '✓';
+  font-size: 9px;
+  font-weight: 900;
+  color: white;
+}
+
+/* High-visibility Glass Tooltip */
+.timetable-tooltip {
+  position: fixed;
+  background: rgba(12, 12, 18, 0.85);
+  border: 1px solid var(--card-border);
+  padding: 14px 18px;
+  border-radius: 16px;
+  white-space: pre-wrap;
+  width: 280px;
+  font-size: 13px;
+  color: var(--text-color);
+  display: none;
+  pointer-events: none;
+  z-index: 9999;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  line-height: 1.5;
+  animation: scaleIn 0.15s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* Milestone Visual lines */
+.milestone-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px dashed rgba(239, 68, 68, 0.55);
+  z-index: 6;
+  pointer-events: none;
+}
+
+.milestone-line.is-done {
+  border-left: 2px dashed rgba(16, 185, 129, 0.4) !important;
+}
+
+.milestone-line-label {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 10px;
+  color: #ef4444;
+  white-space: nowrap;
+  font-weight: 800;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  padding: 2px 6px;
+  border-radius: 6px;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  text-transform: uppercase;
+}
+
+.milestone-line.is-done .milestone-line-label {
+  color: #10b981 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  background: rgba(16, 185, 129, 0.12) !important;
+}
+
+.timetable-day-col.milestone-highlight {
+  border-bottom: 3px solid #ef4444;
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.timetable-day-col.milestone-highlight.is-done {
+  border-bottom-color: #10b981 !important;
+  color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.04) !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Premium Project Manager Done/Deleted Logs Search & Filter UI */
+.pm-search-select {
+  padding: 0 32px 0 16px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: 12px !important;
+  color: var(--accent-color) !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  height: 42px !important;
+  outline: none !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  width: 200px !important;
+  -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23f97316' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+}
+
+.pm-search-select option {
+  background-color: #1a1e26 !important;
+  color: white !important;
+}
+
+.pm-search-select:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.pm-search-select:focus {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 10px var(--accent-glow) !important;
+}
+
+.pm-search-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: 12px !important;
+  color: var(--text-primary) !important;
+  padding: 0 16px !important;
+  height: 42px !important;
+  outline: none !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  transition: all 0.3s ease !important;
+}
+
+.pm-search-input:focus {
+  border-color: var(--accent-color) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  box-shadow: 0 0 12px var(--accent-glow) !important;
+}
+
+/* Premium Status Log Card Actions */
+.status-log-card {
+  position: relative !important;
+}
+
+.status-log-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  background: #181d24; /* Solid dark color matching the card background to cover the time */
+  padding-left: 6px;
+  border-radius: 4px;
+}
+
+.status-log-card:hover .status-log-actions {
+  opacity: 1;
+}
+
+.btn-status-log-done, .btn-status-log-del {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #fff;
+}
+
+.btn-status-log-done:hover {
+  background: #34d399;
+  color: white;
+  border-color: #34d399;
+  transform: scale(1.1);
+}
+
+.btn-status-log-del:hover {
+  background: #f87171;
+  color: white;
+  border-color: #f87171;
+  transform: scale(1.1);
+}
+
+.btn-success-outline {
+  background: transparent;
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.btn-success-outline:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+}
+
+.btn-secondary-outline {
+  background: transparent;
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary-outline:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+}
+
+
 
 
