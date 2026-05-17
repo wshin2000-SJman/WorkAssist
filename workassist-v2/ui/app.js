@@ -2681,8 +2681,8 @@ async function renderTimeTable() {
                     leftPct = 0;
                 }
             } else {
-                // Point display
-                const targetDate = sDateStr ? new Date(sDateStr) : logDate;
+                // Point display (uses due_date/deadline if present, else start_date, else timestamp)
+                const targetDate = dDateStr ? new Date(dDateStr) : (sDateStr ? new Date(sDateStr) : logDate);
                 leftPct = calculatePct(targetDate);
             }
 
@@ -3353,6 +3353,7 @@ function generateProjectHtml(project, milestones, logs) {
             <td style="padding: 12px; color: #fff; font-weight: bold;">${l.title}</td>
             <td style="padding: 12px; color: #ddd; font-size: 13px;">${(l.text_content || '').replace(/\n/g, '<br>')}</td>
             <td style="padding: 12px; color: #aaa; font-size: 12px;">${l.manager || '-'}</td>
+            <td style="padding: 12px; color: #888; font-size: 12px;">${(l.start_date || l.due_date) ? (l.start_date || '-') + ' ~ ' + (l.due_date || '-') : '-'}</td>
             <td style="padding: 12px; color: #888; font-size: 12px;">${formatTimestamp(l.timestamp)}</td>
         </tr>
     `).join('');
@@ -3782,11 +3783,12 @@ function generateProjectHtml(project, milestones, logs) {
                     <th style="width: 220px;">Title</th>
                     <th>Details</th>
                     <th style="width: 120px;">PIC</th>
+                    <th style="width: 180px;">Duration</th>
                     <th style="width: 160px;">Time</th>
                 </tr>
             </thead>
             <tbody>
-                ${logRowsHtml || '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #94a3b8;">No status logs recorded yet.</td></tr>'}
+                ${logRowsHtml || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #94a3b8;">No status logs recorded yet.</td></tr>'}
             </tbody>
         </table>
     </div>
@@ -4016,7 +4018,8 @@ function generateProjectHtml(project, milestones, logs) {
                             leftPct = 0;
                         }
                     } else {
-                        const targetDate = sDateStr ? new Date(sDateStr) : logDate;
+                        // Point display (uses due_date/deadline if present, else start_date, else timestamp)
+                        const targetDate = dDateStr ? new Date(dDateStr) : (sDateStr ? new Date(sDateStr) : logDate);
                         leftPct = calculatePct(targetDate, startDate, scale);
                     }
 
