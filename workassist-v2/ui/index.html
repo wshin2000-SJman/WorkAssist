@@ -752,8 +752,8 @@
         <input type="hidden" id="meeting-id">
         <input type="hidden" id="meeting-tag">
         <div class="form-group">
-          <label for="meeting-title">Meeting Title</label>
-          <input type="text" id="meeting-title" placeholder="What was the meeting about?" required>
+          <label for="meeting-title">Meeting Title <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 30 chars)</span></label>
+          <input type="text" id="meeting-title" placeholder="What was the meeting about?" maxlength="30" required>
         </div>
         <div class="form-row meeting-meta">
           <div class="form-group" style="flex: 2">
@@ -765,25 +765,25 @@
             <input type="time" id="meeting-time">
           </div>
           <div class="form-group" style="flex: 2">
-            <label for="meeting-location">Location</label>
-            <input type="text" id="meeting-location" placeholder="Conference Room A">
+            <label for="meeting-location">Location <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 30 chars)</span></label>
+            <input type="text" id="meeting-location" placeholder="Conference Room A" maxlength="30">
           </div>
         </div>
         <div class="form-group">
-          <label for="meeting-participants">Participants</label>
-          <input type="text" id="meeting-participants" placeholder="Name 1, Name 2, ...">
+          <label for="meeting-participants">Participants <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 50 chars)</span></label>
+          <input type="text" id="meeting-participants" placeholder="Name 1, Name 2, ..." maxlength="50">
         </div>
         <div class="form-group">
-          <label for="meeting-memo">Agenda</label>
-          <textarea id="meeting-memo" rows="4" placeholder="Meeting goals and topics..."></textarea>
+          <label for="meeting-memo">Agenda <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 3000 chars)</span></label>
+          <textarea id="meeting-memo" rows="4" placeholder="Meeting goals and topics..." maxlength="3000"></textarea>
         </div>
         <div class="form-group">
-          <label for="meeting-decisions">Decisions</label>
-          <textarea id="meeting-decisions" rows="3" placeholder="Key decisions made during the meeting..."></textarea>
+          <label for="meeting-decisions">Decisions <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 3000 chars)</span></label>
+          <textarea id="meeting-decisions" rows="3" placeholder="Key decisions made during the meeting..." maxlength="3000"></textarea>
         </div>
         <div class="form-group">
-          <label for="meeting-actions">Action Items</label>
-          <textarea id="meeting-actions" rows="3" placeholder="Who will do what by when?"></textarea>
+          <label for="meeting-actions">Action Items <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 3000 chars)</span></label>
+          <textarea id="meeting-actions" rows="3" placeholder="Who will do what by when?" maxlength="3000"></textarea>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="btn-export-md">Export to MD</button>

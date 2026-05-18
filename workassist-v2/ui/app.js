@@ -1017,6 +1017,33 @@ function setupModals() {
                 created_at: "",
                 is_deleted: false
             };
+
+            // Character length validation
+            if (meetingData.title && meetingData.title.length > 30) {
+                alert("Meeting title cannot exceed 30 characters.");
+                return;
+            }
+            if (meetingData.location && meetingData.location.length > 30) {
+                alert("Meeting location cannot exceed 30 characters.");
+                return;
+            }
+            if (meetingData.participants && meetingData.participants.length > 50) {
+                alert("Meeting participants cannot exceed 50 characters.");
+                return;
+            }
+            if (meetingData.memo && meetingData.memo.length > 3000) {
+                alert("Meeting agenda cannot exceed 3000 characters.");
+                return;
+            }
+            if (meetingData.decisions && meetingData.decisions.length > 3000) {
+                alert("Meeting decisions cannot exceed 3000 characters.");
+                return;
+            }
+            if (meetingData.action_items && meetingData.action_items.length > 3000) {
+                alert("Meeting action items cannot exceed 3000 characters.");
+                return;
+            }
+
             try {
                 await invoke('plugin:minutes|save_meeting', { meeting: meetingData });
                 closeMeeting();
