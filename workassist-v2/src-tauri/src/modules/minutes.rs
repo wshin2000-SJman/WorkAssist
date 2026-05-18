@@ -119,8 +119,8 @@ impl MinutesModule {
             let _ = self.storage.save_meeting_dual(&conn, &meeting, id);
             Ok(id)
         } else {
-            // Generate Tag: MYYYYMMDD-HHMM-##
-            let date_str = now_local.format("%Y%m%d").to_string();
+            // Generate Tag: MYYMMDD-HHMM-##
+            let date_str = now_local.format("%y%m%d").to_string();
             let time_str = now_local.format("%H%M").to_string();
             let minute_prefix = now_local.format("%Y-%m-%dT%H:%M").to_string();
             

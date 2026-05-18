@@ -75,8 +75,8 @@ impl PmModule {
         } else {
             project.created_at = now_rfc;
 
-            // Generate Tag: PYYYYMMDD-HHMM-##
-            let date_str = now_local.format("%Y%m%d").to_string();
+            // Generate Tag: PYYMMDD-HHMM-##
+            let date_str = now_local.format("%y%m%d").to_string();
             let time_str = now_local.format("%H%M").to_string();
             let minute_prefix = now_local.format("%Y-%m-%dT%H:%M").to_string();
             
@@ -117,7 +117,7 @@ impl PmModule {
     pub fn get_status_logs(&self, project_id: i64) -> Result<Vec<StatusLog>> {
         let conn = self.storage.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, project_id, department, text_content, image_path, timestamp, status, tag, title, manager, start_date, due_date, is_deleted 
+            "SELECT id, project_id, department, text_content, timestamp, status, tag, title, manager, start_date, due_date, is_deleted 
              FROM status_logs WHERE project_id = ? ORDER BY timestamp ASC"
         )?;
         
@@ -127,15 +127,14 @@ impl PmModule {
                 project_id: row.get(1)?,
                 department: row.get(2)?,
                 text_content: row.get(3)?,
-                image_path: row.get(4)?,
-                timestamp: row.get(5)?,
-                status: row.get(6)?,
-                tag: row.get(7)?,
-                title: row.get(8)?,
-                manager: row.get(9)?,
-                start_date: row.get(10)?,
-                due_date: row.get(11)?,
-                is_deleted: row.get(12)?,
+                timestamp: row.get(4)?,
+                status: row.get(5)?,
+                tag: row.get(6)?,
+                title: row.get(7)?,
+                manager: row.get(8)?,
+                start_date: row.get(9)?,
+                due_date: row.get(10)?,
+                is_deleted: row.get(11)?,
             })
         })?;
 
@@ -152,39 +151,31 @@ impl PmModule {
 
         let conn = self.storage.conn.lock().unwrap();
 
-        // Generate sequential tag L-YY/MM/DD-### if tag is empty or None
+        // Generate sequential tag L{date_str}-{time_str}-{sequence:02} if tag is empty or None
         if log.tag.as_ref().map_or(true, |t| t.is_empty()) {
             let now_local = chrono::Local::now();
-            let date_str = now_local.format("%y/%m/%d").to_string();
-            let mut max_serial = 0;
-            let mut stmt = conn.prepare("SELECT tag FROM status_logs WHERE tag LIKE ?")?;
-            let tag_pattern = format!("L-{}-%", date_str);
-            let tag_rows = stmt.query_map(params![tag_pattern], |row| row.get::<_, Option<String>>(0))?;
-            for row in tag_rows {
-                if let Ok(Some(tag_str)) = row {
-                    let parts: Vec<&str> = tag_str.split('-').collect();
-                    if parts.len() == 3 {
-                        if let Ok(serial) = parts[2].parse::<i64>() {
-                            if serial > max_serial {
-                                max_serial = serial;
-                            }
-                        }
-                    }
-                }
-            }
-            let serial = max_serial + 1;
-            let generated_tag = format!("L-{}-{:03}", date_str, serial);
+            let date_str = now_local.format("%y%m%d").to_string();
+            let time_str = now_local.format("%H%M").to_string();
+            
+            // Count status logs created in the exact same minute
+            let minute_prefix = &log.timestamp[..16];
+            let mut stmt = conn.prepare("SELECT COUNT(*) FROM status_logs WHERE timestamp LIKE ?")?;
+            let count_this_min: i64 = stmt.query_row(
+                params![format!("{}%", minute_prefix)],
+                |row| row.get(0)
+            )?;
+            let sequence = count_this_min + 1;
+            let generated_tag = format!("L{}-{}-{:02}", date_str, time_str, sequence);
             log.tag = Some(generated_tag);
         }
 
         conn.execute(
-            "INSERT INTO status_logs (project_id, department, text_content, image_path, timestamp, status, tag, title, manager, start_date, due_date)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO status_logs (project_id, department, text_content, timestamp, status, tag, title, manager, start_date, due_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             params![
                 log.project_id,
                 log.department,
                 log.text_content,
-                log.image_path,
                 log.timestamp,
                 log.status,
                 log.tag,
@@ -204,14 +195,13 @@ impl PmModule {
         let conn = self.storage.conn.lock().unwrap();
         if let Some(id) = log.id {
             conn.execute(
-                "UPDATE status_logs SET title = ?, text_content = ?, manager = ?, start_date = ?, due_date = ?, image_path = ? WHERE id = ?",
+                "UPDATE status_logs SET title = ?, text_content = ?, manager = ?, start_date = ?, due_date = ? WHERE id = ?",
                 params![
                     log.title,
                     log.text_content,
                     log.manager,
                     log.start_date,
                     log.due_date,
-                    log.image_path,
                     id
                 ],
             )?;

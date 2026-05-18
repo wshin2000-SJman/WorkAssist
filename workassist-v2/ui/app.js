@@ -600,7 +600,7 @@ function closeAllModals() {
     closeProject();
     
     // Hide other non-form or simple modals
-    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-about', 'modal-privacy', 'modal-terms', 'modal-contact'];
+    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-about', 'modal-privacy', 'modal-terms', 'modal-contact', 'modal-done-log-detail'];
     others.forEach(id => {
         const m = document.getElementById(id);
         if (m) {
@@ -772,6 +772,21 @@ function setupModals() {
     if (btnCloseTask) btnCloseTask.onclick = closeTask;
     if (btnCancelTask) btnCancelTask.onclick = closeTask;
 
+    const taskStart = document.getElementById('task-start');
+    const taskDue = document.getElementById('task-due');
+    if (taskStart && taskDue) {
+        const validateTaskDates = () => {
+            const startVal = taskStart.value;
+            const dueVal = taskDue.value;
+            if (startVal && dueVal && dueVal < startVal) {
+                alert("Due date must be set after start date.");
+                taskDue.value = startVal;
+            }
+        };
+        taskDue.onchange = validateTaskDates;
+        taskStart.onchange = validateTaskDates;
+    }
+
     if (btnCloseMeeting) btnCloseMeeting.onclick = closeMeeting;
     if (btnCancelMeeting) btnCancelMeeting.onclick = closeMeeting;
 
@@ -877,8 +892,9 @@ function setupModals() {
     // Track mousedown to prevent closing on drags
     let modalClickStartedOnOverlay = false;
     const modalProject = document.getElementById('modal-project');
+    const modalDoneLogDetail = document.getElementById('modal-done-log-detail');
     window.addEventListener('mousedown', (e) => {
-        modalClickStartedOnOverlay = (e.target === modalTask || e.target === modalMeeting || e.target === modalProject || e.target === document.getElementById('modal-review'));
+        modalClickStartedOnOverlay = (e.target === modalTask || e.target === modalMeeting || e.target === modalProject || e.target === document.getElementById('modal-review') || e.target === modalDoneLogDetail);
     });
 
     window.addEventListener('click', (e) => {
@@ -889,6 +905,9 @@ function setupModals() {
         if (e.target === modalProject) closeProject();
         if (e.target === document.getElementById('modal-review')) {
             document.getElementById('modal-review').classList.add('hidden');
+        }
+        if (e.target === modalDoneLogDetail) {
+            modalDoneLogDetail.classList.add('hidden');
         }
     });
 
@@ -1091,6 +1110,27 @@ function setupModals() {
     if (btnCloseLog) btnCloseLog.onclick = () => document.getElementById('modal-log').classList.add('hidden');
     if (btnCancelLog) btnCancelLog.onclick = () => document.getElementById('modal-log').classList.add('hidden');
 
+    // Done Log Detail Modal Close
+    const btnCloseDoneLogDetailModal = document.getElementById('btn-close-done-log-detail-modal');
+    const btnCloseDoneLogDetail = document.getElementById('btn-close-done-log-detail');
+    if (btnCloseDoneLogDetailModal) btnCloseDoneLogDetailModal.onclick = () => document.getElementById('modal-done-log-detail').classList.add('hidden');
+    if (btnCloseDoneLogDetail) btnCloseDoneLogDetail.onclick = () => document.getElementById('modal-done-log-detail').classList.add('hidden');
+
+    const logStartDate = document.getElementById('log-start-date');
+    const logDueDate = document.getElementById('log-due-date');
+    if (logStartDate && logDueDate) {
+        const validateLogDates = () => {
+            const startVal = logStartDate.value;
+            const dueVal = logDueDate.value;
+            if (startVal && dueVal && dueVal < startVal) {
+                alert("Due date must be set after start date.");
+                logDueDate.value = startVal;
+            }
+        };
+        logDueDate.onchange = validateLogDates;
+        logStartDate.onchange = validateLogDates;
+    }
+
     if (formLog) {
         formLog.onsubmit = async (e) => {
             e.preventDefault();
@@ -1101,7 +1141,6 @@ function setupModals() {
                 owner_id: currentUser.id,
                 department: document.getElementById('log-department').value,
                 text_content: document.getElementById('log-content').value,
-                image_path: document.getElementById('log-image-path').value || "",
                 timestamp: "",
                 status: 'active',
                 tag: "",
@@ -1234,7 +1273,7 @@ function setupModals() {
                 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-task',
                 'modal-meeting', 'modal-review', 'modal-project', 'modal-privacy',
                 'modal-terms', 'modal-contact', 'modal-about', 'modal-milestone',
-                'modal-log', 'modal-settings'
+                'modal-log', 'modal-settings', 'modal-done-log-detail'
             ];
             modals.forEach(id => {
                 const el = document.getElementById(id);
@@ -2405,13 +2444,35 @@ function renderMilestones(projectId, milestones) {
     for (let slotNum = 1; slotNum <= 20; slotNum++) {
         const ms = milestones.find(m => m.slot_number === slotNum);
         const card = document.createElement('div');
-        card.className = `milestone-slot${(ms && ms.is_done) ? ' done' : ''}`;
+        
+        let cardClass = 'milestone-slot';
+        if (ms && ms.is_saved && ms.is_done) {
+            cardClass += ' done';
+        } else if (ms && ms.is_saved) {
+            cardClass += ' pending-saved';
+        }
+        card.className = cardClass;
+        
         card.setAttribute('data-slot', slotNum);
 
         const displayNum = slotNum < 10 ? '0' + slotNum : slotNum;
-        const name = (ms && ms.name) ? ms.name : '---';
-        const deadline = (ms && ms.deadline) ? ms.deadline : 'YYYY-MM-DD';
-        const status = (ms && ms.is_done) ? 'Done' : 'Pending';
+        const hasData = ms && ms.is_saved && (ms.name || ms.deadline);
+        const name = hasData ? ms.name : '---';
+        const deadline = hasData ? ms.deadline : 'YYYY-MM-DD';
+        const status = (ms && ms.is_saved && ms.is_done) ? 'Done' : 'Pending';
+
+        let actionHtml = '';
+        if (hasData) {
+            actionHtml = `
+                <div class="milestone-actions">
+                    ${ms.is_done 
+                        ? `<button class="btn-milestone-active compact" title="Re-active Milestone">↩</button>` 
+                        : `<button class="btn-milestone-done compact" title="Complete Milestone">✓</button>`
+                    }
+                    <button class="btn-milestone-del compact" title="Reset Milestone">🗑️</button>
+                </div>
+            `;
+        }
 
         card.innerHTML = `
             <div class="slot-num">${displayNum}</div>
@@ -2420,6 +2481,7 @@ function renderMilestones(projectId, milestones) {
                 <div class="slot-date">${deadline}</div>
             </div>
             <div class="slot-status">${status}</div>
+            ${actionHtml}
         `;
 
         card.onclick = () => {
@@ -2428,18 +2490,95 @@ function renderMilestones(projectId, milestones) {
             document.getElementById('ms-project-id').value = projectId;
             document.getElementById('ms-slot-number').value = slotNum;
             
-            if (ms) {
+            if (ms && ms.is_saved) {
                 document.getElementById('ms-id').value = ms.id || '';
                 document.getElementById('ms-name').value = ms.name || '';
                 document.getElementById('ms-deadline').value = ms.deadline || '';
                 document.getElementById('ms-content').value = ms.content || '';
                 document.getElementById('ms-is-done').checked = ms.is_done || false;
             } else {
-                document.getElementById('ms-id').value = '';
+                document.getElementById('ms-id').value = ms ? (ms.id || '') : '';
+                document.getElementById('ms-name').value = '';
+                document.getElementById('ms-deadline').value = '';
+                document.getElementById('ms-content').value = '';
+                document.getElementById('ms-is-done').checked = false;
             }
             
             document.getElementById('modal-milestone').classList.remove('hidden');
         };
+
+        if (hasData) {
+            const btnDone = card.querySelector('.btn-milestone-done');
+            if (btnDone) {
+                btnDone.onclick = async (e) => {
+                    e.stopPropagation();
+                    const milestone = {
+                        id: ms.id || null,
+                        project_id: projectId,
+                        slot_number: slotNum,
+                        name: ms.name,
+                        deadline: ms.deadline,
+                        content: ms.content || '',
+                        is_saved: true,
+                        is_done: true
+                    };
+                    try {
+                        await invoke('plugin:pm|save_milestone', { milestone });
+                        loadProjectDetails(projectId); // Refresh UI
+                    } catch (err) {
+                        console.error("Complete Milestone Error:", err);
+                    }
+                };
+            }
+
+            const btnActive = card.querySelector('.btn-milestone-active');
+            if (btnActive) {
+                btnActive.onclick = async (e) => {
+                    e.stopPropagation();
+                    const milestone = {
+                        id: ms.id || null,
+                        project_id: projectId,
+                        slot_number: slotNum,
+                        name: ms.name,
+                        deadline: ms.deadline,
+                        content: ms.content || '',
+                        is_saved: true,
+                        is_done: false
+                    };
+                    try {
+                        await invoke('plugin:pm|save_milestone', { milestone });
+                        loadProjectDetails(projectId); // Refresh UI
+                    } catch (err) {
+                        console.error("Re-active Milestone Error:", err);
+                    }
+                };
+            }
+
+            const btnDel = card.querySelector('.btn-milestone-del');
+            if (btnDel) {
+                btnDel.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (await askConfirm('Are you sure you want to reset this milestone slot?')) {
+                        const milestone = {
+                            id: ms.id || null,
+                            project_id: projectId,
+                            slot_number: slotNum,
+                            name: '',
+                            deadline: '',
+                            content: '',
+                            is_saved: false,
+                            is_done: false
+                        };
+                        try {
+                            await invoke('plugin:pm|save_milestone', { milestone });
+                            loadProjectDetails(projectId); // Refresh UI
+                        } catch (err) {
+                            console.error("Reset Milestone Error:", err);
+                        }
+                    }
+                };
+            }
+        }
 
         grid.appendChild(card);
     }
@@ -2541,40 +2680,7 @@ async function renderTimeTable() {
     xAxis.className = 'timetable-x-axis';
     xAxis.style.position = 'relative';
 
-    // Create milestone lines container for full-height vertical lines
-    const msContainer = document.createElement('div');
-    msContainer.className = 'milestone-lines-container';
-    msContainer.style.position = 'absolute';
-    msContainer.style.left = '140px';
-    msContainer.style.right = '0';
-    msContainer.style.top = '0';
-    msContainer.style.bottom = '0';
-    msContainer.style.pointerEvents = 'none';
-    msContainer.style.zIndex = '10';
-    container.appendChild(msContainer);
 
-    // Draw Milestone vertical line indicators
-    if (milestones.length > 0) {
-        const sorted = [...milestones].filter(m => m.deadline).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-        sorted.forEach((m, idx) => {
-            const mDate = new Date(m.deadline);
-            const pct = calculatePct(mDate);
-            if (pct >= 0 && pct <= 100) {
-                const line = document.createElement('div');
-                line.className = 'milestone-line';
-                if (m.is_done) line.classList.add('is-done');
-                line.style.left = pct + '%';
-
-                const label = document.createElement('div');
-                label.className = 'milestone-line-label';
-                label.textContent = `📌 ${m.name} (${m.deadline.substring(5)})`;
-                label.style.top = (4 + (idx % 3) * 22) + 'px'; // Stagger to avoid label overlap
-                line.appendChild(label);
-
-                msContainer.appendChild(line);
-            }
-        });
-    }
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -2594,7 +2700,7 @@ async function renderTimeTable() {
 
             // Highlight col if a milestone deadline falls on this day
             const dStr = getLocalDateString(d);
-            const dayMilestones = milestones.filter(ms => ms.deadline === dStr);
+            const dayMilestones = milestones.filter(ms => ms.is_saved && ms.deadline === dStr);
             if (dayMilestones.length > 0) {
                 dayCol.classList.add('milestone-highlight');
                 if (dayMilestones.every(ms => ms.is_done)) {
@@ -2616,6 +2722,36 @@ async function renderTimeTable() {
 
     const body = document.createElement('div');
     body.className = 'timetable-body';
+    body.style.position = 'relative';
+
+    // Render global milestone vertical dashed lines stretching across all tracks
+    const msLinesContainer = document.createElement('div');
+    msLinesContainer.className = 'milestone-lines-container';
+    msLinesContainer.style.position = 'absolute';
+    msLinesContainer.style.left = '140px';
+    msLinesContainer.style.right = '0';
+    msLinesContainer.style.top = '0';
+    msLinesContainer.style.bottom = '0';
+    msLinesContainer.style.pointerEvents = 'none';
+    msLinesContainer.style.zIndex = '1';
+    body.appendChild(msLinesContainer);
+
+    if (milestones.length > 0) {
+        const sorted = [...milestones].filter(m => m.is_saved && m.deadline).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+        sorted.forEach((m) => {
+            const mDate = new Date(m.deadline);
+            const pct = calculatePct(mDate);
+            if (pct >= 0 && pct <= 100) {
+                const line = document.createElement('div');
+                line.className = 'milestone-line';
+                if (m.is_done) line.classList.add('is-done');
+                else if (m.deadline) line.classList.add('pending-saved');
+                line.style.left = pct + '%';
+                line.style.height = '100%';
+                msLinesContainer.appendChild(line);
+            }
+        });
+    }
 
     // Retrieve live department names from the project object
     const project = currentProjects.find(p => p.id === currentProjectId);
@@ -2625,12 +2761,14 @@ async function renderTimeTable() {
         { key: 'Slot 1', name: project.dept1_name || 'Mech', color: 'rgba(59, 130, 246, 0.45)' },
         { key: 'Slot 2', name: project.dept2_name || 'Control', color: 'rgba(245, 158, 11, 0.45)' },
         { key: 'Slot 3', name: project.dept3_name || 'Elec', color: 'rgba(16, 185, 129, 0.45)' },
-        { key: 'Slot 4', name: project.dept4_name || 'Sales', color: 'rgba(239, 68, 68, 0.45)' }
+        { key: 'Slot 4', name: project.dept4_name || 'Sales', color: 'rgba(239, 68, 68, 0.45)' },
+        { key: 'Milestone', name: 'Mile stone', color: 'rgba(168, 85, 247, 0.65)' }
     ];
 
     depts.forEach(dept => {
         const track = document.createElement('div');
         track.className = 'timetable-track';
+        if (dept.key === 'Milestone') track.classList.add('milestone-track-row');
 
         const label = document.createElement('div');
         label.className = 'timetable-track-label';
@@ -2642,119 +2780,168 @@ async function renderTimeTable() {
         content.className = 'timetable-track-content';
         content.style.backgroundSize = `${(100 / days)}% 100%`;
 
-        const showDeleted = document.getElementById('pm-timetable-show-deleted')?.checked;
+        if (dept.key === 'Milestone') {
+            const msLabelsContainer = document.createElement('div');
+            msLabelsContainer.className = 'milestone-labels-container';
+            msLabelsContainer.style.position = 'absolute';
+            msLabelsContainer.style.left = '0';
+            msLabelsContainer.style.right = '0';
+            msLabelsContainer.style.top = '0';
+            msLabelsContainer.style.bottom = '0';
+            msLabelsContainer.style.pointerEvents = 'none';
+            msLabelsContainer.style.zIndex = '26';
+            content.appendChild(msLabelsContainer);
 
-        // Filter status logs by matching the department value
-        let deptLogs = logs.filter(l => l.department === dept.name);
-        if (!showDeleted) {
-            deptLogs = deptLogs.filter(l => !l.is_deleted);
+            if (milestones.length > 0) {
+                const sorted = [...milestones].filter(m => m.is_saved && m.deadline).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+                sorted.forEach((m, idx) => {
+                    const mDate = new Date(m.deadline);
+                    const pct = calculatePct(mDate);
+                    if (pct >= 0 && pct <= 100) {
+                        const label = document.createElement('div');
+                        label.className = 'milestone-line-label';
+                        if (m.is_done) label.classList.add('is-done');
+                        else if (m.deadline) label.classList.add('pending-saved');
+                        label.textContent = `📌 ${m.name} (${m.deadline.substring(5)})`;
+                        label.style.left = pct + '%';
+                        label.style.bottom = (12 + (idx % 3) * 26) + 'px';
+                        label.style.top = 'auto';
+                        msLabelsContainer.appendChild(label);
+                    }
+                });
+            }
+        } else {
+            const showDeleted = document.getElementById('pm-timetable-show-deleted')?.checked;
+
+            // Filter status logs by matching the department value
+            let deptLogs = logs.filter(l => l.department === dept.name);
+            if (!showDeleted) {
+                deptLogs = deptLogs.filter(l => !l.is_deleted);
+            }
+
+            // Sort by timestamp ascending
+            deptLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            const placedMarkers = [];
+
+            deptLogs.forEach(log => {
+                let leftPct = -1;
+                let widthPct = -1;
+
+                const sDateStr = log.start_date;
+                const dDateStr = log.due_date;
+                const logDate = new Date(log.timestamp);
+
+                if (sDateStr && dDateStr && sDateStr !== dDateStr) {
+                    // Range display
+                    const s = new Date(sDateStr);
+                    const d = new Date(dDateStr);
+                    d.setHours(23, 59, 59, 999);
+
+                    leftPct = calculatePct(s);
+                    const rightPct = calculatePct(d);
+                    if (leftPct !== -1 && rightPct !== -1) {
+                        widthPct = rightPct - leftPct;
+                        if (widthPct < 1.0) widthPct = 1.0; // Min visibility
+                    } else if (leftPct !== -1) {
+                        widthPct = 100 - leftPct; // Overflow right
+                    } else if (rightPct !== -1) {
+                        widthPct = rightPct; // Overflow left
+                        leftPct = 0;
+                    }
+                } else {
+                    // Point display (uses due_date/deadline if present, else start_date, else timestamp)
+                    const targetDate = dDateStr ? new Date(dDateStr) : (sDateStr ? new Date(sDateStr) : logDate);
+                    leftPct = calculatePct(targetDate);
+                }
+
+                if (leftPct !== -1) {
+                    // Overlap prevention (vertical lane stacking)
+                    let lane = 0;
+                    const minDistance = 2.5; // percent distance to stack markers
+                    const spanEnd = widthPct !== -1 ? leftPct + widthPct : leftPct;
+
+                    while (placedMarkers.some(m => {
+                        const mEnd = m.width !== -1 ? m.left + m.width : m.left;
+                        const overlap = Math.max(m.left, leftPct) < Math.min(mEnd, spanEnd);
+                        const touch = Math.abs(m.left - leftPct) < minDistance;
+                        return (overlap || touch) && m.lane === lane;
+                    })) {
+                        lane++;
+                    }
+
+                    placedMarkers.push({ left: leftPct, width: widthPct, lane: lane });
+
+                    const laneOffsets = [0, -18, 18, -26, 26];
+                    const finalOffset = laneOffsets[lane % laneOffsets.length];
+
+                    const marker = document.createElement('div');
+                    marker.className = widthPct !== -1 ? 'timetable-log-range' : 'timetable-log-marker';
+                    
+                    // Add status class for styling
+                    if (log.status) marker.classList.add(log.status);
+                    else marker.classList.add('doing'); // fallback
+
+                    marker.style.left = leftPct + '%';
+                    if (widthPct !== -1) {
+                        marker.style.width = widthPct + '%';
+                        marker.textContent = log.title;
+                    }
+                    marker.style.top = (60 + finalOffset) + 'px'; // Lane spacing offset
+
+                    const tooltipEl = document.getElementById('global-timetable-tooltip');
+                    let logText = log.text_content || '[ No content ]';
+                    
+                    const formatDateToMD = (dateStr) => {
+                        if (!dateStr) return '-';
+                        const parts = dateStr.split('-');
+                        if (parts.length >= 3) {
+                            return `${parts[1]}/${parts[2]}`;
+                        }
+                        return dateStr;
+                    };
+
+                    let dateRangeStr = '';
+                    if (log.start_date || log.due_date) {
+                        const sMD = formatDateToMD(log.start_date);
+                        const dMD = formatDateToMD(log.due_date);
+                        dateRangeStr = `[${sMD} ~ ${dMD}] `;
+                    }
+
+                    let tooltipContent = `<strong>${dateRangeStr}${log.title}</strong><br>${logText.replace(/\n/g, '<br>')}`;
+
+                    if (log.is_deleted) {
+                        marker.classList.add('deleted');
+                        tooltipContent = `<span style="text-decoration: line-through; opacity: 0.6;">${tooltipContent}</span>`;
+                    } else if (log.status === 'done') {
+                        tooltipContent = `<span style="color: #10b981; font-weight:bold;">[DONE]</span><br>${tooltipContent}`;
+                    }
+
+                    // Interactive Mouse Follow Tooltip
+                    marker.onmouseenter = (e) => {
+                        tooltipEl.innerHTML = tooltipContent;
+                        tooltipEl.style.display = 'block';
+                        tooltipEl.style.left = (e.clientX + 15) + 'px';
+                        tooltipEl.style.top = (e.clientY + 15) + 'px';
+                    };
+
+                    marker.onmousemove = (e) => {
+                        tooltipEl.style.left = (e.clientX + 15) + 'px';
+                        tooltipEl.style.top = (e.clientY + 15) + 'px';
+                    };
+
+                    marker.onmouseleave = () => {
+                        tooltipEl.style.display = 'none';
+                    };
+
+                    marker.onclick = () => {
+                        refreshPMTimetableLogDetail(log.id, logs);
+                    };
+
+                    content.appendChild(marker);
+                }
+            });
         }
-
-        // Sort by timestamp ascending
-        deptLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-        const placedMarkers = [];
-
-        deptLogs.forEach(log => {
-            let leftPct = -1;
-            let widthPct = -1;
-
-            const sDateStr = log.start_date;
-            const dDateStr = log.due_date;
-            const logDate = new Date(log.timestamp);
-
-            if (sDateStr && dDateStr && sDateStr !== dDateStr) {
-                // Range display
-                const s = new Date(sDateStr);
-                const d = new Date(dDateStr);
-                d.setHours(23, 59, 59, 999);
-
-                leftPct = calculatePct(s);
-                const rightPct = calculatePct(d);
-                if (leftPct !== -1 && rightPct !== -1) {
-                    widthPct = rightPct - leftPct;
-                    if (widthPct < 1.0) widthPct = 1.0; // Min visibility
-                } else if (leftPct !== -1) {
-                    widthPct = 100 - leftPct; // Overflow right
-                } else if (rightPct !== -1) {
-                    widthPct = rightPct; // Overflow left
-                    leftPct = 0;
-                }
-            } else {
-                // Point display (uses due_date/deadline if present, else start_date, else timestamp)
-                const targetDate = dDateStr ? new Date(dDateStr) : (sDateStr ? new Date(sDateStr) : logDate);
-                leftPct = calculatePct(targetDate);
-            }
-
-            if (leftPct !== -1) {
-                // Overlap prevention (vertical lane stacking)
-                let lane = 0;
-                const minDistance = 2.5; // percent distance to stack markers
-                const spanEnd = widthPct !== -1 ? leftPct + widthPct : leftPct;
-
-                while (placedMarkers.some(m => {
-                    const mEnd = m.width !== -1 ? m.left + m.width : m.left;
-                    const overlap = Math.max(m.left, leftPct) < Math.min(mEnd, spanEnd);
-                    const touch = Math.abs(m.left - leftPct) < minDistance;
-                    return (overlap || touch) && m.lane === lane;
-                })) {
-                    lane++;
-                }
-
-                placedMarkers.push({ left: leftPct, width: widthPct, lane: lane });
-
-                const laneOffsets = [0, -18, 18, -26, 26];
-                const finalOffset = laneOffsets[lane % laneOffsets.length];
-
-                const marker = document.createElement('div');
-                marker.className = widthPct !== -1 ? 'timetable-log-range' : 'timetable-log-marker';
-                
-                // Add status class for styling
-                if (log.status) marker.classList.add(log.status);
-                else marker.classList.add('doing'); // fallback
-
-                marker.style.left = leftPct + '%';
-                if (widthPct !== -1) {
-                    marker.style.width = widthPct + '%';
-                    marker.textContent = log.title;
-                }
-                marker.style.top = (40 + finalOffset) + 'px'; // Lane spacing offset
-
-                const tooltipEl = document.getElementById('global-timetable-tooltip');
-                let logText = log.text_content || '[ No content ]';
-                let tooltipContent = `<strong>[${log.timestamp}]</strong><br><strong>${log.title}</strong><br>${logText.replace(/\n/g, '<br>')}`;
-
-                if (log.is_deleted) {
-                    marker.classList.add('deleted');
-                    tooltipContent = `<span style="text-decoration: line-through; opacity: 0.6;">${tooltipContent}</span>`;
-                } else if (log.status === 'done') {
-                    tooltipContent = `<span style="color: #10b981; font-weight:bold;">[DONE]</span><br>${tooltipContent}`;
-                }
-
-                // Interactive Mouse Follow Tooltip
-                marker.onmouseenter = (e) => {
-                    tooltipEl.innerHTML = tooltipContent;
-                    tooltipEl.style.display = 'block';
-                    tooltipEl.style.left = (e.clientX + 15) + 'px';
-                    tooltipEl.style.top = (e.clientY + 15) + 'px';
-                };
-
-                marker.onmousemove = (e) => {
-                    tooltipEl.style.left = (e.clientX + 15) + 'px';
-                    tooltipEl.style.top = (e.clientY + 15) + 'px';
-                };
-
-                marker.onmouseleave = () => {
-                    tooltipEl.style.display = 'none';
-                };
-
-                marker.onclick = () => {
-                    refreshPMTimetableLogDetail(log.id, logs);
-                };
-
-                content.appendChild(marker);
-            }
-        });
 
         track.appendChild(content);
         body.appendChild(track);
@@ -2809,29 +2996,6 @@ async function refreshPMTimetableLogDetail(logId, preloadedLogs) {
 
     // Base64 or standard file image previews
     imgContainer.innerHTML = '';
-    if (log.image_path) {
-        const img = document.createElement('img');
-        img.style.height = '120px';
-        img.style.borderRadius = '8px';
-        img.style.border = '1px solid var(--card-border)';
-        img.style.cursor = 'pointer';
-        img.style.objectFit = 'cover';
-        img.style.transition = 'transform 0.2s';
-        
-        img.onmouseenter = () => img.style.transform = 'scale(1.05)';
-        img.onmouseleave = () => img.style.transform = 'scale(1.0)';
-        
-        let src = log.image_path;
-        if (window.__TAURI__) {
-            src = window.__TAURI__.core.convertFileSrc(log.image_path);
-        }
-        img.src = src;
-
-        img.onclick = () => {
-            window.open(src, '_blank');
-        };
-        imgContainer.appendChild(img);
-    }
 
     // Configure Action Buttons inside Detail Panel
     const btnEdit = document.getElementById('pm-timetable-detail-edit');
@@ -2863,7 +3027,6 @@ async function refreshPMTimetableLogDetail(logId, preloadedLogs) {
             document.getElementById('log-content').value = log.text_content || '';
             document.getElementById('log-start-date').value = log.start_date || '';
             document.getElementById('log-due-date').value = log.due_date || '';
-            document.getElementById('log-image-path').value = log.image_path || '';
             document.getElementById('log-manager').value = log.manager || '';
 
             // Update modal title
@@ -2958,19 +3121,22 @@ function renderDoneLogsList() {
 
     filtered.forEach(log => {
         const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid var(--card-border)';
-        tr.style.background = 'rgba(255, 255, 255, 0.005)';
+
+        tr.onclick = (e) => {
+            if (e.target.closest('button')) return;
+            openDoneLogDetailModal(log);
+        };
 
         tr.innerHTML = `
-            <td style="padding: 14px 16px; font-weight: 700; color: var(--accent-color); font-size: 13px;">${log.tag || '-'}</td>
-            <td style="padding: 14px 16px; color: #94a3b8; font-weight: 600; font-size: 13px;">[${log.department.toUpperCase()}]</td>
-            <td style="padding: 14px 16px; font-weight: 600; color: #fff; font-size: 13px;">${log.title || '-'}</td>
-            <td style="padding: 14px 16px; color: #cbd5e1; font-size: 13px;">${log.manager || '-'}</td>
-            <td style="padding: 14px 16px; color: #888; font-size: 12px;">${formatLogTimestamp(log.timestamp)}</td>
-            <td style="padding: 14px 16px; text-align: center;">
-                <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn btn-sm btn-secondary btn-reopen-log" style="color: #3b82f6; border-color: rgba(59,130,246,0.3); padding: 4px 10px; font-size: 12px;">Reopen</button>
-                    <button class="btn btn-sm btn-secondary btn-delete-log" style="color: #f87171; border-color: rgba(248,113,113,0.3); padding: 4px 10px; font-size: 12px;">Delete</button>
+            <td style="font-family: monospace; font-size: 12px; color: var(--accent-color)">${log.tag || '-'}</td>
+            <td style="color: #94a3b8; font-weight: 600;">[${log.department.toUpperCase()}]</td>
+            <td style="font-weight: 600; color: #fff;">${log.title || '-'}</td>
+            <td>${log.manager || '-'}</td>
+            <td style="color: #888; font-size: 13px;">${formatLogTimestamp(log.timestamp)}</td>
+            <td>
+                <div class="action-buttons" style="justify-content: center;">
+                    <button class="btn-restore btn-reopen-log">🔄 Reopen</button>
+                    <button class="btn-hard-del btn-delete-log">🗑️ Delete</button>
                 </div>
             </td>
         `;
@@ -2995,6 +3161,21 @@ function renderDoneLogsList() {
 
         listBody.appendChild(tr);
     });
+}
+
+function openDoneLogDetailModal(log) {
+    if (!log) return;
+
+    document.getElementById('done-log-detail-tag').textContent = log.tag || '-';
+    document.getElementById('done-log-detail-department').textContent = `[${log.department.toUpperCase()}]`;
+    document.getElementById('done-log-detail-title').textContent = log.title || '-';
+    document.getElementById('done-log-detail-content').textContent = log.text_content || '-';
+    document.getElementById('done-log-detail-start-date').textContent = log.start_date || '-';
+    document.getElementById('done-log-detail-due-date').textContent = log.due_date || '-';
+    document.getElementById('done-log-detail-manager').textContent = log.manager || '-';
+    document.getElementById('done-log-detail-time').textContent = formatLogTimestamp(log.timestamp) || '-';
+
+    document.getElementById('modal-done-log-detail').classList.remove('hidden');
 }
 
 function renderDeletedLogsList() {
@@ -3027,19 +3208,17 @@ function renderDeletedLogsList() {
 
     filtered.forEach(log => {
         const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid var(--card-border)';
-        tr.style.background = 'rgba(255, 255, 255, 0.005)';
 
         tr.innerHTML = `
-            <td style="padding: 14px 16px; font-weight: 700; color: var(--accent-color); font-size: 13px;">${log.tag || '-'}</td>
-            <td style="padding: 14px 16px; color: #94a3b8; font-weight: 600; font-size: 13px;">[${log.department.toUpperCase()}]</td>
-            <td style="padding: 14px 16px; font-weight: 600; color: #fff; font-size: 13px;">${log.title || '-'}</td>
-            <td style="padding: 14px 16px; color: #cbd5e1; font-size: 13px;">${log.manager || '-'}</td>
-            <td style="padding: 14px 16px; color: #888; font-size: 12px;">${formatLogTimestamp(log.timestamp)}</td>
-            <td style="padding: 14px 16px; text-align: center;">
-                <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn btn-sm btn-secondary btn-restore-log" style="color: #10b981; border-color: rgba(16,185,129,0.3); padding: 4px 10px; font-size: 12px;">Restore</button>
-                    <button class="btn btn-sm btn-secondary btn-permanent-delete-log" style="color: #ef4444; border-color: rgba(239,68,68,0.3); padding: 4px 10px; font-size: 12px;">Hard Delete</button>
+            <td style="font-family: monospace; font-size: 12px; color: var(--accent-color)">${log.tag || '-'}</td>
+            <td style="color: #94a3b8; font-weight: 600;">[${log.department.toUpperCase()}]</td>
+            <td style="font-weight: 600; color: #fff;">${log.title || '-'}</td>
+            <td>${log.manager || '-'}</td>
+            <td style="color: #888; font-size: 13px;">${formatLogTimestamp(log.timestamp)}</td>
+            <td>
+                <div class="action-buttons" style="justify-content: center;">
+                    <button class="btn-restore btn-restore-log">🔄 Restore</button>
+                    <button class="btn-hard-del btn-permanent-delete-log">🔥 Permanent</button>
                 </div>
             </td>
         `;
@@ -3219,30 +3398,20 @@ function renderStatusGrid(project) {
             card.style.transform = 'none';
         };
 
-        let imgHtml = '';
-        if (log.image_path) {
-            let src = log.image_path;
-            if (window.__TAURI__) {
-                src = window.__TAURI__.core.convertFileSrc(log.image_path);
-            }
-            imgHtml = `<img src="${src}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid var(--card-border);" />`;
-        }
-
         card.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="tag-badge-mini" style="font-size: 10px; margin: 0; background: rgba(249, 115, 22, 0.15); color: var(--accent-color); border: 1px solid rgba(249, 115, 22, 0.3); padding: 2px 6px; border-radius: 4px;">${log.tag || 'LOG'}</span>
                 <span style="font-size: 11px; color: #888; font-weight: 600;">${formatLogTimeOnly(log.timestamp)}</span>
             </div>
             
             <!-- Hover action buttons consistent with task manager -->
             <div class="status-log-actions">
-                <button class="btn-status-log-done" title="Mark as Done">✔️</button>
+                <button class="btn-status-log-done" title="Mark as Done">✓</button>
                 <button class="btn-status-log-del" title="Delete Log">🗑️</button>
             </div>
 
             <div style="font-weight: 700; color: #fff; font-size: 13px; line-height: 1.4;">${log.title || 'Untitled Update'}</div>
             ${log.text_content ? `<div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${log.text_content}</div>` : ''}
-            ${imgHtml}
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 11px; color: #aaa;">
                 <span><strong>PIC:</strong> ${log.manager || '-'}</span>
                 ${log.due_date ? `<span style="color: var(--accent-color); font-weight: 600;">📅 ${log.due_date}</span>` : ''}
@@ -3304,7 +3473,6 @@ function renderStatusGrid(project) {
             document.getElementById('log-content').value = log.text_content || '';
             document.getElementById('log-start-date').value = log.start_date || '';
             document.getElementById('log-due-date').value = log.due_date || '';
-            document.getElementById('log-image-path').value = log.image_path || '';
             document.getElementById('log-manager').value = log.manager || '';
 
             // Update modal title to show detailed status log
@@ -3318,7 +3486,7 @@ function renderStatusGrid(project) {
 }
 
 function generateProjectHtml(project, milestones, logs) {
-    const sortedMilestones = [...milestones].sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
+    const sortedMilestones = [...milestones].filter(m => m.is_saved && (m.name || m.deadline)).sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
     const sortedLogs = [...logs].filter(l => !l.is_deleted).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     const formatTimestamp = (tsString) => {
@@ -3339,22 +3507,22 @@ function generateProjectHtml(project, milestones, logs) {
     };
 
     let milestoneRowsHtml = sortedMilestones.map((m, idx) => `
-        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-            <td style="padding: 12px; color: #3b82f6; font-weight: bold;">${(idx+1) < 10 ? '0' + (idx+1) : (idx+1)}</td>
-            <td style="padding: 12px; color: #fff; font-weight: bold;">${m.name}</td>
-            <td style="padding: 12px; color: #aaa;">${m.deadline || 'YYYY-MM-DD'}</td>
-            <td style="padding: 12px; color: ${m.is_done ? '#10b981' : '#f59e0b'}; font-weight: bold;">${m.is_done ? '✓ Done' : '⏳ Pending'}</td>
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px; color: #2563eb; font-weight: bold;">${(idx+1) < 10 ? '0' + (idx+1) : (idx+1)}</td>
+            <td style="padding: 12px; color: #0f172a; font-weight: bold;">${m.name}</td>
+            <td style="padding: 12px; color: #475569;">${m.deadline || 'YYYY-MM-DD'}</td>
+            <td style="padding: 12px; color: ${m.is_done ? '#16a34a' : '#ea580c'}; font-weight: bold;">${m.is_done ? '✓ Done' : '⏳ Pending'}</td>
         </tr>
     `).join('');
 
     let logRowsHtml = sortedLogs.map(l => `
-        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-            <td style="padding: 12px; color: #3b82f6; font-weight: bold;">[${l.department.toUpperCase()}]</td>
-            <td style="padding: 12px; color: #fff; font-weight: bold;">${l.title}</td>
-            <td style="padding: 12px; color: #ddd; font-size: 13px;">${(l.text_content || '').replace(/\n/g, '<br>')}</td>
-            <td style="padding: 12px; color: #aaa; font-size: 12px;">${l.manager || '-'}</td>
-            <td style="padding: 12px; color: #888; font-size: 12px;">${(l.start_date || l.due_date) ? (l.start_date || '-') + ' ~ ' + (l.due_date || '-') : '-'}</td>
-            <td style="padding: 12px; color: #888; font-size: 12px;">${formatTimestamp(l.timestamp)}</td>
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px; color: #2563eb; font-weight: bold;">[${l.department.toUpperCase()}]</td>
+            <td style="padding: 12px; color: #0f172a; font-weight: bold;">${l.title}</td>
+            <td style="padding: 12px; color: #334155; font-size: 13px;">${(l.text_content || '').replace(/\n/g, '<br>')}</td>
+            <td style="padding: 12px; color: #475569; font-size: 12px;">${l.manager || '-'}</td>
+            <td style="padding: 12px; color: #64748b; font-size: 12px;">${(l.start_date || l.due_date) ? (l.start_date || '-') + ' ~ ' + (l.due_date || '-') : '-'}</td>
+            <td style="padding: 12px; color: #64748b; font-size: 12px;">${formatTimestamp(l.timestamp)}</td>
         </tr>
     `).join('');
 
@@ -3365,15 +3533,15 @@ function generateProjectHtml(project, milestones, logs) {
     <title>Project Report - ${project.name}</title>
     <style>
         :root {
-            --card-border: rgba(255, 255, 255, 0.08);
-            --accent-color: #3b82f6;
-            --text-primary: #e2e8f0;
-            --text-secondary: #94a3b8;
+            --card-border: #e2e8f0;
+            --accent-color: #2563eb;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0b0b0f;
-            color: #e2e8f0;
+            background-color: #f8fafc;
+            color: #0f172a;
             padding: 40px;
             margin: 0;
             line-height: 1.6;
@@ -3381,31 +3549,31 @@ function generateProjectHtml(project, milestones, logs) {
         .container {
             max-width: 1000px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 20px;
             padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
         .header {
-            border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 2px solid #e2e8f0;
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
         .project-title {
             font-size: 28px;
             font-weight: 800;
-            color: #3b82f6;
+            color: #2563eb;
             margin: 0 0 10px 0;
             letter-spacing: -0.5px;
         }
         .meta-text {
-            color: #94a3b8;
+            color: #475569;
             font-size: 14px;
         }
         h3 {
-            color: #fff;
-            border-left: 4px solid #3b82f6;
+            color: #0f172a;
+            border-left: 4px solid #2563eb;
             padding-left: 12px;
             margin-top: 40px;
             margin-bottom: 20px;
@@ -3419,20 +3587,19 @@ function generateProjectHtml(project, milestones, logs) {
             margin-bottom: 30px;
         }
         th {
-            background: rgba(255, 255, 255, 0.04);
-            color: #94a3b8;
+            background: #f1f5f9;
+            color: #475569;
             font-weight: bold;
             font-size: 12px;
             text-transform: uppercase;
             padding: 12px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 2px solid #e2e8f0;
         }
 
         /* Gantt Chart Exported Styles */
         .timetable-container {
-            backdrop-filter: blur(8px);
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 20px;
             position: relative;
             display: flex;
@@ -3443,46 +3610,47 @@ function generateProjectHtml(project, milestones, logs) {
             max-height: none !important;
             min-height: none !important;
             width: 100%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         }
         /* Custom scrollbar design */
         .timetable-container::-webkit-scrollbar {
             height: 10px;
         }
         .timetable-container::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.3);
+            background: #f1f5f9;
             border-radius: 10px;
         }
         .timetable-container::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.12);
+            background: #cbd5e1;
             border-radius: 10px;
             border: 2px solid transparent;
             background-clip: padding-box;
             transition: background 0.3s;
         }
         .timetable-container::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: #94a3b8;
             border: 2px solid transparent;
             background-clip: padding-box;
         }
         .timetable-container {
             scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.12) rgba(0, 0, 0, 0.3);
+            scrollbar-color: #cbd5e1 #f1f5f9;
         }
         .timetable-header, .timetable-body {
             min-width: 800px;
         }
         .timetable-header {
             display: flex;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(20, 20, 28, 0.85);
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
         }
         .timetable-y-axis-header {
             width: 140px;
             flex-shrink: 0;
-            border-right: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(20, 20, 28, 0.95);
+            border-right: 1px solid #e2e8f0;
+            background: #f1f5f9;
             border-top-left-radius: 20px;
         }
         .timetable-x-axis {
@@ -3493,18 +3661,18 @@ function generateProjectHtml(project, milestones, logs) {
         .timetable-day-col {
             flex: 1;
             text-align: center;
-            border-right: 1px solid rgba(255, 255, 255, 0.03);
+            border-right: 1px solid #e2e8f0;
             padding: 12px 0;
             font-size: 12px;
             font-weight: 700;
-            color: #94a3b8;
+            color: #475569;
             min-width: 80px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .timetable-day-col.today {
-            background: rgba(79, 70, 229, 0.08);
-            color: #3b82f6;
+            background: rgba(37, 99, 235, 0.05);
+            color: #2563eb;
             font-weight: bold;
         }
         .timetable-body {
@@ -3514,9 +3682,10 @@ function generateProjectHtml(project, milestones, logs) {
         }
         .timetable-track {
             display: flex;
-            min-height: 80px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            min-height: 120px;
+            border-bottom: 1px solid #e2e8f0;
             position: relative;
+            z-index: 2;
         }
         .timetable-track:last-child {
             border-bottom-left-radius: 20px;
@@ -3531,9 +3700,9 @@ function generateProjectHtml(project, milestones, logs) {
             padding: 0 16px;
             font-size: 13px;
             font-weight: 800;
-            border-right: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(15, 15, 22, 0.9);
-            color: #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #0f172a;
             position: relative;
             z-index: 8;
             letter-spacing: 0.5px;
@@ -3541,7 +3710,7 @@ function generateProjectHtml(project, milestones, logs) {
         .timetable-track-content {
             flex: 1;
             position: relative;
-            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-image: linear-gradient(to right, #f1f5f9 1px, transparent 1px);
         }
         .timetable-log-marker {
             position: absolute;
@@ -3550,20 +3719,25 @@ function generateProjectHtml(project, milestones, logs) {
             border-radius: 50%;
             transform: translate(-50%, -50%);
             top: 50%;
-            border: 2px solid white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
-            z-index: 5;
+            border: 1.5px solid rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 20;
             cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
+        }
+        .timetable-log-marker:hover {
+            transform: translate(-50%, -50%) scale(1.4);
+            z-index: 30 !important;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
         }
         .timetable-log-range {
             position: absolute;
             height: 16px;
             border-radius: 8px;
             transform: translateY(-50%);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            z-index: 4;
-            backdrop-filter: blur(4px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            z-index: 19;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -3575,50 +3749,57 @@ function generateProjectHtml(project, milestones, logs) {
             overflow: hidden;
             text-overflow: ellipsis;
             cursor: pointer;
+            transition: height 0.2s ease, box-shadow 0.2s, background 0.2s;
+        }
+        .timetable-log-range:hover {
+            height: 22px;
+            z-index: 30 !important;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
         }
         .timetable-log-marker.todo,
         .timetable-log-range.todo {
-            background: rgba(59, 130, 246, 0.6) !important;
-            border-color: rgba(59, 130, 246, 0.8);
+            background: #3b82f6 !important;
+            border-color: #2563eb;
         }
         .timetable-log-marker.doing,
         .timetable-log-range.doing {
-            background: rgba(245, 158, 11, 0.6) !important;
-            border-color: rgba(245, 158, 11, 0.8);
+            background: #f59e0b !important;
+            border-color: #d97706;
         }
         .timetable-log-marker.done,
         .timetable-log-range.done {
-            background: rgba(16, 185, 129, 0.65) !important;
-            border-color: rgba(16, 185, 129, 0.8);
+            background: #10b981 !important;
+            border-color: #059669;
         }
         .timetable-log-marker.note,
         .timetable-log-range.note {
-            background: rgba(148, 163, 184, 0.6) !important;
-            border-color: rgba(148, 163, 184, 0.8);
+            background: #94a3b8 !important;
+            border-color: #64748b;
         }
         .timetable-log-marker.review,
         .timetable-log-range.review {
-            background: rgba(139, 92, 246, 0.6) !important;
-            border-color: rgba(139, 92, 246, 0.8);
+            background: #8b5cf6 !important;
+            border-color: #7c3aed;
         }
         .timetable-log-marker.deleted,
         .timetable-log-range.deleted {
-            background: rgba(255, 255, 255, 0.05) !important;
-            border-color: rgba(255, 255, 255, 0.15) !important;
-            opacity: 0.25 !important;
+            background: #e2e8f0 !important;
+            border-color: #cbd5e1 !important;
+            color: #64748b !important;
+            opacity: 0.55 !important;
             border-style: dashed;
         }
         .milestone-line {
             position: absolute;
             width: 0;
-            border-left: 2px dashed rgba(239, 68, 68, 0.45);
-            z-index: 10;
+            border-left: 2px dashed #f87171;
+            z-index: 1;
             pointer-events: none;
             height: 100%;
             top: 0;
         }
         .milestone-line.is-done {
-            border-left: 2px dashed rgba(16, 185, 129, 0.5);
+            border-left: 2px dashed #34d399;
         }
         .milestone-line-label {
             position: absolute;
@@ -3630,16 +3811,33 @@ function generateProjectHtml(project, milestones, logs) {
             padding: 3px 8px;
             border-radius: 6px;
             white-space: nowrap;
-            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            z-index: 11;
+            z-index: 26;
             pointer-events: auto;
             cursor: pointer;
         }
-        .milestone-line.is-done .milestone-line-label {
+        .milestone-line-label.is-done {
             background: #10b981;
-            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
             border-color: rgba(255, 255, 255, 0.2);
+        }
+        .milestone-line.pending-saved {
+            border-left: 2px dashed #f87171 !important;
+        }
+        .milestone-line-label.pending-saved {
+            background: #fee2e2 !important;
+            border: 1px solid #f87171 !important;
+            color: #ef4444 !important;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.05) !important;
+        }
+        .timetable-track.milestone-track-row {
+            background: #faf5ff !important;
+            border-top: 1px dashed #e9d5ff !important;
+            border-bottom: 2px solid #d8b4fe !important;
+        }
+        .timetable-track.milestone-track-row:hover {
+            background: #f3e8ff !important;
         }
         .badge {
             display: inline-block;
@@ -3649,11 +3847,11 @@ function generateProjectHtml(project, milestones, logs) {
             font-weight: bold;
             color: #fff;
         }
-        .badge.todo { background: rgba(59, 130, 246, 0.6); }
-        .badge.doing { background: rgba(245, 158, 11, 0.6); }
-        .badge.done { background: rgba(16, 185, 129, 0.65); }
-        .badge.review { background: rgba(139, 92, 246, 0.6); }
-        .badge.note { background: rgba(148, 163, 184, 0.6); }
+        .badge.todo { background: #3b82f6; }
+        .badge.doing { background: #f59e0b; }
+        .badge.done { background: #10b981; }
+        .badge.review { background: #8b5cf6; }
+        .badge.note { background: #94a3b8; }
 
         @media print {
             .timetable-controls, #global-timetable-tooltip, #pm-timetable-log-detail {
@@ -3709,7 +3907,7 @@ function generateProjectHtml(project, milestones, logs) {
     </style>
 </head>
 <body>
-    <div id="global-timetable-tooltip" style="display: none; position: fixed; background: rgba(15, 15, 22, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px; border-radius: 12px; font-size: 12px; color: #e2e8f0; z-index: 9999; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8); max-width: 320px; line-height: 1.5; backdrop-filter: blur(8px);"></div>
+    <div id="global-timetable-tooltip" style="display: none; position: fixed; background: #ffffff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 12px; font-size: 12px; color: #0f172a; z-index: 9999; pointer-events: none; box-shadow: 0 10px 25px rgba(0,0,0,0.15); max-width: 320px; line-height: 1.5; backdrop-filter: blur(8px);"></div>
 
     <div class="container">
         <div class="header">
@@ -3719,7 +3917,7 @@ function generateProjectHtml(project, milestones, logs) {
                 Manager: <strong>${project.manager || '-'}</strong> | 
                 Generated: <strong>${new Date().toLocaleString()}</strong>
             </div>
-            <p style="margin-top: 15px; color: #cbd5e1; font-size: 15px;">${project.description || 'No description available.'}</p>
+            <p style="margin-top: 15px; color: #334155; font-size: 15px;">${project.description || 'No description available.'}</p>
         </div>
 
         <h3>Project Timetable (Gantt Chart)</h3>
@@ -3727,18 +3925,18 @@ function generateProjectHtml(project, milestones, logs) {
         <!-- Interactive Controls -->
         <div class="timetable-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 16px;">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <button id="pm-timetable-prev" style="padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 8px; cursor: pointer;">&lt;</button>
-                <div id="pm-timetable-current-range" style="font-weight: 700; font-size: 14px; color: #3b82f6; min-width: 150px; text-align: center; user-select: none;"></div>
-                <button id="pm-timetable-next" style="padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 8px; cursor: pointer;">&gt;</button>
+                <button id="pm-timetable-prev" style="padding: 6px 12px; background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; border-radius: 8px; cursor: pointer; transition: background 0.2s;">&lt;</button>
+                <div id="pm-timetable-current-range" style="font-weight: 700; font-size: 14px; color: #2563eb; min-width: 150px; text-align: center; user-select: none;"></div>
+                <button id="pm-timetable-next" style="padding: 6px 12px; background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; border-radius: 8px; cursor: pointer; transition: background 0.2s;">&gt;</button>
             </div>
 
             <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <input type="checkbox" id="pm-timetable-show-deleted" style="width: 16px; height: 16px; cursor: pointer;">
-                    <label for="pm-timetable-show-deleted" style="font-size: 13px; color: #94a3b8; cursor: pointer; user-select: none;">Show Deleted LOGs</label>
+                    <label for="pm-timetable-show-deleted" style="font-size: 13px; color: #475569; cursor: pointer; user-select: none;">Show Deleted LOGs</label>
                 </div>
                 
-                <select id="pm-timetable-scale" style="width: 110px; height: 36px; padding: 6px 12px; font-size: 13px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer;">
+                <select id="pm-timetable-scale" style="width: 110px; height: 36px; padding: 6px 12px; font-size: 13px; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
                     <option value="weekly">Weekly</option>
                     <option value="monthly" selected>Monthly</option>
                 </select>
@@ -3750,14 +3948,14 @@ function generateProjectHtml(project, milestones, logs) {
         </div>
 
         <!-- Detail Panel -->
-        <div id="pm-timetable-log-detail" style="display: none; flex-direction: column; gap: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 20px; border-radius: 16px; margin-bottom: 40px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px;">
-                <div id="pm-timetable-detail-header" style="font-weight: 700; color: #3b82f6; font-size: 14px;">[DEPARTMENT] Details</div>
+        <div id="pm-timetable-log-detail" style="display: none; flex-direction: column; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 16px; margin-bottom: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                <div id="pm-timetable-detail-header" style="font-weight: 700; color: #2563eb; font-size: 14px;">[DEPARTMENT] Details</div>
                 <div>
-                    <button style="font-size: 12px; padding: 4px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 6px; cursor: pointer;" onclick="document.getElementById('pm-timetable-log-detail').style.display='none'">Close</button>
+                    <button style="font-size: 12px; padding: 4px 10px; background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; border-radius: 6px; cursor: pointer;" onclick="document.getElementById('pm-timetable-log-detail').style.display='none'">Close</button>
                 </div>
             </div>
-            <div id="pm-timetable-detail-content" style="white-space: pre-wrap; font-size: 13px; color: #94a3b8; line-height: 1.6;"></div>
+            <div id="pm-timetable-detail-content" style="white-space: pre-wrap; font-size: 13px; color: #475569; line-height: 1.6;"></div>
         </div>
 
         <h3>Project Milestones</h3>
@@ -3771,7 +3969,7 @@ function generateProjectHtml(project, milestones, logs) {
                 </tr>
             </thead>
             <tbody>
-                ${milestoneRowsHtml || '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #94a3b8;">No milestones defined.</td></tr>'}
+                ${milestoneRowsHtml || '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #475569;">No milestones defined.</td></tr>'}
             </tbody>
         </table>
 
@@ -3788,7 +3986,7 @@ function generateProjectHtml(project, milestones, logs) {
                 </tr>
             </thead>
             <tbody>
-                ${logRowsHtml || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #94a3b8;">No status logs recorded yet.</td></tr>'}
+                ${logRowsHtml || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #475569;">No status logs recorded yet.</td></tr>'}
             </tbody>
         </table>
     </div>
@@ -3889,40 +4087,7 @@ function generateProjectHtml(project, milestones, logs) {
             xAxis.className = 'timetable-x-axis';
             xAxis.style.position = 'relative';
 
-            // Create milestone lines container for full-height vertical lines
-            const msContainer = document.createElement('div');
-            msContainer.className = 'milestone-lines-container';
-            msContainer.style.position = 'absolute';
-            msContainer.style.left = '140px';
-            msContainer.style.right = '0';
-            msContainer.style.top = '0';
-            msContainer.style.bottom = '0';
-            msContainer.style.pointerEvents = 'none';
-            msContainer.style.zIndex = '10';
-            container.appendChild(msContainer);
 
-            // Draw Milestone vertical line indicators
-            if (milestones.length > 0) {
-                const sorted = [...milestones].filter(m => m.deadline).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-                sorted.forEach((m, idx) => {
-                    const mDate = new Date(m.deadline);
-                    const pct = calculatePct(mDate, startDate, scale);
-                    if (pct >= 0 && pct <= 100) {
-                        const line = document.createElement('div');
-                        line.className = 'milestone-line';
-                        if (m.is_done) line.classList.add('is-done');
-                        line.style.left = pct + '%';
-
-                        const label = document.createElement('div');
-                        label.className = 'milestone-line-label';
-                        label.textContent = \`📌 \${m.name} (\${m.deadline.substring(5)})\`;
-                        label.style.top = (4 + (idx % 3) * 22) + 'px';
-                        line.appendChild(label);
-
-                        msContainer.appendChild(line);
-                    }
-                });
-            }
 
             const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -3941,7 +4106,7 @@ function generateProjectHtml(project, milestones, logs) {
                     dayCol.textContent = \`\${m}/\${day} (\${dayName})\`;
 
                     const dStr = getLocalDateString(d);
-                    const dayMilestones = milestones.filter(ms => ms.deadline === dStr);
+                    const dayMilestones = milestones.filter(ms => ms.is_saved && ms.deadline === dStr);
                     if (dayMilestones.length > 0) {
                         dayCol.classList.add('milestone-highlight');
                         if (dayMilestones.every(ms => ms.is_done)) {
@@ -3962,17 +4127,48 @@ function generateProjectHtml(project, milestones, logs) {
 
             const body = document.createElement('div');
             body.className = 'timetable-body';
+            body.style.position = 'relative';
+
+            const msLinesContainer = document.createElement('div');
+            msLinesContainer.className = 'milestone-lines-container';
+            msLinesContainer.style.position = 'absolute';
+            msLinesContainer.style.left = '140px';
+            msLinesContainer.style.right = '0';
+            msLinesContainer.style.top = '0';
+            msLinesContainer.style.bottom = '0';
+            msLinesContainer.style.pointerEvents = 'none';
+            msLinesContainer.style.zIndex = '1';
+            body.appendChild(msLinesContainer);
+
+            if (milestones.length > 0) {
+                const sorted = [...milestones].filter(m => m.is_saved && m.deadline).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+                sorted.forEach((m) => {
+                    const mDate = new Date(m.deadline);
+                    const pct = calculatePct(mDate, startDate, scale);
+                    if (pct >= 0 && pct <= 100) {
+                        const line = document.createElement('div');
+                        line.className = 'milestone-line';
+                        if (m.is_done) line.classList.add('is-done');
+                        else if (m.deadline) line.classList.add('pending-saved');
+                        line.style.left = pct + '%';
+                        line.style.height = '100%';
+                        msLinesContainer.appendChild(line);
+                    }
+                });
+            }
 
             const depts = [
-                { key: 'Slot 1', name: project.dept1_name || 'Mech', color: 'rgba(59, 130, 246, 0.45)' },
-                { key: 'Slot 2', name: project.dept2_name || 'Control', color: 'rgba(245, 158, 11, 0.45)' },
-                { key: 'Slot 3', name: project.dept3_name || 'Elec', color: 'rgba(16, 185, 129, 0.45)' },
-                { key: 'Slot 4', name: project.dept4_name || 'Sales', color: 'rgba(239, 68, 68, 0.45)' }
+                { key: 'Slot 1', name: project.dept1_name || 'Mech', color: '#2563eb' },
+                { key: 'Slot 2', name: project.dept2_name || 'Control', color: '#ea580c' },
+                { key: 'Slot 3', name: project.dept3_name || 'Elec', color: '#16a34a' },
+                { key: 'Slot 4', name: project.dept4_name || 'Sales', color: '#dc2626' },
+                { key: 'Milestone', name: 'Mile stone', color: '#7c3aed' }
             ];
 
             depts.forEach(dept => {
                 const track = document.createElement('div');
                 track.className = 'timetable-track';
+                if (dept.key === 'Milestone') track.classList.add('milestone-track-row');
 
                 const label = document.createElement('div');
                 label.className = 'timetable-track-label';
@@ -3984,7 +4180,38 @@ function generateProjectHtml(project, milestones, logs) {
                 content.className = 'timetable-track-content';
                 content.style.backgroundSize = \`\${(100 / days)}% 100%\`;
 
-                let deptLogs = logs.filter(l => l.department === dept.name);
+                if (dept.key === 'Milestone') {
+                    const msLabelsContainer = document.createElement('div');
+                    msLabelsContainer.className = 'milestone-labels-container';
+                    msLabelsContainer.style.position = 'absolute';
+                    msLabelsContainer.style.left = '0';
+                    msLabelsContainer.style.right = '0';
+                    msLabelsContainer.style.top = '0';
+                    msLabelsContainer.style.bottom = '0';
+                    msLabelsContainer.style.pointerEvents = 'none';
+                    msLabelsContainer.style.zIndex = '26';
+                    content.appendChild(msLabelsContainer);
+
+                    if (milestones.length > 0) {
+                        const sorted = [...milestones].filter(m => m.is_saved && m.deadline).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+                        sorted.forEach((m, idx) => {
+                            const mDate = new Date(m.deadline);
+                            const pct = calculatePct(mDate, startDate, scale);
+                            if (pct >= 0 && pct <= 100) {
+                                const label = document.createElement('div');
+                                label.className = 'milestone-line-label';
+                                if (m.is_done) label.classList.add('is-done');
+                                else if (m.deadline) label.classList.add('pending-saved');
+                                label.textContent = '📌 ' + m.name + ' (' + m.deadline.substring(5) + ')';
+                                label.style.left = pct + '%';
+                                label.style.bottom = (12 + (idx % 3) * 26) + 'px';
+                                label.style.top = 'auto';
+                                msLabelsContainer.appendChild(label);
+                            }
+                        });
+                    }
+                } else {
+                    let deptLogs = logs.filter(l => l.department === dept.name);
                 if (!showDeleted) {
                     deptLogs = deptLogs.filter(l => !l.is_deleted);
                 }
@@ -4048,16 +4275,38 @@ function generateProjectHtml(project, milestones, logs) {
                         if (log.status) marker.classList.add(log.status);
                         else marker.classList.add('doing');
 
+                        if (!log.is_deleted) {
+                            marker.style.setProperty('background', dept.color, 'important');
+                            marker.style.setProperty('border-color', dept.color, 'important');
+                        }
+
                         marker.style.left = leftPct + '%';
                         if (widthPct !== -1) {
                             marker.style.width = widthPct + '%';
                             marker.textContent = log.title;
                         }
-                        marker.style.top = (40 + finalOffset) + 'px';
+                        marker.style.top = (60 + finalOffset) + 'px';
 
                         const tooltipEl = document.getElementById('global-timetable-tooltip');
                         let logText = log.text_content || '[ No content ]';
-                        let tooltipContent = \`<strong>[\${formatTimestamp(log.timestamp)}]</strong><br><strong>\${log.title}</strong><br>\${logText.replace(/\\n/g, '<br>')}\`;
+
+                        const formatDateToMD = (dateStr) => {
+                            if (!dateStr) return '-';
+                            const parts = dateStr.split('-');
+                            if (parts.length >= 3) {
+                                return parts[1] + '/' + parts[2];
+                            }
+                            return dateStr;
+                        };
+
+                        let dateRangeStr = '';
+                        if (log.start_date || log.due_date) {
+                            const sMD = formatDateToMD(log.start_date);
+                            const dMD = formatDateToMD(log.due_date);
+                            dateRangeStr = '[' + sMD + ' ~ ' + dMD + '] ';
+                        }
+
+                        let tooltipContent = '<strong>' + dateRangeStr + log.title + '</strong><br>' + logText.replace(/\\n/g, '<br>');
 
                         if (log.is_deleted) {
                             marker.classList.add('deleted');
@@ -4102,6 +4351,8 @@ function generateProjectHtml(project, milestones, logs) {
                         content.appendChild(marker);
                     }
                 });
+
+                }
 
                 track.appendChild(content);
                 body.appendChild(track);

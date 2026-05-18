@@ -1953,6 +1953,7 @@ tr:has(.status-review) {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .pm-tab.active {
@@ -2095,6 +2096,73 @@ tr:has(.status-review) {
 .milestone-slot.done .slot-status {
   background: rgba(16, 185, 129, 0.2);
   color: #10b981;
+}
+
+.milestone-slot.pending-saved {
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.milestone-slot.pending-saved:hover {
+  border-color: rgba(239, 68, 68, 0.85);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+}
+
+.milestone-slot.pending-saved .slot-status {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.milestone-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  opacity: 0; /* Hide by default */
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.milestone-slot:hover .milestone-actions {
+  opacity: 1; /* Show on hover */
+}
+
+.btn-milestone-del.compact, .btn-milestone-done.compact, .btn-milestone-active.compact {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex: none; /* Prevent stretching */
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  transition: all 0.2s;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.btn-milestone-del.compact:hover {
+  background: #f87171;
+  color: white;
+  border-color: #f87171;
+  transform: scale(1.1);
+}
+
+.btn-milestone-done.compact:hover {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+  transform: scale(1.1);
+}
+
+.btn-milestone-active.compact:hover {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+  transform: scale(1.1);
 }
 
 /* Timeline */
@@ -2843,10 +2911,11 @@ tr:has(.status-review) {
 
 .timetable-track {
   display: flex;
-  min-height: 80px;
+  min-height: 120px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   position: relative;
   transition: background 0.2s;
+  z-index: 2;
 }
 
 .timetable-track:hover {
@@ -2888,13 +2957,13 @@ tr:has(.status-review) {
   cursor: pointer;
   border: 2px solid white;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
-  z-index: 5;
+  z-index: 20;
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
 }
 
 .timetable-log-marker:hover {
   transform: translate(-50%, -50%) scale(1.4);
-  z-index: 15;
+  z-index: 30 !important;
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
 }
 
@@ -2906,7 +2975,7 @@ tr:has(.status-review) {
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.25);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  z-index: 4;
+  z-index: 19;
   backdrop-filter: blur(4px);
   transition: height 0.2s ease, box-shadow 0.2s, background 0.2s;
   display: flex;
@@ -2923,7 +2992,7 @@ tr:has(.status-review) {
 
 .timetable-log-range:hover {
   height: 22px;
-  z-index: 15;
+  z-index: 30 !important;
   box-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
   border-color: rgba(255, 255, 255, 0.5);
 }
@@ -2963,10 +3032,10 @@ tr:has(.status-review) {
 /* Soft Styling for Deleted items */
 .timetable-log-marker.deleted,
 .timetable-log-range.deleted {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
   box-shadow: none !important;
-  opacity: 0.25 !important;
+  opacity: 0.55 !important;
   border-style: dashed;
 }
 
@@ -3010,7 +3079,7 @@ tr:has(.status-review) {
   bottom: 0;
   width: 0;
   border-left: 2px dashed rgba(239, 68, 68, 0.55);
-  z-index: 6;
+  z-index: 1;
   pointer-events: none;
 }
 
@@ -3018,10 +3087,21 @@ tr:has(.status-review) {
   border-left: 2px dashed rgba(16, 185, 129, 0.4) !important;
 }
 
+.timetable-track.milestone-track-row {
+  background: rgba(168, 85, 247, 0.02) !important;
+  border-top: 1px dashed rgba(168, 85, 247, 0.15) !important;
+  border-bottom: 2px solid rgba(168, 85, 247, 0.25) !important;
+}
+
+.timetable-track.milestone-track-row:hover {
+  background: rgba(168, 85, 247, 0.04) !important;
+}
+
 .milestone-line-label {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 10px;
   color: #ef4444;
   white-space: nowrap;
@@ -3033,9 +3113,10 @@ tr:has(.status-review) {
   pointer-events: none;
   backdrop-filter: blur(4px);
   text-transform: uppercase;
+  z-index: 26;
 }
 
-.milestone-line.is-done .milestone-line-label {
+.milestone-line-label.is-done {
   color: #10b981 !important;
   border-color: rgba(16, 185, 129, 0.4) !important;
   background: rgba(16, 185, 129, 0.12) !important;
@@ -3125,15 +3206,13 @@ tr:has(.status-review) {
 
 .status-log-actions {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 8px;
+  right: 8px;
   display: flex;
   gap: 6px;
   opacity: 0;
   transition: opacity 0.2s ease;
-  background: #181d24; /* Solid dark color matching the card background to cover the time */
-  padding-left: 6px;
-  border-radius: 4px;
+  z-index: 10;
 }
 
 .status-log-card:hover .status-log-actions {
@@ -3141,14 +3220,14 @@ tr:has(.status-review) {
 }
 
 .btn-status-log-done, .btn-status-log-del {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 13px;
   flex: none;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--card-border);
@@ -3162,6 +3241,7 @@ tr:has(.status-review) {
   color: white;
   border-color: #34d399;
   transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
 }
 
 .btn-status-log-del:hover {
@@ -3169,6 +3249,7 @@ tr:has(.status-review) {
   color: white;
   border-color: #f87171;
   transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(248, 113, 113, 0.4);
 }
 
 .btn-success-outline {

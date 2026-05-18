@@ -86,7 +86,6 @@ pub const CREATE_STATUS_LOGS_TABLE: &str = "
         owner_id INTEGER,
         department TEXT NOT NULL,
         text_content TEXT,
-        image_path TEXT,
         timestamp TEXT NOT NULL,
         status TEXT DEFAULT 'active',
         tag TEXT,

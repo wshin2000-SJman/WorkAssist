@@ -382,16 +382,16 @@
                     <option value="Sales">Slot 4: Sales</option>
                   </select>
                 </div>
-                <div class="table-wrapper" style="overflow-x: auto; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 12px;">
-                  <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                <div class="trash-container">
+                  <table class="data-table">
                     <thead>
-                      <tr style="border-bottom: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.02);">
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 140px;">Tag</th>
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 140px;">Department</th>
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary);">Title</th>
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 120px;">Manager</th>
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 180px;">Log Time</th>
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 140px; text-align: center;">Actions</th>
+                      <tr>
+                        <th>Tag</th>
+                        <th>Department</th>
+                        <th>Title</th>
+                        <th>Manager</th>
+                        <th>Log Time</th>
+                        <th style="text-align: center;">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="done-logs-list-body">
@@ -412,16 +412,16 @@
                     <option value="Sales">Slot 4: Sales</option>
                   </select>
                 </div>
-                <div class="table-wrapper" style="overflow-x: auto; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 12px;">
-                  <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                <div class="trash-container">
+                  <table class="data-table">
                     <thead>
-                      <tr style="border-bottom: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.02);">
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 140px;">Tag</th>
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 140px;">Department</th>
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary);">Title</th>
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 120px;">Manager</th>
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 180px;">Log Time</th>
-                        <th style="padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-secondary); width: 200px; text-align: center;">Actions</th>
+                      <tr>
+                        <th>Tag</th>
+                        <th>Department</th>
+                        <th>Title</th>
+                        <th>Manager</th>
+                        <th>Log Time</th>
+                        <th style="text-align: center;">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="deleted-logs-list-body">
@@ -450,7 +450,7 @@
                         <label for="pm-timetable-show-deleted" style="font-size: 13px; color: var(--text-secondary); cursor: pointer;">Show Deleted LOGs</label>
                       </div>
                       
-                      <select id="pm-timetable-scale" class="form-select" style="width: 110px; height: 36px; padding: 6px 12px; font-size: 13px; background: rgba(0,0,0,0.2);">
+                      <select id="pm-timetable-scale" class="form-select" style="width: 120px; height: 36px; padding: 6px 32px 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 10px;">
                         <option value="weekly">Weekly</option>
                         <option value="monthly">Monthly</option>
                       </select>
@@ -460,7 +460,7 @@
                   </div>
 
                   <!-- Horizontal Timetable Gantt Container -->
-                  <div id="pm-timetable-container" class="timetable-container" style="flex: 1; min-height: 320px; max-height: 400px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); border-radius: 20px; overflow: auto; position: relative; display: flex; flex-direction: column;">
+                   <div id="pm-timetable-container" class="timetable-container" style="flex: 1; min-height: 680px; max-height: none; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); border-radius: 20px; overflow: auto; position: relative; display: flex; flex-direction: column;">
                     <!-- Rendered via JS -->
                   </div>
 
@@ -1005,10 +1005,6 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Image Path (Optional)</label>
-          <input type="text" id="log-image-path" placeholder="Path to status image (e.g. D:\images\part.png)">
-        </div>
-        <div class="form-group">
           <label>Manager (Optional)</label>
           <input type="text" id="log-manager" placeholder="Person in charge">
         </div>
@@ -1023,6 +1019,55 @@
           </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Read-only Done Log Detail Modal -->
+  <div id="modal-done-log-detail" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="done-log-detail-modal-title">Completed Status Log Details</h2>
+        <button class="btn-close" id="btn-close-done-log-detail-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 0; max-height: 480px; overflow-y: auto;">
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Tag / ID</label>
+          <div id="done-log-detail-tag" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; font-weight: 700; color: var(--accent-color); font-size: 13px;"></div>
+        </div>
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Department</label>
+          <div id="done-log-detail-department" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; font-weight: 600; color: #fff; font-size: 13px;"></div>
+        </div>
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Update Status (Title)</label>
+          <div id="done-log-detail-title" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; font-weight: 600; color: #fff; font-size: 13px;"></div>
+        </div>
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Content / Details</label>
+          <div id="done-log-detail-content" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 12px; border-radius: 8px; min-height: 80px; color: var(--text-color); font-size: 13px; line-height: 1.6; white-space: pre-wrap;"></div>
+        </div>
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Start Date</label>
+            <div id="done-log-detail-start-date" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; color: var(--text-color); font-size: 13px;"></div>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Due Date</label>
+            <div id="done-log-detail-due-date" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; color: var(--text-color); font-size: 13px;"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Manager in Charge</label>
+          <div id="done-log-detail-manager" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; color: var(--text-color); font-size: 13px;"></div>
+        </div>
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Completed Log Time</label>
+          <div id="done-log-detail-time" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; color: var(--text-color); font-size: 13px;"></div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; width: 100%; border-top: 1px solid var(--card-border); padding-top: 14px;">
+        <button type="button" class="btn btn-primary" id="btn-close-done-log-detail" style="padding: 8px 20px; font-size: 13px;">Close</button>
+      </div>
     </div>
   </div>
 

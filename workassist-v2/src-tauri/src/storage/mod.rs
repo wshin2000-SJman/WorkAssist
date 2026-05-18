@@ -427,7 +427,7 @@ impl Storage {
                 created_at: format!("{}T09:00:00Z", d_m10), status: "active".to_string(),
                 dept1_name: "Control".to_string(), dept2_name: "Hardware".to_string(),
                 dept3_name: "Software".to_string(), dept4_name: "Testing".to_string(),
-                project_tag: Some(format!("P{}-0900-01", d_m10.replace("-", ""))),
+                project_tag: Some(format!("P{}-0900-01", &d_m10.replace("-", "")[2..])),
                 is_deleted: false,
             },
             Project {
@@ -439,7 +439,7 @@ impl Storage {
                 created_at: format!("{}T10:00:00Z", d_m5), status: "active".to_string(),
                 dept1_name: "Design".to_string(), dept2_name: "Frontend".to_string(),
                 dept3_name: "Backend".to_string(), dept4_name: "QA".to_string(),
-                project_tag: Some(format!("P{}-1000-02", d_m5.replace("-", ""))),
+                project_tag: Some(format!("P{}-1000-02", &d_m5.replace("-", "")[2..])),
                 is_deleted: false,
             },
             Project {
@@ -451,7 +451,7 @@ impl Storage {
                 created_at: format!("{}T11:00:00Z", d_today), status: "active".to_string(),
                 dept1_name: "Algorithm".to_string(), dept2_name: "Vision".to_string(),
                 dept3_name: "Control".to_string(), dept4_name: "Integration".to_string(),
-                project_tag: Some(format!("P{}-1100-03", d_today.replace("-", ""))),
+                project_tag: Some(format!("P{}-1100-03", &d_today.replace("-", "")[2..])),
                 is_deleted: false,
             },
             Project {
@@ -463,7 +463,7 @@ impl Storage {
                 created_at: format!("{}T14:00:00Z", d_today), status: "active".to_string(),
                 dept1_name: "API".to_string(), dept2_name: "Security".to_string(),
                 dept3_name: "DevOps".to_string(), dept4_name: "Monitoring".to_string(),
-                project_tag: Some(format!("P{}-1400-04", d_today.replace("-", ""))),
+                project_tag: Some(format!("P{}-1400-04", &d_today.replace("-", "")[2..])),
                 is_deleted: false,
             }
         ];
@@ -482,7 +482,7 @@ impl Storage {
             let log = StatusLog {
                 id: None, project_id: pid, department: "Software".to_string(),
                 text_content: Some("SecurityEngine tokenization logic implemented and tested with SJ-Gimbal data.".to_string()),
-                image_path: None, timestamp: now.clone(), status: "completed".to_string(),
+                timestamp: now.clone(), status: "completed".to_string(),
                 tag: Some("Security".to_string()), title: Some("Security Gateway Update".to_string()),
                 manager: Some("Wonseup Shin".to_string()), start_date: None, due_date: None,
                 is_deleted: false,
@@ -559,7 +559,7 @@ impl Storage {
                 action_items: Some("1. Update schema.rs, 2. Test dual-write latency".to_string()),
                 memo: Some("Crucial meeting to finalize the Antigravity security layer.".to_string()),
                 created_at: now.clone(),
-                meeting_tag: Some(format!("M{}-1400-01", d_m2.replace("-", ""))),
+                meeting_tag: Some(format!("M{}-1400-01", &d_m2.replace("-", "")[2..])),
                 is_deleted: false,
             },
             Meeting {
@@ -572,7 +572,7 @@ impl Storage {
                 action_items: Some("1. Draft deployment roadmap, 2. Allocate Q3 budget".to_string()),
                 memo: Some("High-level strategic alignment for the next expansion phase.".to_string()),
                 created_at: now.clone(),
-                meeting_tag: Some(format!("M{}-1000-02", d_today.replace("-", ""))),
+                meeting_tag: Some(format!("M{}-1000-02", &d_today.replace("-", "")[2..])),
                 is_deleted: false,
             }
         ];
@@ -620,7 +620,7 @@ mod tests {
     #[test]
     fn test_project_tag_flow() {
         // Create a temporary test database file in the workspace
-        let test_db_dir = PathBuf::from("d:/Antigravity/scripts");
+        let test_db_dir = std::env::temp_dir();
         std::fs::create_dir_all(&test_db_dir).ok();
         let test_db_path = test_db_dir.join("test_workassist.db");
         if test_db_path.exists() {
@@ -652,7 +652,7 @@ mod tests {
         assert!(!seeded_projects.is_empty(), "Seeded projects should not be empty");
         for (name, tag) in &seeded_projects {
             assert!(tag.starts_with('P'), "Demo project {} tag '{}' should start with 'P'", name, tag);
-            assert_eq!(tag.len(), 17, "Demo project {} tag '{}' length should be 17", name, tag);
+            assert_eq!(tag.len(), 15, "Demo project {} tag '{}' length should be 15", name, tag);
             println!("Demo project seeded tag verified: {} -> {}", name, tag);
         }
 
@@ -682,7 +682,7 @@ mod tests {
         let generated_tag: String = stmt_new.query_row([project_id], |row| row.get(0)).unwrap();
         
         assert!(generated_tag.starts_with('P'), "Generated tag '{}' should start with 'P'", generated_tag);
-        assert_eq!(generated_tag.len(), 17, "Generated tag '{}' length should be 17", generated_tag);
+        assert_eq!(generated_tag.len(), 15, "Generated tag '{}' length should be 15", generated_tag);
         assert!(generated_tag.ends_with("-01"), "Generated tag '{}' should end with -01 sequence number", generated_tag);
         println!("Dynamically generated project tag verified: {}", generated_tag);
 
@@ -692,7 +692,7 @@ mod tests {
 
     #[test]
     fn test_project_trash_flow() {
-        let test_db_dir = PathBuf::from("d:/Antigravity/scripts");
+        let test_db_dir = std::env::temp_dir();
         std::fs::create_dir_all(&test_db_dir).ok();
         let test_db_path = test_db_dir.join("test_workassist_trash.db");
         if test_db_path.exists() {

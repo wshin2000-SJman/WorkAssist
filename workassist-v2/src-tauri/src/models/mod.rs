@@ -81,7 +81,6 @@ pub struct StatusLog {
     pub project_id: i64,
     pub department: String,
     pub text_content: Option<String>,
-    pub image_path: Option<String>,
     pub timestamp: String,
     pub status: String,
     pub tag: Option<String>,
