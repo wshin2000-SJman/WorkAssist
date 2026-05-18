@@ -75,7 +75,6 @@ impl Storage {
         let backup_path = backup_dir.join(format!("sjworkassist_v2_backup_{}.db", timestamp));
 
         std::fs::copy(&self.path, &backup_path).map_err(|e| e.to_string())?;
-        println!("Auto-backup created at: {:?}", backup_path);
 
         self.cleanup_backups(backup_dir).map_err(|e| e.to_string())?;
         Ok(())
@@ -109,20 +108,16 @@ impl Storage {
     }
 
     pub fn import_database(&self, source_path: PathBuf, current_user: Option<crate::models::User>) -> Result<(), String> {
-        println!("Starting database import from: {:?}", source_path);
-        
+
         // 1. Checkpoint and Close current connection
         {
             let mut conn = self.conn.lock().unwrap();
             let _ = conn.pragma_update(None, "wal_checkpoint", "TRUNCATE");
-            println!("Closing current database connection...");
             *conn = Connection::open_in_memory().map_err(|e| e.to_string())?;
         }
 
         // 2. Overwrite the DB file
-        println!("Overwriting database file at: {:?}", self.path);
         std::fs::copy(&source_path, &self.path).map_err(|e| {
-            println!("FS Copy Error: {:?}", e);
             format!("Failed to copy file: {}", e)
         })?;
         
@@ -136,7 +131,6 @@ impl Storage {
 
         // 4. Re-open, Migrate, and Remap
         {
-            println!("Re-opening new database connection and migrating...");
             let mut conn = self.conn.lock().unwrap();
             let new_conn = Connection::open(&self.path).map_err(|e| e.to_string())?;
             new_conn.pragma_update(None, "journal_mode", "WAL").map_err(|e| e.to_string())?;
@@ -146,8 +140,7 @@ impl Storage {
 
             // If we have a current user, preserve/remap them
             if let Some(user) = current_user {
-                println!("Syncing user session for username: {} (provided ID: {:?})", user.username, user.id);
-                
+
                 // 1. Sync user record by username
                 new_conn.execute(
                     "INSERT INTO users (username, password_hash, password_hint) 
@@ -164,16 +157,12 @@ impl Storage {
                     |row| row.get(0),
                 ).map_err(|e| format!("Failed to retrieve final user ID: {}", e))?;
 
-                println!("Remapping all records to final user ID: {}", final_id);
-
                 // 3. Remap all data to this final ID and count changes
-                let t_count = new_conn.execute("UPDATE tasks SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
-                let m_count = new_conn.execute("UPDATE meetings SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
-                let p_count = new_conn.execute("UPDATE projects SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
-                let s_count = new_conn.execute("UPDATE status_logs SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
+                let _t_count = new_conn.execute("UPDATE tasks SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
+                let _m_count = new_conn.execute("UPDATE meetings SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
+                let _p_count = new_conn.execute("UPDATE projects SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
+                let _s_count = new_conn.execute("UPDATE status_logs SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
 
-                println!("Import Summary: {} tasks, {} meetings, {} projects, {} status logs remapped.", 
-                         t_count, m_count, p_count, s_count);
                 
                 // Also ensure shadow tables are correctly associated if needed 
                 // (Note: Shadow tables currently match by ID, so if main IDs are kept, they're fine)
@@ -182,7 +171,6 @@ impl Storage {
             *conn = new_conn;
         }
 
-        println!("Database import and remapping completed successfully.");
         Ok(())
     }
 
@@ -322,6 +310,27 @@ impl Storage {
 
     // --- Dual-Write Methods ---
 
+    pub fn generate_sequential_tag(
+        conn: &rusqlite::Connection, 
+        table_name: &str, 
+        prefix: &str, 
+        timestamp: &chrono::DateTime<chrono::Local>
+    ) -> String {
+        let date_str = timestamp.format("%y%m%d").to_string();
+        let time_str = timestamp.format("%H%M").to_string();
+        let minute_prefix = timestamp.format("%Y-%m-%dT%H:%M").to_string();
+        
+        let query = format!("SELECT COUNT(*) FROM {} WHERE created_at LIKE ?", table_name);
+        let count: i64 = conn.query_row(
+            &query,
+            params![format!("{}%", minute_prefix)],
+            |row| row.get(0)
+        ).unwrap_or(0);
+        
+        format!("{}{}-{}-{:02}", prefix, date_str, time_str, count + 1)
+    }
+
+
     pub fn save_task_dual(&self, conn: &rusqlite::Connection, task: &Task, task_id: i64) -> Result<()> {
         // 1. Tokenize content
         let shadow_title = SecurityEngine::tokenize(conn, &task.title);
@@ -381,6 +390,33 @@ impl Storage {
         Ok(())
     }
 
+    pub fn delete_task_dual(&self, conn: &rusqlite::Connection, task_id: i64) -> Result<()> {
+        conn.execute("DELETE FROM tasks WHERE id = ?", params![task_id])?;
+        conn.execute("DELETE FROM shadow_tasks WHERE id = ?", params![task_id])?;
+        Ok(())
+    }
+
+    pub fn delete_meeting_dual(&self, conn: &rusqlite::Connection, meeting_id: i64) -> Result<()> {
+        conn.execute("DELETE FROM meetings WHERE id = ?", params![meeting_id])?;
+        conn.execute("DELETE FROM shadow_meetings WHERE id = ?", params![meeting_id])?;
+        Ok(())
+    }
+
+    pub fn delete_project_dual(&self, conn: &rusqlite::Connection, project_id: i64) -> Result<()> {
+        let _ = conn.execute("DELETE FROM shadow_status_logs WHERE id IN (SELECT id FROM status_logs WHERE project_id = ?)", params![project_id]);
+        let _ = conn.execute("DELETE FROM status_logs WHERE project_id = ?", params![project_id]);
+        let _ = conn.execute("DELETE FROM milestones WHERE project_id = ?", params![project_id]);
+        let _ = conn.execute("DELETE FROM shadow_projects WHERE id = ?", params![project_id]);
+        conn.execute("DELETE FROM projects WHERE id = ?", params![project_id])?;
+        Ok(())
+    }
+
+    pub fn delete_status_log_dual(&self, conn: &rusqlite::Connection, log_id: i64) -> Result<()> {
+        let _ = conn.execute("DELETE FROM shadow_status_logs WHERE id = ?", params![log_id]);
+        conn.execute("DELETE FROM status_logs WHERE id = ?", params![log_id])?;
+        Ok(())
+    }
+
     pub fn seed_demo_data(&self) -> Result<()> {
         let owner_id = 999;
         let now_dt = chrono::Local::now();
@@ -395,7 +431,7 @@ impl Storage {
         let d_p3 = (now_dt + chrono::Duration::days(3)).format("%Y-%m-%d").to_string();
         let d_p5 = (now_dt + chrono::Duration::days(5)).format("%Y-%m-%d").to_string();
         let d_p8 = (now_dt + chrono::Duration::days(8)).format("%Y-%m-%d").to_string();
-        let d_p14 = (now_dt + chrono::Duration::days(14)).format("%Y-%m-%d").to_string();
+        let _d_p14 = (now_dt + chrono::Duration::days(14)).format("%Y-%m-%d").to_string();
 
         let conn = self.conn.lock().unwrap();
 

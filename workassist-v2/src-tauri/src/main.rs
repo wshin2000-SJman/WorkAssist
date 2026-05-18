@@ -129,10 +129,7 @@ fn main() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 let api = window.state::<api::Api>();
-                println!("Window closing... performing final backup.");
-                if let Err(e) = api.backup() {
-                    eprintln!("Failed to perform exit backup: {}", e);
-                }
+                let _ = api.backup();
             }
         })
         .run(tauri::generate_context!())

@@ -75,19 +75,8 @@ impl PmModule {
         } else {
             project.created_at = now_rfc;
 
-            // Generate Tag: PYYMMDD-HHMM-##
-            let date_str = now_local.format("%y%m%d").to_string();
-            let time_str = now_local.format("%H%M").to_string();
-            let minute_prefix = now_local.format("%Y-%m-%dT%H:%M").to_string();
-            
-            let count_this_min: i64 = conn.query_row(
-                "SELECT COUNT(*) FROM projects WHERE created_at LIKE ?",
-                params![format!("{}%", minute_prefix)],
-                |row| row.get(0)
-            ).unwrap_or(0);
-
-            let sequence = count_this_min + 1;
-            project.project_tag = Some(format!("P{}-{}-{:02}", date_str, time_str, sequence));
+            // Generate Tag: PYYMMDD-HHMM-## (SSOT)
+            project.project_tag = Some(crate::storage::Storage::generate_sequential_tag(&conn, "projects", "P", &now_local));
 
             conn.execute(
                 "INSERT INTO projects (owner_id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted)
@@ -154,19 +143,7 @@ impl PmModule {
         // Generate sequential tag L{date_str}-{time_str}-{sequence:02} if tag is empty or None
         if log.tag.as_ref().map_or(true, |t| t.is_empty()) {
             let now_local = chrono::Local::now();
-            let date_str = now_local.format("%y%m%d").to_string();
-            let time_str = now_local.format("%H%M").to_string();
-            
-            // Count status logs created in the exact same minute
-            let minute_prefix = &log.timestamp[..16];
-            let mut stmt = conn.prepare("SELECT COUNT(*) FROM status_logs WHERE timestamp LIKE ?")?;
-            let count_this_min: i64 = stmt.query_row(
-                params![format!("{}%", minute_prefix)],
-                |row| row.get(0)
-            )?;
-            let sequence = count_this_min + 1;
-            let generated_tag = format!("L{}-{}-{:02}", date_str, time_str, sequence);
-            log.tag = Some(generated_tag);
+            log.tag = Some(crate::storage::Storage::generate_sequential_tag(&conn, "status_logs", "L", &now_local));
         }
 
         conn.execute(
@@ -212,8 +189,7 @@ impl PmModule {
 
     pub fn delete_status_log_permanent(&self, log_id: i64) -> Result<()> {
         let conn = self.storage.conn.lock().unwrap();
-        let _ = conn.execute("DELETE FROM shadow_status_logs WHERE id = ?", params![log_id]);
-        conn.execute("DELETE FROM status_logs WHERE id = ?", params![log_id])?;
+        self.storage.delete_status_log_dual(&conn, log_id)?;
         Ok(())
     }
 
@@ -322,16 +298,7 @@ impl PmModule {
 
     pub fn hard_delete_project(&self, project_id: i64) -> Result<()> {
         let conn = self.storage.conn.lock().unwrap();
-        // Delete shadow status logs first
-        let _ = conn.execute("DELETE FROM shadow_status_logs WHERE id IN (SELECT id FROM status_logs WHERE project_id = ?)", params![project_id]);
-        // Delete status logs
-        let _ = conn.execute("DELETE FROM status_logs WHERE project_id = ?", params![project_id]);
-        // Delete milestones
-        let _ = conn.execute("DELETE FROM milestones WHERE project_id = ?", params![project_id]);
-        // Delete shadow project
-        let _ = conn.execute("DELETE FROM shadow_projects WHERE id = ?", params![project_id]);
-        // Delete original project
-        conn.execute("DELETE FROM projects WHERE id = ?", params![project_id])?;
+        self.storage.delete_project_dual(&conn, project_id)?;
         Ok(())
     }
 }

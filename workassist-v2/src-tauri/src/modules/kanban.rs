@@ -48,8 +48,6 @@ impl KanbanModule {
 
     pub fn add_task(&self, mut task: Task) -> Result<i64, String> {
         let now_local = Utc::now().with_timezone(&chrono::Local);
-        let date_str = now_local.format("%y%m%d").to_string();
-        let time_str = now_local.format("%H%M").to_string();
         
         let conn = self.storage.conn.lock().unwrap();
 
@@ -65,19 +63,8 @@ impl KanbanModule {
             return Err("Task creation limit exceeded (max 55 per minute). Please wait.".to_string());
         }
 
-        // 2. Sequence number for current minute
-        // We look for tasks created in the same minute to determine the sequence suffix
-        // We'll search by created_at prefix (YYYY-MM-DDTHH:MM)
-        let minute_prefix = now_local.format("%Y-%m-%dT%H:%M").to_string();
-        let count_this_min: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM tasks WHERE created_at LIKE ?",
-            params![format!("{}%", minute_prefix)],
-            |row| row.get(0)
-        ).map_err(|e| e.to_string())?;
-
-        let sequence = count_this_min + 1;
-        let tag = format!("T{}-{}-{:02}", date_str, time_str, sequence);
-        task.task_tag = Some(tag);
+        // 2. Sequence number for current minute (SSOT)
+        task.task_tag = Some(crate::storage::Storage::generate_sequential_tag(&conn, "tasks", "T", &now_local));
         task.created_at = Utc::now().to_rfc3339();
 
         conn.execute(
@@ -189,7 +176,7 @@ impl KanbanModule {
 
     pub fn hard_delete_task(&self, task_id: i64) -> Result<()> {
         let conn = self.storage.conn.lock().unwrap();
-        conn.execute("DELETE FROM tasks WHERE id = ?", params![task_id])?;
+        self.storage.delete_task_dual(&conn, task_id)?;
         Ok(())
     }
 }

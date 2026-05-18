@@ -90,7 +90,7 @@ impl MinutesModule {
 
     pub fn hard_delete_meeting(&self, meeting_id: i64) -> Result<()> {
         let conn = self.storage.conn.lock().unwrap();
-        conn.execute("DELETE FROM meetings WHERE id = ?", params![meeting_id])?;
+        self.storage.delete_meeting_dual(&conn, meeting_id)?;
         Ok(())
     }
 
@@ -119,19 +119,8 @@ impl MinutesModule {
             let _ = self.storage.save_meeting_dual(&conn, &meeting, id);
             Ok(id)
         } else {
-            // Generate Tag: MYYMMDD-HHMM-##
-            let date_str = now_local.format("%y%m%d").to_string();
-            let time_str = now_local.format("%H%M").to_string();
-            let minute_prefix = now_local.format("%Y-%m-%dT%H:%M").to_string();
-            
-            let count_this_min: i64 = conn.query_row(
-                "SELECT COUNT(*) FROM meetings WHERE created_at LIKE ?",
-                params![format!("{}%", minute_prefix)],
-                |row| row.get(0)
-            ).unwrap_or(0);
-
-            let sequence = count_this_min + 1;
-            meeting.meeting_tag = Some(format!("M{}-{}-{:02}", date_str, time_str, sequence));
+            // Generate Tag: MYYMMDD-HHMM-## (SSOT)
+            meeting.meeting_tag = Some(crate::storage::Storage::generate_sequential_tag(&conn, "meetings", "M", &now_local));
             meeting.created_at = now_rfc;
             conn.execute(
                 "INSERT INTO meetings (owner_id, title, date, participants, location, decisions, action_items, memo, created_at, meeting_tag, is_deleted)
@@ -242,6 +231,127 @@ pub async fn hard_delete_meeting_cmd(api: tauri::State<'_, crate::api::Api>, mee
     api.minutes().hard_delete_meeting(meeting_id).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn export_minutes_md_bulk(api: tauri::State<'_, crate::api::Api>, dir_path: String, owner_id: i64) -> Result<String, String> {
+    let minutes = api.minutes().get_all_meetings(owner_id).map_err(|e| e.to_string())?;
+    
+    let path = std::path::Path::new(&dir_path);
+    if !path.exists() {
+        return Err("Directory does not exist.".to_string());
+    }
+    
+    let mut count = 0;
+    for m in minutes {
+        let tag = m.meeting_tag.as_deref().unwrap_or("M-UNKNOWN");
+        let safe_title = m.title.replace(&['/', '\\', ':', '*', '?', '"', '<', '>', '|'][..], "_");
+        let filename = format!("{}_{}.md", tag, safe_title);
+        let file_path = path.join(&filename);
+        
+        let content = format!(
+            "# {}\n\n- **Date**: {}\n- **Participants**: {}\n- **Location**: {}\n- **Tag**: {}\n\n## Decisions\n{}\n\n## Action Items\n{}\n\n## Memo\n{}\n",
+            m.title,
+            m.date.as_deref().unwrap_or(""),
+            m.participants.as_deref().unwrap_or(""),
+            m.location.as_deref().unwrap_or(""),
+            tag,
+            m.decisions.as_deref().unwrap_or(""),
+            m.action_items.as_deref().unwrap_or(""),
+            m.memo.as_deref().unwrap_or("")
+        );
+        
+        if std::fs::write(&file_path, content).is_ok() {
+            count += 1;
+        }
+    }
+    
+    Ok(format!("Successfully exported {} minutes to MD files.", count))
+}
+
+#[tauri::command]
+pub async fn import_minutes_md_bulk(api: tauri::State<'_, crate::api::Api>, dir_path: String, owner_id: i64) -> Result<usize, String> {
+    let path = std::path::Path::new(&dir_path);
+    if !path.exists() {
+        return Err("Directory does not exist.".to_string());
+    }
+    
+    let entries = std::fs::read_dir(path).map_err(|e| e.to_string())?;
+    let mut count = 0;
+    let mut errors = Vec::new();
+    
+    for entry in entries.flatten() {
+        let file_path = entry.path();
+        if file_path.extension().and_then(|s| s.to_str()) != Some("md") {
+            continue;
+        }
+        
+        let content = match std::fs::read_to_string(&file_path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        
+        let title_line = content.lines().find(|l| l.starts_with("# "));
+        if title_line.is_none() {
+            errors.push(format!("Missing '# Title' in {:?}", file_path.file_name().unwrap()));
+            continue;
+        }
+        let title = title_line.unwrap()[2..].trim().to_string();
+        
+        let extract_meta = |key: &str| -> Option<String> {
+            let prefix = format!("- **{}**:", key);
+            content.lines()
+                .find(|l| l.starts_with(&prefix))
+                .map(|l| l[prefix.len()..].trim().to_string())
+        };
+        
+        let date = extract_meta("Date");
+        let participants = extract_meta("Participants");
+        let location = extract_meta("Location");
+        
+        let extract_section = |header: &str| -> Option<String> {
+            let parts: Vec<&str> = content.split(&format!("## {}", header)).collect();
+            if parts.len() > 1 {
+                let section_content = parts[1].split("\n## ").next().unwrap_or(parts[1]);
+                Some(section_content.trim().to_string())
+            } else {
+                None
+            }
+        };
+        
+        let decisions = extract_section("Decisions");
+        let action_items = extract_section("Action Items");
+        let memo = extract_section("Memo");
+        
+        let meeting = crate::models::Meeting {
+            id: None,
+            owner_id: Some(owner_id),
+            title,
+            date,
+            participants,
+            location,
+            decisions,
+            action_items,
+            memo,
+            created_at: chrono::Utc::now().to_rfc3339(),
+            meeting_tag: None,
+            is_deleted: false,
+        };
+        
+        if let Err(e) = api.minutes().save_meeting(meeting) {
+            errors.push(format!("Failed to save {:?}: {}", file_path.file_name().unwrap(), e));
+        } else {
+            count += 1;
+        }
+    }
+    
+    if count == 0 && !errors.is_empty() {
+        return Err(format!("Import failed. Errors:\n{}", errors.join("\n")));
+    } else if !errors.is_empty() {
+        return Err(format!("Imported {} files with some errors:\n{}", count, errors.join("\n")));
+    }
+    
+    Ok(count)
+}
+
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("minutes")
         .invoke_handler(tauri::generate_handler![
@@ -253,7 +363,9 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             delete_meeting,
             get_deleted_meetings,
             restore_meeting,
-            hard_delete_meeting_cmd
+            hard_delete_meeting_cmd,
+            export_minutes_md_bulk,
+            import_minutes_md_bulk
         ])
         .build()
 }

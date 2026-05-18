@@ -259,7 +259,9 @@
               <button class="btn btn-primary" id="btn-new-meeting">+ New Minutes</button>
               <button id="btn-minutes-trash" class="btn btn-secondary"><span>🗑️</span> Trash Bin</button>
             </div>
-            <div class="header-search">
+            <div class="header-search" style="display: flex; align-items: center;">
+              <button id="btn-import-minutes-md" class="btn btn-sm btn-outline-accent" style="margin-right: 8px;">Import MD</button>
+              <button id="btn-export-minutes-md" class="btn btn-sm btn-outline-accent" style="margin-right: 16px;">Export MD</button>
               <select id="minutes-search-type" class="search-type-select">
                 <option value="all">All</option>
                 <option value="title">Title</option>
@@ -455,7 +457,7 @@
                         <option value="monthly">Monthly</option>
                       </select>
 
-                      <button id="pm-timetable-export-html" class="btn btn-sm btn-secondary" style="padding: 6px 16px; font-size: 13px; border: 1px solid var(--accent-color); color: var(--accent-color); background: transparent;">Export HTML</button>
+                      <button id="pm-timetable-export-html" class="btn btn-sm btn-outline-accent">Export HTML</button>
                     </div>
                   </div>
 

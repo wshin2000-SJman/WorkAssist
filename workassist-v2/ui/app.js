@@ -119,6 +119,51 @@ const init = () => {
         };
     }
 
+    // Minutes Export/Import MD
+    const btnExportMinutesMd = document.getElementById('btn-export-minutes-md');
+    if (btnExportMinutesMd) {
+        btnExportMinutesMd.onclick = async () => {
+            try {
+                const dir = await window.__TAURI__.dialog.open({
+                    directory: true,
+                    multiple: false,
+                    title: "Select Directory to Export MD files"
+                });
+                
+                if (dir) {
+                    const result = await invoke('plugin:minutes|export_minutes_md_bulk', { dirPath: dir, ownerId: currentUser.id });
+                    alert(result);
+                }
+            } catch (err) {
+                console.error("Export MD Error:", err);
+                alert("Failed to export MD files: " + err);
+            }
+        };
+    }
+
+    const btnImportMinutesMd = document.getElementById('btn-import-minutes-md');
+    if (btnImportMinutesMd) {
+        btnImportMinutesMd.onclick = async () => {
+            try {
+                const dir = await window.__TAURI__.dialog.open({
+                    directory: true,
+                    multiple: false,
+                    title: "Select Directory to Import MD files"
+                });
+                
+                if (dir) {
+                    const count = await invoke('plugin:minutes|import_minutes_md_bulk', { dirPath: dir, ownerId: currentUser.id });
+                    alert(`Successfully imported ${count} minutes.`);
+                    refreshMinutes(); // refresh the list
+                }
+            } catch (err) {
+                console.error("Import MD Error:", err);
+                alert(err);
+                if (typeof refreshMinutes === 'function') refreshMinutes();
+            }
+        };
+    }
+
     const btnBackMinutes = document.getElementById('btn-back-minutes');
     if (btnBackMinutes) {
         btnBackMinutes.onclick = () => {
