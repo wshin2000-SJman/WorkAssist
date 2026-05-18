@@ -140,7 +140,7 @@ textarea::-webkit-scrollbar {
   height: 200%;
   pointer-events: none;
   z-index: -1;
-  transform: rotate(35deg);
+  transform: rotate(30deg);
 }
 
 .rainbow-bars .bar {
