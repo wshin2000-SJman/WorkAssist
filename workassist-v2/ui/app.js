@@ -964,8 +964,8 @@ function setupModals() {
             }
 
             // Character length validation
-            if (newTask.title.length > 20) {
-                alert("Task title cannot exceed 20 characters.");
+            if (newTask.title.length > 30) {
+                alert("Task title cannot exceed 30 characters.");
                 return;
             }
             if (newTask.content.length > 500) {
