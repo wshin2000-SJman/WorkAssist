@@ -537,14 +537,29 @@ impl Storage {
                 project_tag: Some(format!("P{}-1400-04", &d_today.replace("-", "")[2..])),
                 is_deleted: false,
                 completion_date: None, completion_memo: None,
+            },
+            Project {
+                id: None, owner_id: Some(owner_id),
+                name: "Legacy Control Board Prototype".to_string(),
+                description: Some("Initial hardware prototyping and motor drive testing for first-generation gimbal system.".to_string()),
+                manager: Some("Wonseup Shin".to_string()),
+                client: Some("SJ Global".to_string()),
+                start_date: Some(d_m10.clone()),
+                created_at: format!("{}T08:00:00Z", d_m10), status: "done".to_string(),
+                dept1_name: "Control".to_string(), dept2_name: "Hardware".to_string(),
+                dept3_name: "Software".to_string(), dept4_name: "Testing".to_string(),
+                project_tag: Some(format!("P{}-0800-05", &d_m10.replace("-", "")[2..])),
+                is_deleted: false,
+                completion_date: Some(d_m2.clone()),
+                completion_memo: Some("Prototype validated successfully under load. Design signed off by client.".to_string()),
             }
         ];
 
         for mut p in projects {
             conn.execute(
-                "INSERT INTO projects (owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                params![p.owner_id, p.name, p.description, p.manager, p.client, p.start_date, p.created_at, p.status, p.dept1_name, p.dept2_name, p.dept3_name, p.dept4_name, p.project_tag, p.is_deleted],
+                "INSERT INTO projects (owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![p.owner_id, p.name, p.description, p.manager, p.client, p.start_date, p.created_at, p.status, p.dept1_name, p.dept2_name, p.dept3_name, p.dept4_name, p.project_tag, p.is_deleted, p.completion_date, p.completion_memo],
             )?;
             let pid = conn.last_insert_rowid();
             p.id = Some(pid);
@@ -673,8 +688,9 @@ impl Storage {
         conn.execute("DELETE FROM shadow_projects WHERE id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
         conn.execute("DELETE FROM shadow_status_logs WHERE id IN (SELECT id FROM status_logs WHERE owner_id = ?)", [owner_id])?;
 
-        // Delete from primary tables
+        // Delete from primary tables (Referencing tables first to prevent foreign key errors)
         conn.execute("DELETE FROM status_logs WHERE owner_id = ?", [owner_id])?;
+        conn.execute("DELETE FROM milestones WHERE project_id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
         conn.execute("DELETE FROM projects WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM tasks WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM meetings WHERE owner_id = ?", [owner_id])?;
