@@ -2687,6 +2687,7 @@ async function refreshProjects() {
         currentProjects.forEach(p => {
             const item = document.createElement('div');
             item.className = 'project-item';
+            item.dataset.id = p.id;
             
             // Render Tag Badge if exists
             const tagBadge = p.project_tag ? `<span class="tag-badge-mini" style="margin-left: 0; margin-bottom: 6px; display: inline-block;">${p.project_tag}</span>` : '';
@@ -2744,7 +2745,7 @@ async function refreshProjects() {
                             
                             // If the deleted project was the currently selected one, clear detail panel
                             const activeItem = document.querySelector('.project-item.active');
-                            const isActiveSelected = activeItem && activeItem.querySelector('h4').textContent === p.name;
+                            const isActiveSelected = activeItem && Number(activeItem.dataset.id) === p.id;
                             if (isActiveSelected) {
                                 document.getElementById('detail-project-name').textContent = 'Select a Project';
                                 document.getElementById('detail-project-meta').textContent = 'Client: - | Manager: - | Start Date: -';
@@ -2782,8 +2783,7 @@ async function loadProjectDetails(projectId) {
 
     // Highlight active item
     document.querySelectorAll('.project-item').forEach(item => {
-        const title = item.querySelector('h4').textContent;
-        if (title === project.name) item.classList.add('active');
+        if (Number(item.dataset.id) === projectId) item.classList.add('active');
         else item.classList.remove('active');
     });
 
