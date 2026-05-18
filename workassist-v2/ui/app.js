@@ -2308,7 +2308,7 @@ async function loadCompletedProjects() {
         const completedProjects = await invoke('plugin:pm|get_completed_projects', { ownerId: currentUser.id });
         body.innerHTML = '';
         if (completedProjects.length === 0) {
-            body.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--text-muted)">완료 처리된 과제가 없습니다.</td></tr>';
+            body.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--text-muted)">No completed projects found.</td></tr>';
             return;
         }
         completedProjects.forEach(p => {
@@ -2341,7 +2341,7 @@ async function loadCompletedProjects() {
         body.querySelectorAll('.btn-restore').forEach(btn => {
             btn.onclick = async (e) => {
                 e.stopPropagation();
-                if (await askConfirm('이 완료과제를 활성 과제 목록으로 재활성화하시겠습니까?')) {
+                if (await askConfirm('Are you sure you want to reactivate this completed project back to active?')) {
                     try {
                         await invoke('plugin:pm|reactivate_project', { projectId: Number(btn.dataset.id) });
                         await loadCompletedProjects();
@@ -2356,7 +2356,7 @@ async function loadCompletedProjects() {
         body.querySelectorAll('.btn-delete-log-permanent').forEach(btn => {
             btn.onclick = async (e) => {
                 e.stopPropagation();
-                if (await askConfirm('이 과제를 휴지통으로 이동하시겠습니까?')) {
+                if (await askConfirm('Are you sure you want to move this project to the Trash Bin?')) {
                     try {
                         await invoke('plugin:pm|delete_project', { projectId: Number(btn.dataset.id) });
                         await loadCompletedProjects();
