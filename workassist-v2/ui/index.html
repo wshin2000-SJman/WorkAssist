@@ -629,12 +629,12 @@
             <div id="task-status-info" class="status-badge-inline">Note</div>
           </div>
           <div class="form-group">
-            <label for="task-title">Title</label>
+            <label for="task-title">Title <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 30 chars)</span></label>
             <input type="text" id="task-title" placeholder="What needs to be done?" maxlength="30" required>
           </div>
         </div>
         <div class="form-group">
-          <label for="task-content">Content</label>
+          <label for="task-content">Content <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 500 chars)</span></label>
           <textarea id="task-content" rows="4" placeholder="Describe the task details..." maxlength="500"></textarea>
         </div>
         <div class="form-group hidden" id="task-review-group">
@@ -643,7 +643,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="task-manager">Manager</label>
+            <label for="task-manager">Manager <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 15 chars)</span></label>
             <input type="text" id="task-manager" placeholder="Assignee" maxlength="15">
           </div>
           <div class="form-group">
