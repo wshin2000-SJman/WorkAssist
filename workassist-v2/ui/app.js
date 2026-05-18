@@ -4962,25 +4962,25 @@ function initDragAndDrop() {
 }
 
 function checkTaskLimits(task, isNew) {
-    // 1. Total Limit: Max 396
-    if (isNew && currentTasks.length >= 396) {
-        alert("전체 Task 개수 제한 초과: 활성화된 총 Task는 최대 396개까지만 등록할 수 있습니다.");
+    // 1. Total Limit: Max 200
+    if (isNew && currentTasks.length >= 200) {
+        alert("Total active tasks limit exceeded: You can only have a maximum of 200 active tasks in total.");
         return false;
     }
 
-    // 2. Status Limit: Max 99
+    // 2. Status Limit: Max 50
     const status = task.status || 'Note';
     const sameStatusCount = currentTasks.filter(t => t.status === status && t.id !== task.id).length;
-    if (sameStatusCount >= 99) {
-        alert(`상태별 Task 개수 제한 초과: '${status}' 상태의 Task는 최대 99개까지만 등록할 수 있습니다.`);
+    if (sameStatusCount >= 50) {
+        alert(`Task status limit exceeded: Status '${status}' can only have a maximum of 50 tasks.`);
         return false;
     }
 
-    // 3. Same-Date Limit: Max 99
+    // 3. Same-Date Limit: Max 20
     if (task.start_date) {
         const sameDateCount = currentTasks.filter(t => t.start_date === task.start_date && t.id !== task.id).length;
-        if (sameDateCount >= 99) {
-            alert(`일자별 Task 개수 제한 초과: 선택하신 시작일(${task.start_date})에는 최대 99개까지만 등록할 수 있습니다.`);
+        if (sameDateCount >= 20) {
+            alert(`Task date limit exceeded: Selected start date (${task.start_date}) can only have a maximum of 20 tasks.`);
             return false;
         }
     }
