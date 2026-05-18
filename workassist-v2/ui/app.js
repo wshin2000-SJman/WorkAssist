@@ -141,6 +141,30 @@ const init = () => {
         };
     }
 
+    const btnImportMinutesSingleMd = document.getElementById('btn-import-minutes-single-md');
+    if (btnImportMinutesSingleMd) {
+        btnImportMinutesSingleMd.onclick = async () => {
+            try {
+                const file = await window.__TAURI__.dialog.open({
+                    directory: false,
+                    multiple: false,
+                    title: "Select Markdown File to Import",
+                    filters: [{ name: 'Markdown', extensions: ['md'] }]
+                });
+                
+                if (file) {
+                    await invoke('plugin:minutes|import_minutes_md_single', { filePath: file, ownerId: currentUser.id });
+                    alert("Successfully imported the meeting minutes.");
+                    refreshMinutes(); // refresh the list
+                }
+            } catch (err) {
+                console.error("Import MD File Error:", err);
+                alert(err);
+                if (typeof refreshMinutes === 'function') refreshMinutes();
+            }
+        };
+    }
+
     const btnImportMinutesMd = document.getElementById('btn-import-minutes-md');
     if (btnImportMinutesMd) {
         btnImportMinutesMd.onclick = async () => {

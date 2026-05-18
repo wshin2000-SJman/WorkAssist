@@ -352,6 +352,65 @@ pub async fn import_minutes_md_bulk(api: tauri::State<'_, crate::api::Api>, dir_
     Ok(count)
 }
 
+#[tauri::command]
+pub async fn import_minutes_md_single(api: tauri::State<'_, crate::api::Api>, file_path: String, owner_id: i64) -> Result<(), String> {
+    let path = std::path::Path::new(&file_path);
+    if !path.exists() {
+        return Err("File does not exist.".to_string());
+    }
+    
+    let content = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    
+    let title_line = content.lines().find(|l| l.starts_with("# "));
+    if title_line.is_none() {
+        return Err("Missing '# Title' in the markdown file.".to_string());
+    }
+    let title = title_line.unwrap()[2..].trim().to_string();
+    
+    let extract_meta = |key: &str| -> Option<String> {
+        let prefix = format!("- **{}**:", key);
+        content.lines()
+            .find(|l| l.starts_with(&prefix))
+            .map(|l| l[prefix.len()..].trim().to_string())
+    };
+    
+    let date = extract_meta("Date");
+    let participants = extract_meta("Participants");
+    let location = extract_meta("Location");
+    
+    let extract_section = |header: &str| -> Option<String> {
+        let parts: Vec<&str> = content.split(&format!("## {}", header)).collect();
+        if parts.len() > 1 {
+            let section_content = parts[1].split("\n## ").next().unwrap_or(parts[1]);
+            Some(section_content.trim().to_string())
+        } else {
+            None
+        }
+    };
+    
+    let decisions = extract_section("Decisions");
+    let action_items = extract_section("Action Items");
+    let memo = extract_section("Memo");
+    
+    let meeting = crate::models::Meeting {
+        id: None,
+        owner_id: Some(owner_id),
+        title,
+        date,
+        participants,
+        location,
+        decisions,
+        action_items,
+        memo,
+        created_at: chrono::Utc::now().to_rfc3339(),
+        meeting_tag: None,
+        is_deleted: false,
+    };
+    
+    api.minutes().save_meeting(meeting).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("minutes")
         .invoke_handler(tauri::generate_handler![
@@ -365,7 +424,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             restore_meeting,
             hard_delete_meeting_cmd,
             export_minutes_md_bulk,
-            import_minutes_md_bulk
+            import_minutes_md_bulk,
+            import_minutes_md_single
         ])
         .build()
 }

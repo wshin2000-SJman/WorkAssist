@@ -24,6 +24,7 @@
     "minutes:allow-export-meeting-md",
     "minutes:allow-export-minutes-md-bulk",
     "minutes:allow-import-minutes-md-bulk",
+    "minutes:allow-import-minutes-md-single",
     "minutes:allow-save-text-file",
     "minutes:allow-delete-meeting",
     "minutes:allow-get-deleted-meetings",
