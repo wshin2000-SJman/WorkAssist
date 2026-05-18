@@ -820,6 +820,7 @@ body {
   border: 1px solid rgba(243, 141, 33, 0.3);
   font-weight: 600;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .tag-badge-mini {
@@ -2113,7 +2114,9 @@ tr:has(.status-review) {
   border-bottom: 1px solid var(--card-border);
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
 }
 
 .project-info-main h2 {

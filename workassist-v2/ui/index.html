@@ -325,12 +325,14 @@
             </div>
             <div class="pm-details" id="pm-details">
               <div class="pm-details-header">
-                <div class="project-info-main" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%;">
+                <div class="project-info-main" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; flex: 1; min-width: 280px; width: 100%;">
                   <span id="detail-project-tag" class="tag-badge hidden"></span>
-                  <div style="display: flex; align-items: center; gap: 12px; width: 100%; flex-wrap: wrap;">
-                    <h2 id="detail-project-name" style="margin: 0; word-break: break-word; max-width: min(100%, max(180px, calc(100% - 200px)));">Select a Project</h2>
-                    <button id="btn-edit-project" class="btn btn-secondary btn-sm hidden" style="padding: 4px 8px; font-size: 12px; flex-shrink: 0;">✏️ Edit</button>
-                    <button id="pm-timetable-export-html" class="btn btn-outline-accent btn-sm hidden" style="padding: 4px 10px; font-size: 12px; flex-shrink: 0;">Export HTML</button>
+                  <div style="display: flex; align-items: center; gap: 16px; width: 100%; flex-wrap: wrap;">
+                    <h2 id="detail-project-name" style="margin: 0; font-size: 26px; font-weight: 800; color: var(--accent-color); overflow-wrap: break-word; word-break: keep-all; flex: 1; min-width: 200px;">Select a Project</h2>
+                    <div class="project-title-actions" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                      <button id="btn-edit-project" class="btn btn-secondary btn-sm hidden" style="padding: 6px 12px; font-size: 12px; height: 32px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">✏️ Edit</button>
+                      <button id="pm-timetable-export-html" class="btn btn-outline-accent btn-sm hidden" style="padding: 6px 12px; font-size: 12px; height: 32px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">Export HTML</button>
+                    </div>
                   </div>
                   <p id="detail-project-meta" style="margin: 0;">Client: - | Manager: -</p>
                 </div>
