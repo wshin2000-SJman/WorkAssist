@@ -938,8 +938,8 @@ function setupModals() {
             }
 
             // Character length validation
-            if (newTask.title.length > 30) {
-                alert("Task title cannot exceed 30 characters.");
+            if (newTask.title.length > 20) {
+                alert("Task title cannot exceed 20 characters.");
                 return;
             }
             if (newTask.content.length > 500) {
@@ -1289,6 +1289,21 @@ function setupModals() {
                 start_date: document.getElementById('log-start-date').value || "",
                 due_date: document.getElementById('log-due-date').value || ""
             };
+
+            // Character length validation
+            if (log.title && log.title.length > 20) {
+                alert("Log title cannot exceed 20 characters.");
+                return;
+            }
+            if (log.text_content && log.text_content.length > 500) {
+                alert("Log content cannot exceed 500 characters.");
+                return;
+            }
+            if (log.manager && log.manager.length > 15) {
+                alert("Log manager cannot exceed 15 characters.");
+                return;
+            }
+
             try {
                 if (log.id) {
                     await invoke('plugin:pm|update_status_log', { log });
