@@ -947,6 +947,14 @@ function setupModals() {
                         newTask.review_comment = existingTask.review_comment;
                         newTask.task_tag = existingTask.task_tag;
                     }
+                }
+
+                // Enforce task limits
+                if (!checkTaskLimits(newTask, !taskId)) {
+                    return;
+                }
+
+                if (taskId) {
                     await invoke('plugin:kanban|update_task', { task: newTask });
                 } else {
                     // Add new task
@@ -1641,6 +1649,13 @@ async function loadDeletedTasks() {
 
 async function restoreTask(taskId) {
     try {
+        const deletedTasks = await invoke('plugin:kanban|get_deleted_tasks', { ownerId: currentUser.id });
+        const taskToRestore = deletedTasks.find(t => t.id === taskId);
+        if (taskToRestore) {
+            if (!checkTaskLimits(taskToRestore, true)) {
+                return;
+            }
+        }
         await invoke('plugin:kanban|restore_task', { taskId });
         await loadDeletedTasks();
         await refreshStats();
@@ -4914,6 +4929,15 @@ function initDragAndDrop() {
 
                     if (taskIndex !== -1 && currentTasks[taskIndex].status !== status) {
                         const oldStatus = currentTasks[taskIndex].status;
+
+                        // Check limits before applying the drop!
+                        const dummyTask = { ...currentTasks[taskIndex], status: status };
+                        if (!checkTaskLimits(dummyTask, false)) {
+                            document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
+                            draggingTaskId = null;
+                            return;
+                        }
+
                         currentTasks[taskIndex].status = status;
                         renderKanban();
                         try {
@@ -4935,4 +4959,31 @@ function initDragAndDrop() {
         window.addEventListener('mouseup', onMouseUp);
         window.addEventListener('keydown', onKeyDown);
     });
+}
+
+function checkTaskLimits(task, isNew) {
+    // 1. Total Limit: Max 396
+    if (isNew && currentTasks.length >= 396) {
+        alert("전체 Task 개수 제한 초과: 활성화된 총 Task는 최대 396개까지만 등록할 수 있습니다.");
+        return false;
+    }
+
+    // 2. Status Limit: Max 99
+    const status = task.status || 'Note';
+    const sameStatusCount = currentTasks.filter(t => t.status === status && t.id !== task.id).length;
+    if (sameStatusCount >= 99) {
+        alert(`상태별 Task 개수 제한 초과: '${status}' 상태의 Task는 최대 99개까지만 등록할 수 있습니다.`);
+        return false;
+    }
+
+    // 3. Same-Date Limit: Max 99
+    if (task.start_date) {
+        const sameDateCount = currentTasks.filter(t => t.start_date === task.start_date && t.id !== task.id).length;
+        if (sameDateCount >= 99) {
+            alert(`일자별 Task 개수 제한 초과: 선택하신 시작일(${task.start_date})에는 최대 99개까지만 등록할 수 있습니다.`);
+            return false;
+        }
+    }
+
+    return true;
 }
