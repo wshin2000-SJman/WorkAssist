@@ -186,6 +186,21 @@ const init = () => {
         };
     }
 
+    // Project Completed Navigation
+    const btnProjectCompleted = document.getElementById('btn-project-completed');
+    if (btnProjectCompleted) {
+        btnProjectCompleted.onclick = () => {
+            loadView('nav-pm-completed');
+        };
+    }
+
+    const btnBackProjectCompleted = document.getElementById('btn-back-project-completed');
+    if (btnBackProjectCompleted) {
+        btnBackProjectCompleted.onclick = () => {
+            loadView('nav-pm');
+        };
+    }
+
     setupModals();
     setupSettings();
     setupKanbanTabs();
@@ -645,7 +660,7 @@ function closeAllModals() {
     closeProject();
     
     // Hide other non-form or simple modals
-    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-about', 'modal-privacy', 'modal-terms', 'modal-contact', 'modal-done-log-detail'];
+    const others = ['modal-settings', 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-about', 'modal-privacy', 'modal-terms', 'modal-contact', 'modal-done-log-detail', 'modal-complete-project'];
     others.forEach(id => {
         const m = document.getElementById(id);
         if (m) {
@@ -671,6 +686,56 @@ function setupModals() {
     const btnCancelMeeting = document.getElementById('btn-cancel-meeting');
 
     console.log("Modal Elements Init Check:", { modalTask, btnNewTask, formTask });
+
+    // Project Completion Modal
+    const modalCompleteProject = document.getElementById('modal-complete-project');
+    const btnCloseCompleteProject = document.getElementById('btn-close-complete-project');
+    const btnCancelCompleteProject = document.getElementById('btn-cancel-complete-project');
+    const formCompleteProject = document.getElementById('form-complete-project');
+
+    if (btnCloseCompleteProject) {
+        btnCloseCompleteProject.onclick = () => {
+            modalCompleteProject.classList.add('hidden');
+        };
+    }
+    if (btnCancelCompleteProject) {
+        btnCancelCompleteProject.onclick = () => {
+            modalCompleteProject.classList.add('hidden');
+        };
+    }
+    if (formCompleteProject) {
+        formCompleteProject.onsubmit = async (e) => {
+            e.preventDefault();
+            const projectId = Number(document.getElementById('complete-project-id').value);
+            const completionDate = document.getElementById('complete-project-date').value;
+            const completionMemo = document.getElementById('complete-project-memo').value;
+
+            try {
+                await invoke('plugin:pm|complete_project', {
+                    projectId,
+                    completionDate,
+                    completionMemo
+                });
+                modalCompleteProject.classList.add('hidden');
+                await refreshProjects();
+                
+                // Clear the project details view since it is no longer active
+                document.getElementById('detail-project-name').textContent = 'Select a Project';
+                document.getElementById('detail-project-meta').textContent = 'Client: - | Manager: - | Start Date: -';
+                document.getElementById('detail-project-desc').textContent = 'No description available.';
+                document.getElementById('detail-project-tag').classList.add('hidden');
+                const btnEditProject = document.getElementById('btn-edit-project');
+                if (btnEditProject) btnEditProject.classList.add('hidden');
+                const btnExportHtml = document.getElementById('pm-timetable-export-html');
+                if (btnExportHtml) btnExportHtml.classList.add('hidden');
+                document.getElementById('pm-milestones-container').innerHTML = '';
+                document.getElementById('pm-logs-tbody').innerHTML = '';
+            } catch (err) {
+                console.error("Complete Project Submit Error:", err);
+                alert(err);
+            }
+        };
+    }
 
     const modalMeeting = document.getElementById('modal-meeting');
     const btnNewMeeting = document.getElementById('btn-new-meeting');
@@ -1021,6 +1086,7 @@ function setupModals() {
         document.getElementById('project-desc').value = p.description || '';
         document.getElementById('project-manager').value = p.manager || '';
         document.getElementById('project-client').value = p.client || '';
+        document.getElementById('project-start-date').value = p.start_date || '';
         document.getElementById('project-dept1').value = p.dept1_name || 'SALES';
         document.getElementById('project-dept2').value = p.dept2_name || 'DESIGN';
         document.getElementById('project-dept3').value = p.dept3_name || 'PROCUREMENT';
@@ -1059,11 +1125,13 @@ function setupModals() {
                             
                             // Clear current selected project display
                             document.getElementById('detail-project-name').textContent = 'Select a Project';
-                            document.getElementById('detail-project-meta').textContent = 'Client: - | Manager: -';
+                            document.getElementById('detail-project-meta').textContent = 'Client: - | Manager: - | Start Date: -';
                             document.getElementById('detail-project-desc').textContent = 'No description available.';
                             document.getElementById('detail-project-tag').classList.add('hidden');
                             const btnEditProject = document.getElementById('btn-edit-project');
                             if (btnEditProject) btnEditProject.classList.add('hidden');
+                            const btnExportHtml = document.getElementById('pm-timetable-export-html');
+                            if (btnExportHtml) btnExportHtml.classList.add('hidden');
 
                             await refreshProjects();
                         } catch (err) {
@@ -1099,6 +1167,7 @@ function setupModals() {
                 description: document.getElementById('project-desc').value,
                 manager: document.getElementById('project-manager').value,
                 client: document.getElementById('project-client').value,
+                start_date: document.getElementById('project-start-date').value,
                 created_at: "",
                 status: 'active',
                 dept1_name: document.getElementById('project-dept1').value,
@@ -1595,6 +1664,7 @@ async function loadView(viewId) {
         'nav-trash': 'Trash Bin',
         'nav-minutes-trash': 'Trash Bin',
         'nav-pm-trash': 'Trash Bin',
+        'nav-pm-completed': 'Completed Projects',
         'nav-minutes': 'Minutes Manager',
         'nav-pm': 'Project Manager'
     };
@@ -1608,12 +1678,15 @@ async function loadView(viewId) {
     document.querySelectorAll('.nav-item').forEach(nav => {
         const isActive = nav.id === viewId || 
             (viewId === 'nav-minutes-trash' && nav.id === 'nav-minutes') ||
-            (viewId === 'nav-pm-trash' && nav.id === 'nav-pm');
+            (viewId === 'nav-pm-trash' && nav.id === 'nav-pm') ||
+            (viewId === 'nav-pm-completed' && nav.id === 'nav-pm');
         nav.classList.toggle('active', isActive);
     });
 
     // Toggle view visibility
-    const targetViewId = viewId === 'nav-pm-trash' ? 'view-project-trash' : `view-${viewId.replace('nav-', '')}`;
+    const targetViewId = viewId === 'nav-pm-trash' ? 'view-project-trash' : 
+                         viewId === 'nav-pm-completed' ? 'view-project-completed' :
+                         `view-${viewId.replace('nav-', '')}`;
     document.querySelectorAll('.view').forEach(v => {
         v.classList.toggle('hidden', v.id !== targetViewId);
     });
@@ -1633,6 +1706,8 @@ async function loadView(viewId) {
         await loadDeletedMeetings();
     } else if (viewId === 'nav-pm-trash') {
         await loadDeletedProjects();
+    } else if (viewId === 'nav-pm-completed') {
+        await loadCompletedProjects();
     }
     else if (viewId === 'nav-minutes') await refreshMinutes();
     else if (viewId === 'nav-pm') await refreshProjects();
@@ -2225,6 +2300,92 @@ async function loadDeletedProjects() {
     }
 }
 
+async function loadCompletedProjects() {
+    const body = document.getElementById('project-completed-list-body');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
+    try {
+        const completedProjects = await invoke('plugin:pm|get_completed_projects', { ownerId: currentUser.id });
+        body.innerHTML = '';
+        if (completedProjects.length === 0) {
+            body.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--text-muted)">완료 처리된 과제가 없습니다.</td></tr>';
+            return;
+        }
+        completedProjects.forEach(p => {
+            const row = document.createElement('tr');
+            row.style.cursor = 'default';
+
+            row.innerHTML = `
+                <td style="font-family: monospace; font-size: 12px; color: var(--accent-color)">${p.project_tag || '-'}</td>
+                <td style="font-weight: 600;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>✅</span>
+                        <span>${p.name}</span>
+                    </div>
+                </td>
+                <td style="color: var(--text-secondary); font-size: 13px;">${p.completion_date || '-'}</td>
+                <td style="max-width: 300px; white-space: normal; word-break: break-all; font-size: 13px;">${p.completion_memo || '-'}</td>
+                <td>${p.manager || '-'}</td>
+                <td>${p.client || '-'}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-restore" data-id="${p.id}" title="Reactivate Project">🔄 Reactivate</button>
+                        <button class="btn-delete-log-permanent" data-id="${p.id}" title="Move to Trash" style="background-color: var(--btn-danger-bg) !important; color: white !important;">🗑️ Trash</button>
+                    </div>
+                </td>
+            `;
+            body.appendChild(row);
+        });
+
+        // Add listeners
+        body.querySelectorAll('.btn-restore').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                if (await askConfirm('이 완료과제를 활성 과제 목록으로 재활성화하시겠습니까?')) {
+                    try {
+                        await invoke('plugin:pm|reactivate_project', { projectId: Number(btn.dataset.id) });
+                        await loadCompletedProjects();
+                        await refreshProjects();
+                    } catch (err) {
+                        console.error("Reactivate Project Error:", err);
+                        alert(err);
+                    }
+                }
+            };
+        });
+        body.querySelectorAll('.btn-delete-log-permanent').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                if (await askConfirm('이 과제를 휴지통으로 이동하시겠습니까?')) {
+                    try {
+                        await invoke('plugin:pm|delete_project', { projectId: Number(btn.dataset.id) });
+                        await loadCompletedProjects();
+                    } catch (err) {
+                        console.error("Delete Completed Project Error:", err);
+                        alert(err);
+                    }
+                }
+            };
+        });
+    } catch (err) {
+        console.error("Load Completed Projects Error:", err);
+    }
+}
+
+function openCompleteProjectModal(project) {
+    const modal = document.getElementById('modal-complete-project');
+    if (!modal) return;
+    
+    document.getElementById('complete-project-id').value = project.id;
+    
+    // Set default completion date to today (YYYY-MM-DD)
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('complete-project-date').value = today;
+    document.getElementById('complete-project-memo').value = '';
+    
+    modal.classList.remove('hidden');
+}
+
 async function restoreProject(projectId) {
     try {
         await invoke('plugin:pm|restore_project', { projectId });
@@ -2292,12 +2453,23 @@ async function refreshProjects() {
                 <h4>${p.name}</h4>
                 <div class="client">${p.client || 'Internal Project'}</div>
                 <div class="project-actions-mini">
+                    <button class="btn-icon complete-project-btn" title="Complete Project" style="margin-right: 8px;">
+                        ✅
+                    </button>
                     <button class="btn-icon delete-project-btn" title="Delete">
                         🗑️
                     </button>
                 </div>
             `;
             item.addEventListener('click', () => loadProjectDetails(p.id));
+
+            const completeBtn = item.querySelector('.complete-project-btn');
+            if (completeBtn) {
+                completeBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    openCompleteProjectModal(p);
+                };
+            }
 
             const delBtn = item.querySelector('.delete-project-btn');
             if (delBtn) {
@@ -2312,11 +2484,13 @@ async function refreshProjects() {
                             const isActiveSelected = activeItem && activeItem.querySelector('h4').textContent === p.name;
                             if (isActiveSelected) {
                                 document.getElementById('detail-project-name').textContent = 'Select a Project';
-                                document.getElementById('detail-project-meta').textContent = 'Client: - | Manager: -';
+                                document.getElementById('detail-project-meta').textContent = 'Client: - | Manager: - | Start Date: -';
                                 document.getElementById('detail-project-desc').textContent = 'No description available.';
                                 document.getElementById('detail-project-tag').classList.add('hidden');
                                 const btnEditProject = document.getElementById('btn-edit-project');
                                 if (btnEditProject) btnEditProject.classList.add('hidden');
+                                const btnExportHtml = document.getElementById('pm-timetable-export-html');
+                                if (btnExportHtml) btnExportHtml.classList.add('hidden');
                             }
                             
                             await refreshProjects();
@@ -2367,7 +2541,11 @@ async function loadProjectDetails(projectId) {
         btnEditProject.classList.remove('hidden');
         btnEditProject.onclick = () => openProjectModal(project);
     }
-    document.getElementById('detail-project-meta').textContent = `Client: ${project.client || '-'} | Manager: ${project.manager || '-'}`;
+    const btnExportHtml = document.getElementById('pm-timetable-export-html');
+    if (btnExportHtml) {
+        btnExportHtml.classList.remove('hidden');
+    }
+    document.getElementById('detail-project-meta').textContent = `Client: ${project.client || '-'} | Manager: ${project.manager || '-'} | Start Date: ${project.start_date || '-'}`;
 
     // Update Status Tab
     document.getElementById('detail-project-desc').textContent = project.description || 'No description available.';
@@ -2382,15 +2560,68 @@ async function loadProjectDetails(projectId) {
     if (dept3Input) dept3Input.value = project.dept3_name || 'Elec';
     if (dept4Input) dept4Input.value = project.dept4_name || 'Sales';
 
-    // Rename Columns on Kanban Board
+    // Rename and Style Columns on Kanban Board to match Timetable department colors
     const col1 = document.getElementById('col-header-dept1');
     const col2 = document.getElementById('col-header-dept2');
     const col3 = document.getElementById('col-header-dept3');
     const col4 = document.getElementById('col-header-dept4');
-    if (col1) col1.textContent = project.dept1_name || 'Mech';
-    if (col2) col2.textContent = project.dept2_name || 'Control';
-    if (col3) col3.textContent = project.dept3_name || 'Elec';
-    if (col4) col4.textContent = project.dept4_name || 'Sales';
+    
+    if (col1) {
+        col1.textContent = project.dept1_name || 'Mech';
+        col1.style.color = '#3b82f6';
+        col1.style.borderBottom = '1px solid rgba(59, 130, 246, 0.25)';
+        if (col1.parentElement) {
+            col1.parentElement.style.border = '1px solid rgba(59, 130, 246, 0.2)';
+            col1.parentElement.style.background = 'rgba(59, 130, 246, 0.015)';
+            const btn1 = col1.parentElement.querySelector('.btn-add-log-col');
+            if (btn1) {
+                btn1.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                btn1.style.color = 'rgba(59, 130, 246, 0.8)';
+            }
+        }
+    }
+    if (col2) {
+        col2.textContent = project.dept2_name || 'Control';
+        col2.style.color = '#f59e0b';
+        col2.style.borderBottom = '1px solid rgba(245, 158, 11, 0.25)';
+        if (col2.parentElement) {
+            col2.parentElement.style.border = '1px solid rgba(245, 158, 11, 0.2)';
+            col2.parentElement.style.background = 'rgba(245, 158, 11, 0.015)';
+            const btn2 = col2.parentElement.querySelector('.btn-add-log-col');
+            if (btn2) {
+                btn2.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                btn2.style.color = 'rgba(245, 158, 11, 0.8)';
+            }
+        }
+    }
+    if (col3) {
+        col3.textContent = project.dept3_name || 'Elec';
+        col3.style.color = '#10b981';
+        col3.style.borderBottom = '1px solid rgba(16, 185, 129, 0.25)';
+        if (col3.parentElement) {
+            col3.parentElement.style.border = '1px solid rgba(16, 185, 129, 0.2)';
+            col3.parentElement.style.background = 'rgba(16, 185, 129, 0.015)';
+            const btn3 = col3.parentElement.querySelector('.btn-add-log-col');
+            if (btn3) {
+                btn3.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                btn3.style.color = 'rgba(16, 185, 129, 0.8)';
+            }
+        }
+    }
+    if (col4) {
+        col4.textContent = project.dept4_name || 'Sales';
+        col4.style.color = '#ef4444';
+        col4.style.borderBottom = '1px solid rgba(239, 68, 68, 0.25)';
+        if (col4.parentElement) {
+            col4.parentElement.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+            col4.parentElement.style.background = 'rgba(239, 68, 68, 0.015)';
+            const btn4 = col4.parentElement.querySelector('.btn-add-log-col');
+            if (btn4) {
+                btn4.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                btn4.style.color = 'rgba(239, 68, 68, 0.8)';
+            }
+        }
+    }
 
     // Update Log Modal Department Select
     const logDeptSelect = document.getElementById('log-department');
@@ -3532,7 +3763,9 @@ function renderStatusGrid(project) {
 
 function generateProjectHtml(project, milestones, logs) {
     const sortedMilestones = [...milestones].filter(m => m.is_saved && (m.name || m.deadline)).sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
-    const sortedLogs = [...logs].filter(l => !l.is_deleted).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const activeLogs = [...logs].filter(l => !l.is_deleted && l.status !== 'done').sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const doneLogs = [...logs].filter(l => !l.is_deleted && l.status === 'done').sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const deletedLogs = [...logs].filter(l => l.is_deleted).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     const formatTimestamp = (tsString) => {
         if (!tsString) return '';
@@ -3560,16 +3793,79 @@ function generateProjectHtml(project, milestones, logs) {
         </tr>
     `).join('');
 
-    let logRowsHtml = sortedLogs.map(l => `
+    let logRowsHtml = activeLogs.map(l => `
         <tr style="border-bottom: 1px solid #e2e8f0;">
             <td style="padding: 12px; color: #2563eb; font-weight: bold;">[${l.department.toUpperCase()}]</td>
             <td style="padding: 12px; color: #0f172a; font-weight: bold;">${l.title}</td>
             <td style="padding: 12px; color: #334155; font-size: 13px;">${(l.text_content || '').replace(/\n/g, '<br>')}</td>
             <td style="padding: 12px; color: #475569; font-size: 12px;">${l.manager || '-'}</td>
-            <td style="padding: 12px; color: #64748b; font-size: 12px;">${(l.start_date || l.due_date) ? (l.start_date || '-') + ' ~ ' + (l.due_date || '-') : '-'}</td>
-            <td style="padding: 12px; color: #64748b; font-size: 12px;">${formatTimestamp(l.timestamp)}</td>
+            <td style="padding: 12px; color: #64748b; font-size: 12px; line-height: 1.4;">${(l.start_date || l.due_date) ? (l.start_date || '-') + '<br>~ ' + (l.due_date || '-') : '-'}</td>
         </tr>
     `).join('');
+
+    let doneLogRowsHtml = doneLogs.map(l => `
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px; color: #475569; font-weight: bold;">[${l.department.toUpperCase()}]</td>
+            <td style="padding: 12px; color: #0f172a; font-weight: bold;">${l.title}</td>
+            <td style="padding: 12px; color: #334155; font-size: 13px;">${(l.text_content || '').replace(/\n/g, '<br>')}</td>
+            <td style="padding: 12px; color: #475569; font-size: 12px;">${l.manager || '-'}</td>
+            <td style="padding: 12px; color: #64748b; font-size: 12px; line-height: 1.4;">${(l.start_date || l.due_date) ? (l.start_date || '-') + '<br>~ ' + (l.due_date || '-') : '-'}</td>
+            <td style="padding: 12px; color: #16a34a; font-weight: bold; font-size: 12px;">✓ Done</td>
+        </tr>
+    `).join('');
+
+    let deletedLogRowsHtml = deletedLogs.map(l => `
+        <tr style="border-bottom: 1px solid #e2e8f0; background: #fff8f8;">
+            <td style="padding: 12px; color: #ef4444; font-weight: bold;">[${l.department.toUpperCase()}]</td>
+            <td style="padding: 12px; color: #475569; font-weight: bold; text-decoration: line-through;">${l.title}</td>
+            <td style="padding: 12px; color: #94a3b8; font-size: 13px; text-decoration: line-through;">${(l.text_content || '').replace(/\n/g, '<br>')}</td>
+            <td style="padding: 12px; color: #94a3b8; font-size: 12px;">${l.manager || '-'}</td>
+            <td style="padding: 12px; color: #64748b; font-size: 12px; line-height: 1.4; text-decoration: line-through;">${(l.start_date || l.due_date) ? (l.start_date || '-') + '<br>~ ' + (l.due_date || '-') : '-'}</td>
+            <td style="padding: 12px; color: #ef4444; font-weight: bold; font-size: 12px;">🗑 Deleted</td>
+        </tr>
+    `).join('');
+
+    const dept1Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept1_name || 'Mech').toLowerCase());
+    const dept2Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept2_name || 'Control').toLowerCase());
+    const dept3Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept3_name || 'Elec').toLowerCase());
+    const dept4Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept4_name || 'Sales').toLowerCase());
+
+    const renderDeptCards = (deptLogs, signatureColor) => {
+        if (deptLogs.length === 0) {
+            return `<div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 20px; border: 1px dashed #e2e8f0; border-radius: 8px;">No active logs</div>`;
+        }
+        return deptLogs.map(l => `
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid ${signatureColor}; border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); page-break-inside: avoid; break-inside: avoid;">
+                <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 4px;">${l.title}</div>
+                <div style="color: #475569; font-size: 12px; margin-bottom: 8px; line-height: 1.4; word-break: break-all;">${(l.text_content || '').replace(/\n/g, '<br>')}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 6px; flex-wrap: wrap; gap: 4px;">
+                    <span>👤 ${l.manager || '-'}</span>
+                    <span>📅 ${(l.start_date || l.due_date) ? (l.start_date || '-') + ' ~ ' + (l.due_date || '-') : '-'}</span>
+                </div>
+            </div>
+        `).join('');
+    };
+
+    const deptColumnsHtml = `
+        <div class="dept-kanban-print" style="display: flex; gap: 16px; margin-bottom: 35px; width: 100%; flex-wrap: nowrap;">
+            <div style="flex: 1; min-width: 0; background: rgba(59, 130, 246, 0.015); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+                <div style="text-align: center; font-weight: 800; font-size: 14px; color: #3b82f6; text-transform: uppercase; border-bottom: 2px solid rgba(59, 130, 246, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept1_name || 'Mech').toUpperCase()}</div>
+                <div>${renderDeptCards(dept1Logs, '#3b82f6')}</div>
+            </div>
+            <div style="flex: 1; min-width: 0; background: rgba(245, 158, 11, 0.015); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+                <div style="text-align: center; font-weight: 800; font-size: 14px; color: #f59e0b; text-transform: uppercase; border-bottom: 2px solid rgba(245, 158, 11, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept2_name || 'Control').toUpperCase()}</div>
+                <div>${renderDeptCards(dept2Logs, '#f59e0b')}</div>
+            </div>
+            <div style="flex: 1; min-width: 0; background: rgba(16, 185, 129, 0.015); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+                <div style="text-align: center; font-weight: 800; font-size: 14px; color: #10b981; text-transform: uppercase; border-bottom: 2px solid rgba(16, 185, 129, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept3_name || 'Elec').toUpperCase()}</div>
+                <div>${renderDeptCards(dept3Logs, '#10b981')}</div>
+            </div>
+            <div style="flex: 1; min-width: 0; background: rgba(239, 68, 68, 0.015); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+                <div style="text-align: center; font-weight: 800; font-size: 14px; color: #ef4444; text-transform: uppercase; border-bottom: 2px solid rgba(239, 68, 68, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept4_name || 'Sales').toUpperCase()}</div>
+                <div>${renderDeptCards(dept4Logs, '#ef4444')}</div>
+            </div>
+        </div>
+    `;
 
     return `<!DOCTYPE html>
 <html>
@@ -3899,6 +4195,10 @@ function generateProjectHtml(project, milestones, logs) {
         .badge.note { background: #94a3b8; }
 
         @media print {
+            @page {
+                size: A4 landscape;
+                margin: 10mm 12mm;
+            }
             .timetable-controls, #global-timetable-tooltip, #pm-timetable-log-detail {
                 display: none !important;
             }
@@ -3906,16 +4206,26 @@ function generateProjectHtml(project, milestones, logs) {
                 background: #fff !important;
                 color: #000 !important;
                 padding: 0 !important;
+                margin: 0 !important;
+                font-size: 12px !important;
             }
             .container {
                 max-width: 100% !important;
+                width: 100% !important;
                 border: none !important;
                 box-shadow: none !important;
                 padding: 0 !important;
+                margin: 0 !important;
                 background: transparent !important;
             }
             h3, .project-title {
                 color: #000 !important;
+            }
+            h3 {
+                margin-top: 25px !important;
+                margin-bottom: 12px !important;
+                page-break-after: avoid;
+                break-after: avoid;
             }
             .meta-text {
                 color: #555 !important;
@@ -3923,6 +4233,14 @@ function generateProjectHtml(project, milestones, logs) {
             .timetable-container {
                 border: 1px solid #ccc !important;
                 background: transparent !important;
+                width: 100% !important;
+                min-width: unset !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .timetable-header, .timetable-body {
+                min-width: unset !important;
+                width: 100% !important;
             }
             .timetable-header {
                 background: #eee !important;
@@ -3940,6 +4258,15 @@ function generateProjectHtml(project, milestones, logs) {
             .timetable-day-col.today {
                 background: #eee !important;
             }
+            .timetable-track {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            table {
+                width: 100% !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
             table th {
                 background: #eee !important;
                 color: #000 !important;
@@ -3947,6 +4274,8 @@ function generateProjectHtml(project, milestones, logs) {
             }
             tr {
                 border-bottom: 1px solid #eee !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
         }
     </style>
@@ -3960,9 +4289,13 @@ function generateProjectHtml(project, milestones, logs) {
             <div class="meta-text">
                 Client: <strong>${project.client || '-'}</strong> | 
                 Manager: <strong>${project.manager || '-'}</strong> | 
+                Start Date: <strong>${project.start_date || '-'}</strong> | 
                 Generated: <strong>${new Date().toLocaleString()}</strong>
             </div>
-            <p style="margin-top: 15px; color: #334155; font-size: 15px;">${project.description || 'No description available.'}</p>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-top: 20px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.01);">
+                <h4 style="margin: 0 0 8px 0; color: #0f172a; font-size: 15px; font-weight: 700; border-left: 3px solid #2563eb; padding-left: 8px;">Project Overview</h4>
+                <p style="margin: 0; color: #334155; font-size: 13.5px; white-space: pre-line; line-height: 1.6;">${project.description || 'No description available.'}</p>
+            </div>
         </div>
 
         <h3>Project Timetable (Gantt Chart)</h3>
@@ -4003,6 +4336,9 @@ function generateProjectHtml(project, milestones, logs) {
             <div id="pm-timetable-detail-content" style="white-space: pre-wrap; font-size: 13px; color: #475569; line-height: 1.6;"></div>
         </div>
 
+        <h3>Departmental Status Board</h3>
+        ${deptColumnsHtml}
+
         <h3>Project Milestones</h3>
         <table>
             <thead>
@@ -4022,16 +4358,49 @@ function generateProjectHtml(project, milestones, logs) {
         <table>
             <thead>
                 <tr>
-                    <th style="width: 140px;">Slot</th>
-                    <th style="width: 220px;">Title</th>
+                    <th style="width: 110px;">Slot</th>
+                    <th style="width: 160px;">Title</th>
                     <th>Details</th>
-                    <th style="width: 120px;">PIC</th>
-                    <th style="width: 180px;">Duration</th>
-                    <th style="width: 160px;">Time</th>
+                    <th style="width: 90px;">PIC</th>
+                    <th style="width: 110px;">Duration</th>
                 </tr>
             </thead>
             <tbody>
-                ${logRowsHtml || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #475569;">No status logs recorded yet.</td></tr>'}
+                ${logRowsHtml || '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #475569;">No status logs recorded yet.</td></tr>'}
+            </tbody>
+        </table>
+
+        <h3>Done Status Logs</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 120px;">Slot</th>
+                    <th style="width: 160px;">Title</th>
+                    <th>Details</th>
+                    <th style="width: 90px;">PIC</th>
+                    <th style="width: 110px;">Duration</th>
+                    <th style="width: 110px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${doneLogRowsHtml || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #475569;">No done logs recorded yet.</td></tr>'}
+            </tbody>
+        </table>
+
+        <h3>Deleted Status Logs</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 120px;">Slot</th>
+                    <th style="width: 160px;">Title</th>
+                    <th>Details</th>
+                    <th style="width: 90px;">PIC</th>
+                    <th style="width: 110px;">Duration</th>
+                    <th style="width: 110px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${deletedLogRowsHtml || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #475569;">No deleted logs recorded yet.</td></tr>'}
             </tbody>
         </table>
     </div>

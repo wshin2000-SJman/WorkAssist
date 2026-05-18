@@ -17,7 +17,7 @@ impl PmModule {
     pub fn get_active_projects(&self, owner_id: i64) -> Result<Vec<Project>> {
         let conn = self.storage.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, owner_id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted 
+            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo 
              FROM projects WHERE (owner_id = ? OR owner_id = 999) AND status = 'active' AND is_deleted = 0 ORDER BY created_at DESC"
         )?;
         
@@ -29,14 +29,17 @@ impl PmModule {
                 description: row.get(3)?,
                 manager: row.get(4)?,
                 client: row.get(5)?,
-                created_at: row.get(6)?,
-                status: row.get(7)?,
-                dept1_name: row.get(8)?,
-                dept2_name: row.get(9)?,
-                dept3_name: row.get(10)?,
-                dept4_name: row.get(11)?,
-                project_tag: row.get(12)?,
-                is_deleted: row.get(13)?,
+                start_date: row.get(6)?,
+                created_at: row.get(7)?,
+                status: row.get(8)?,
+                dept1_name: row.get(9)?,
+                dept2_name: row.get(10)?,
+                dept3_name: row.get(11)?,
+                dept4_name: row.get(12)?,
+                project_tag: row.get(13)?,
+                is_deleted: row.get(14)?,
+                completion_date: row.get(15)?,
+                completion_memo: row.get(16)?,
             })
         })?;
 
@@ -54,22 +57,48 @@ impl PmModule {
         let conn = self.storage.conn.lock().unwrap();
 
         if let Some(id) = project.id {
+            // Fetch old department names before updating the project
+            let mut stmt = conn.prepare("SELECT dept1_name, dept2_name, dept3_name, dept4_name FROM projects WHERE id = ?")?;
+            let old_depts: Option<(String, String, String, String)> = stmt.query_row(params![id], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+            }).ok();
+
             conn.execute(
-                "UPDATE projects SET name = ?, description = ?, manager = ?, client = ?, dept1_name = ?, dept2_name = ?, dept3_name = ?, dept4_name = ?, project_tag = ?, is_deleted = ? WHERE id = ?",
+                "UPDATE projects SET name = ?, description = ?, manager = ?, client = ?, start_date = ?, dept1_name = ?, dept2_name = ?, dept3_name = ?, dept4_name = ?, project_tag = ?, is_deleted = ?, completion_date = ?, completion_memo = ? WHERE id = ?",
                 params![
                     project.name,
                     project.description,
                     project.manager,
                     project.client,
+                    project.start_date,
                     project.dept1_name,
                     project.dept2_name,
                     project.dept3_name,
                     project.dept4_name,
                     project.project_tag,
                     project.is_deleted,
+                    project.completion_date,
+                    project.completion_memo,
                     id
                 ],
             )?;
+
+            // Cascade update status logs if department names were modified
+            if let Some((o1, o2, o3, o4)) = old_depts {
+                if o1 != project.dept1_name {
+                    conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept1_name, id, o1])?;
+                }
+                if o2 != project.dept2_name {
+                    conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept2_name, id, o2])?;
+                }
+                if o3 != project.dept3_name {
+                    conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept3_name, id, o3])?;
+                }
+                if o4 != project.dept4_name {
+                    conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept4_name, id, o4])?;
+                }
+            }
+
             let _ = self.storage.save_project_dual(&conn, &project, id);
             Ok(id)
         } else {
@@ -79,14 +108,15 @@ impl PmModule {
             project.project_tag = Some(crate::storage::Storage::generate_sequential_tag(&conn, "projects", "P", &now_local));
 
             conn.execute(
-                "INSERT INTO projects (owner_id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO projects (owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 params![
                     project.owner_id,
                     project.name,
                     project.description,
                     project.manager,
                     project.client,
+                    project.start_date,
                     project.created_at,
                     project.status,
                     project.dept1_name,
@@ -95,6 +125,8 @@ impl PmModule {
                     project.dept4_name,
                     project.project_tag,
                     project.is_deleted,
+                    project.completion_date,
+                    project.completion_memo,
                 ],
             )?;
             let project_id = conn.last_insert_rowid();
@@ -260,7 +292,7 @@ impl PmModule {
     pub fn get_deleted_projects(&self, owner_id: i64) -> Result<Vec<Project>> {
         let conn = self.storage.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, owner_id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted 
+            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo 
              FROM projects WHERE (owner_id = ? OR owner_id = 999) AND is_deleted = 1 ORDER BY created_at DESC"
         )?;
         
@@ -272,14 +304,17 @@ impl PmModule {
                 description: row.get(3)?,
                 manager: row.get(4)?,
                 client: row.get(5)?,
-                created_at: row.get(6)?,
-                status: row.get(7)?,
-                dept1_name: row.get(8)?,
-                dept2_name: row.get(9)?,
-                dept3_name: row.get(10)?,
-                dept4_name: row.get(11)?,
-                project_tag: row.get(12)?,
-                is_deleted: row.get(13)?,
+                start_date: row.get(6)?,
+                created_at: row.get(7)?,
+                status: row.get(8)?,
+                dept1_name: row.get(9)?,
+                dept2_name: row.get(10)?,
+                dept3_name: row.get(11)?,
+                dept4_name: row.get(12)?,
+                project_tag: row.get(13)?,
+                is_deleted: row.get(14)?,
+                completion_date: row.get(15)?,
+                completion_memo: row.get(16)?,
             })
         })?;
 
@@ -299,6 +334,77 @@ impl PmModule {
     pub fn hard_delete_project(&self, project_id: i64) -> Result<()> {
         let conn = self.storage.conn.lock().unwrap();
         self.storage.delete_project_dual(&conn, project_id)?;
+        Ok(())
+    }
+
+    pub fn complete_project(&self, project_id: i64, completion_date: String, completion_memo: String) -> Result<()> {
+        let conn = self.storage.conn.lock().unwrap();
+        // 1. Update Raw DB
+        conn.execute(
+            "UPDATE projects SET status = 'done', completion_date = ?, completion_memo = ? WHERE id = ?",
+            params![completion_date, completion_memo, project_id]
+        )?;
+
+        // 2. Update Shadow DB (De-identified)
+        let s_comp_memo = crate::storage::security::SecurityEngine::tokenize(&conn, &completion_memo);
+        conn.execute(
+            "UPDATE shadow_projects SET status = 'done', completion_date = ?, completion_memo = ? WHERE id = ?",
+            params![completion_date, s_comp_memo, project_id]
+        )?;
+
+        Ok(())
+    }
+
+    pub fn get_completed_projects(&self, owner_id: i64) -> Result<Vec<Project>> {
+        let conn = self.storage.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo 
+             FROM projects WHERE (owner_id = ? OR owner_id = 999) AND status = 'done' AND is_deleted = 0 ORDER BY completion_date DESC"
+        )?;
+        
+        let project_iter = stmt.query_map(params![owner_id], |row| {
+            Ok(Project {
+                id: Some(row.get(0)?),
+                owner_id: Some(row.get(1)?),
+                name: row.get(2)?,
+                description: row.get(3)?,
+                manager: row.get(4)?,
+                client: row.get(5)?,
+                start_date: row.get(6)?,
+                created_at: row.get(7)?,
+                status: row.get(8)?,
+                dept1_name: row.get(9)?,
+                dept2_name: row.get(10)?,
+                dept3_name: row.get(11)?,
+                dept4_name: row.get(12)?,
+                project_tag: row.get(13)?,
+                is_deleted: row.get(14)?,
+                completion_date: row.get(15)?,
+                completion_memo: row.get(16)?,
+            })
+        })?;
+
+        let mut projects = Vec::new();
+        for project in project_iter {
+            projects.push(project?);
+        }
+        Ok(projects)
+    }
+
+    pub fn reactivate_project(&self, project_id: i64) -> Result<()> {
+        let conn = self.storage.conn.lock().unwrap();
+        // 1. Update Raw DB
+        conn.execute(
+            "UPDATE projects SET status = 'active', completion_date = NULL, completion_memo = NULL WHERE id = ?",
+            params![project_id]
+        )?;
+
+        // 2. Update Shadow DB
+        conn.execute(
+            "UPDATE shadow_projects SET status = 'active', completion_date = NULL, completion_memo = NULL WHERE id = ?",
+            params![project_id]
+        )?;
+
         Ok(())
     }
 }
@@ -380,6 +486,21 @@ pub async fn hard_delete_project_cmd(api: tauri::State<'_, crate::api::Api>, pro
     api.pm().hard_delete_project(project_id).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn complete_project(api: tauri::State<'_, crate::api::Api>, project_id: i64, completion_date: String, completion_memo: String) -> Result<(), String> {
+    api.pm().complete_project(project_id, completion_date, completion_memo).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_completed_projects(api: tauri::State<'_, crate::api::Api>, owner_id: i64) -> Result<Vec<Project>, String> {
+    api.pm().get_completed_projects(owner_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn reactivate_project(api: tauri::State<'_, crate::api::Api>, project_id: i64) -> Result<(), String> {
+    api.pm().reactivate_project(project_id).map_err(|e| e.to_string())
+}
+
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("pm")
         .invoke_handler(tauri::generate_handler![
@@ -397,7 +518,10 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             delete_project,
             get_deleted_projects,
             restore_project,
-            hard_delete_project_cmd
+            hard_delete_project_cmd,
+            complete_project,
+            get_completed_projects,
+            reactivate_project
         ])
         .build()
 }

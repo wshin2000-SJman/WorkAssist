@@ -174,13 +174,15 @@ body {
   background-color: var(--bg-color);
   color: var(--text-primary);
   height: 100vh;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .app-container {
   display: flex;
   height: 100vh;
   background: transparent;
+  min-width: 1440px;
 }
 
 /* Sidebar */
@@ -1208,7 +1210,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   position: relative;
 }
 
-/* Hover Delete Button for Project Cards */
+/* Hover Delete & Complete Button for Project Cards */
 .project-actions-mini {
   position: absolute;
   top: 15px;
@@ -1216,6 +1218,8 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   opacity: 0;
   transition: opacity 0.2s;
   z-index: 10;
+  display: flex;
+  gap: 8px;
 }
 
 .project-item:hover .project-actions-mini {
@@ -1226,8 +1230,6 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(255, 68, 68, 0.1);
-  color: #ff4444;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1236,8 +1238,24 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   transition: all 0.2s;
 }
 
-.project-actions-mini .btn-icon:hover {
+.project-actions-mini .delete-project-btn {
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+}
+
+.project-actions-mini .delete-project-btn:hover {
   background: #ff4444;
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.project-actions-mini .complete-project-btn {
+  background: rgba(0, 200, 83, 0.1);
+  color: #00c853;
+}
+
+.project-actions-mini .complete-project-btn:hover {
+  background: #00c853;
   color: #fff;
   transform: scale(1.1);
 }

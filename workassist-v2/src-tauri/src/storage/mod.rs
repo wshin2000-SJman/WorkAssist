@@ -251,6 +251,15 @@ impl Storage {
         if !projects_info.contains(&"is_deleted".to_string()) {
             conn.execute("ALTER TABLE projects ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT 0", [])?;
         }
+        if !projects_info.contains(&"start_date".to_string()) {
+            conn.execute("ALTER TABLE projects ADD COLUMN start_date TEXT", [])?;
+        }
+        if !projects_info.contains(&"completion_date".to_string()) {
+            conn.execute("ALTER TABLE projects ADD COLUMN completion_date TEXT", [])?;
+        }
+        if !projects_info.contains(&"completion_memo".to_string()) {
+            conn.execute("ALTER TABLE projects ADD COLUMN completion_memo TEXT", [])?;
+        }
 
         let shadow_projects_info: Vec<String> = {
             let mut stmt = conn.prepare("PRAGMA table_info(shadow_projects)")?;
@@ -259,6 +268,15 @@ impl Storage {
         };
         if !shadow_projects_info.contains(&"project_tag".to_string()) {
             conn.execute("ALTER TABLE shadow_projects ADD COLUMN project_tag TEXT", [])?;
+        }
+        if !shadow_projects_info.contains(&"status".to_string()) {
+            conn.execute("ALTER TABLE shadow_projects ADD COLUMN status TEXT", [])?;
+        }
+        if !shadow_projects_info.contains(&"completion_date".to_string()) {
+            conn.execute("ALTER TABLE shadow_projects ADD COLUMN completion_date TEXT", [])?;
+        }
+        if !shadow_projects_info.contains(&"completion_memo".to_string()) {
+            conn.execute("ALTER TABLE shadow_projects ADD COLUMN completion_memo TEXT", [])?;
         }
 
         Ok(())
@@ -368,10 +386,20 @@ impl Storage {
     pub fn save_project_dual(&self, conn: &rusqlite::Connection, project: &Project, project_id: i64) -> Result<()> {
         let s_name = SecurityEngine::tokenize(conn, &project.name);
         let s_desc = SecurityEngine::tokenize(conn, project.description.as_deref().unwrap_or(""));
+        let s_comp_memo = SecurityEngine::tokenize(conn, project.completion_memo.as_deref().unwrap_or(""));
 
         conn.execute(
-            "INSERT OR REPLACE INTO shadow_projects (id, name, description, project_tag) VALUES (?, ?, ?, ?)",
-            params![project_id, s_name, s_desc, project.project_tag],
+            "INSERT OR REPLACE INTO shadow_projects (id, name, description, project_tag, status, completion_date, completion_memo) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            params![
+                project_id, 
+                s_name, 
+                s_desc, 
+                project.project_tag, 
+                project.status, 
+                project.completion_date, 
+                s_comp_memo
+            ],
         )?;
 
         Ok(())
@@ -460,11 +488,13 @@ impl Storage {
                 description: Some("Developing high-precision gimbal stabilization for industrial drones.".to_string()),
                 manager: Some("Wonseup Shin".to_string()),
                 client: Some("SJ Global".to_string()),
+                start_date: Some(d_m10.clone()),
                 created_at: format!("{}T09:00:00Z", d_m10), status: "active".to_string(),
                 dept1_name: "Control".to_string(), dept2_name: "Hardware".to_string(),
                 dept3_name: "Software".to_string(), dept4_name: "Testing".to_string(),
                 project_tag: Some(format!("P{}-0900-01", &d_m10.replace("-", "")[2..])),
                 is_deleted: false,
+                completion_date: None, completion_memo: None,
             },
             Project {
                 id: None, owner_id: Some(owner_id),
@@ -472,11 +502,13 @@ impl Storage {
                 description: Some("Premium UI/UX overhaul for the core WorkAssist engine.".to_string()),
                 manager: Some("Admin User".to_string()),
                 client: Some("Internal".to_string()),
+                start_date: Some(d_m5.clone()),
                 created_at: format!("{}T10:00:00Z", d_m5), status: "active".to_string(),
                 dept1_name: "Design".to_string(), dept2_name: "Frontend".to_string(),
                 dept3_name: "Backend".to_string(), dept4_name: "QA".to_string(),
                 project_tag: Some(format!("P{}-1000-02", &d_m5.replace("-", "")[2..])),
                 is_deleted: false,
+                completion_date: None, completion_memo: None,
             },
             Project {
                 id: None, owner_id: Some(owner_id),
@@ -484,11 +516,13 @@ impl Storage {
                 description: Some("Implementing SLAM algorithms for indoor warehouse robots.".to_string()),
                 manager: Some("Wonseup Shin".to_string()),
                 client: Some("Logistics Corp".to_string()),
+                start_date: Some(d_today.clone()),
                 created_at: format!("{}T11:00:00Z", d_today), status: "active".to_string(),
                 dept1_name: "Algorithm".to_string(), dept2_name: "Vision".to_string(),
                 dept3_name: "Control".to_string(), dept4_name: "Integration".to_string(),
                 project_tag: Some(format!("P{}-1100-03", &d_today.replace("-", "")[2..])),
                 is_deleted: false,
+                completion_date: None, completion_memo: None,
             },
             Project {
                 id: None, owner_id: Some(owner_id),
@@ -496,19 +530,21 @@ impl Storage {
                 description: Some("Next-gen secure synchronization layer for cross-platform data.".to_string()),
                 manager: Some("Cloud Lead".to_string()),
                 client: Some("SJ Global".to_string()),
+                start_date: Some(d_today.clone()),
                 created_at: format!("{}T14:00:00Z", d_today), status: "active".to_string(),
                 dept1_name: "API".to_string(), dept2_name: "Security".to_string(),
                 dept3_name: "DevOps".to_string(), dept4_name: "Monitoring".to_string(),
                 project_tag: Some(format!("P{}-1400-04", &d_today.replace("-", "")[2..])),
                 is_deleted: false,
+                completion_date: None, completion_memo: None,
             }
         ];
 
         for mut p in projects {
             conn.execute(
-                "INSERT INTO projects (owner_id, name, description, manager, client, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                params![p.owner_id, p.name, p.description, p.manager, p.client, p.created_at, p.status, p.dept1_name, p.dept2_name, p.dept3_name, p.dept4_name, p.project_tag, p.is_deleted],
+                "INSERT INTO projects (owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![p.owner_id, p.name, p.description, p.manager, p.client, p.start_date, p.created_at, p.status, p.dept1_name, p.dept2_name, p.dept3_name, p.dept4_name, p.project_tag, p.is_deleted],
             )?;
             let pid = conn.last_insert_rowid();
             p.id = Some(pid);
@@ -701,6 +737,7 @@ mod tests {
             description: Some("Verification of sequential tags".to_string()),
             manager: Some("Tester".to_string()),
             client: Some("QA".to_string()),
+            start_date: None,
             created_at: "".to_string(),
             status: "active".to_string(),
             dept1_name: "".to_string(),
@@ -709,6 +746,8 @@ mod tests {
             dept4_name: "".to_string(),
             project_tag: None,
             is_deleted: false,
+            completion_date: None,
+            completion_memo: None,
         };
 
         let project_id = pm.add_project(new_project).expect("Failed to add project");

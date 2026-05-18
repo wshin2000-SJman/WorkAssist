@@ -6321,6 +6321,12 @@
           "markdownDescription": "Enables the export_meeting_md command without any pre-configured scope."
         },
         {
+          "description": "Enables the export_minutes_md_bulk command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:allow-export-minutes-md-bulk",
+          "markdownDescription": "Enables the export_minutes_md_bulk command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_deleted_meetings command without any pre-configured scope.",
           "type": "string",
           "const": "minutes:allow-get-deleted-meetings",
@@ -6343,6 +6349,12 @@
           "type": "string",
           "const": "minutes:allow-hard-delete-meeting-cmd",
           "markdownDescription": "Enables the hard_delete_meeting_cmd command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the import_minutes_md_bulk command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:allow-import-minutes-md-bulk",
+          "markdownDescription": "Enables the import_minutes_md_bulk command without any pre-configured scope."
         },
         {
           "description": "Enables the restore_meeting command without any pre-configured scope.",
@@ -6375,6 +6387,12 @@
           "markdownDescription": "Denies the export_meeting_md command without any pre-configured scope."
         },
         {
+          "description": "Denies the export_minutes_md_bulk command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:deny-export-minutes-md-bulk",
+          "markdownDescription": "Denies the export_minutes_md_bulk command without any pre-configured scope."
+        },
+        {
           "description": "Denies the get_deleted_meetings command without any pre-configured scope.",
           "type": "string",
           "const": "minutes:deny-get-deleted-meetings",
@@ -6397,6 +6415,12 @@
           "type": "string",
           "const": "minutes:deny-hard-delete-meeting-cmd",
           "markdownDescription": "Denies the hard_delete_meeting_cmd command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the import_minutes_md_bulk command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:deny-import-minutes-md-bulk",
+          "markdownDescription": "Denies the import_minutes_md_bulk command without any pre-configured scope."
         },
         {
           "description": "Denies the restore_meeting command without any pre-configured scope.",
@@ -6429,6 +6453,12 @@
           "markdownDescription": "Enables the add_status_log command without any pre-configured scope."
         },
         {
+          "description": "Enables the complete_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-complete-project",
+          "markdownDescription": "Enables the complete_project command without any pre-configured scope."
+        },
+        {
           "description": "Enables the delete_project command without any pre-configured scope.",
           "type": "string",
           "const": "pm:allow-delete-project",
@@ -6439,6 +6469,12 @@
           "type": "string",
           "const": "pm:allow-delete-status-log-permanent",
           "markdownDescription": "Enables the delete_status_log_permanent command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_completed_projects command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-get-completed-projects",
+          "markdownDescription": "Enables the get_completed_projects command without any pre-configured scope."
         },
         {
           "description": "Enables the get_deleted_projects command without any pre-configured scope.",
@@ -6475,6 +6511,12 @@
           "type": "string",
           "const": "pm:allow-hard-delete-project-cmd",
           "markdownDescription": "Enables the hard_delete_project_cmd command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the reactivate_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-reactivate-project",
+          "markdownDescription": "Enables the reactivate_project command without any pre-configured scope."
         },
         {
           "description": "Enables the restore_project command without any pre-configured scope.",
@@ -6519,6 +6561,12 @@
           "markdownDescription": "Denies the add_status_log command without any pre-configured scope."
         },
         {
+          "description": "Denies the complete_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-complete-project",
+          "markdownDescription": "Denies the complete_project command without any pre-configured scope."
+        },
+        {
           "description": "Denies the delete_project command without any pre-configured scope.",
           "type": "string",
           "const": "pm:deny-delete-project",
@@ -6529,6 +6577,12 @@
           "type": "string",
           "const": "pm:deny-delete-status-log-permanent",
           "markdownDescription": "Denies the delete_status_log_permanent command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_completed_projects command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-get-completed-projects",
+          "markdownDescription": "Denies the get_completed_projects command without any pre-configured scope."
         },
         {
           "description": "Denies the get_deleted_projects command without any pre-configured scope.",
@@ -6565,6 +6619,12 @@
           "type": "string",
           "const": "pm:deny-hard-delete-project-cmd",
           "markdownDescription": "Denies the hard_delete_project_cmd command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the reactivate_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-reactivate-project",
+          "markdownDescription": "Denies the reactivate_project command without any pre-configured scope."
         },
         {
           "description": "Denies the restore_project command without any pre-configured scope.",

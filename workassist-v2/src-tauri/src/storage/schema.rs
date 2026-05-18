@@ -52,6 +52,7 @@ pub const CREATE_PROJECTS_TABLE: &str = "
         description TEXT,
         manager TEXT,
         client TEXT,
+        start_date TEXT,
         created_at TEXT NOT NULL,
         status TEXT DEFAULT 'active',
         dept1_name TEXT DEFAULT '[DPT. 1]',
@@ -60,6 +61,8 @@ pub const CREATE_PROJECTS_TABLE: &str = "
         dept4_name TEXT DEFAULT '[DPT. 4]',
         project_tag TEXT DEFAULT '',
         is_deleted BOOLEAN NOT NULL DEFAULT 0,
+        completion_date TEXT,
+        completion_memo TEXT,
         FOREIGN KEY (owner_id) REFERENCES users(id)
     );
 ";
@@ -136,7 +139,10 @@ pub const CREATE_SHADOW_PROJECTS_TABLE: &str = "
         id INTEGER PRIMARY KEY, -- Matches original project ID
         name TEXT,
         description TEXT,
-        project_tag TEXT
+        project_tag TEXT,
+        status TEXT,
+        completion_date TEXT,
+        completion_memo TEXT
     );
 ";
 

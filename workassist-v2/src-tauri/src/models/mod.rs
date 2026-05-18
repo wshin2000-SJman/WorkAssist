@@ -52,6 +52,7 @@ pub struct Project {
     pub description: Option<String>,
     pub manager: Option<String>,
     pub client: Option<String>,
+    pub start_date: Option<String>,
     pub created_at: String,
     pub status: String,
     pub dept1_name: String,
@@ -61,6 +62,8 @@ pub struct Project {
     pub project_tag: Option<String>,
     #[serde(default)]
     pub is_deleted: bool,
+    pub completion_date: Option<String>,
+    pub completion_memo: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

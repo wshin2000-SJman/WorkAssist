@@ -283,6 +283,7 @@
             <div class="header-left">
               <button class="btn btn-primary" id="btn-new-project">+ New Project</button>
               <button id="btn-project-trash" class="btn btn-secondary"><span>🗑️</span> Trash Bin</button>
+              <button id="btn-project-completed" class="btn btn-secondary"><span>✅</span> 완료과제</button>
             </div>
           </div>
           <div class="pm-container">
@@ -298,9 +299,10 @@
               <div class="pm-details-header">
                 <div class="project-info-main" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%;">
                   <span id="detail-project-tag" class="tag-badge hidden"></span>
-                  <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
-                    <h2 id="detail-project-name" style="margin: 0;">Select a Project</h2>
-                    <button id="btn-edit-project" class="btn btn-secondary btn-sm hidden" style="padding: 4px 8px; font-size: 12px;">✏️ Edit</button>
+                  <div style="display: flex; align-items: center; gap: 12px; width: 100%; flex-wrap: wrap;">
+                    <h2 id="detail-project-name" style="margin: 0; word-break: break-word; max-width: min(100%, max(180px, calc(100% - 200px)));">Select a Project</h2>
+                    <button id="btn-edit-project" class="btn btn-secondary btn-sm hidden" style="padding: 4px 8px; font-size: 12px; flex-shrink: 0;">✏️ Edit</button>
+                    <button id="pm-timetable-export-html" class="btn btn-outline-accent btn-sm hidden" style="padding: 4px 10px; font-size: 12px; flex-shrink: 0;">Export HTML</button>
                   </div>
                   <p id="detail-project-meta" style="margin: 0;">Client: - | Manager: -</p>
                 </div>
@@ -324,16 +326,16 @@
                   <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px; letter-spacing: 1px;">Department Slot Configuration</h4>
                   <div class="slot-config-bar" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
                     <div class="form-group" style="margin-bottom: 0;">
-                      <input type="text" id="project-dept1-name" placeholder="[Slot 1: Mech]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;">
+                      <input type="text" id="project-dept1-name" placeholder="[Slot 1: Mech]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="15">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                      <input type="text" id="project-dept2-name" placeholder="[Slot 2: Control]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;">
+                      <input type="text" id="project-dept2-name" placeholder="[Slot 2: Control]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="15">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                      <input type="text" id="project-dept3-name" placeholder="[Slot 3: Elec]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;">
+                      <input type="text" id="project-dept3-name" placeholder="[Slot 3: Elec]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="15">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                      <input type="text" id="project-dept4-name" placeholder="[Slot 4: Sales]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;">
+                      <input type="text" id="project-dept4-name" placeholder="[Slot 4: Sales]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="15">
                     </div>
                   </div>
                 </div>
@@ -456,8 +458,6 @@
                         <option value="weekly">Weekly</option>
                         <option value="monthly">Monthly</option>
                       </select>
-
-                      <button id="pm-timetable-export-html" class="btn btn-sm btn-outline-accent">Export HTML</button>
                     </div>
                   </div>
 
@@ -577,6 +577,31 @@
                 </tr>
               </thead>
               <tbody id="project-trash-list-body">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Project Completed View -->
+        <div class="view hidden" id="view-project-completed">
+          <div class="view-header">
+            <h2>완료과제 목록 (Completed Projects)</h2>
+            <button class="btn btn-secondary" id="btn-back-project-completed">Back to Project Manager</button>
+          </div>
+          <div class="trash-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Tag</th>
+                  <th>Name</th>
+                  <th>종료일</th>
+                  <th>완료 메모 (피드백)</th>
+                  <th>담당자</th>
+                  <th>고객사</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="project-completed-list-body">
                 <!-- Loaded via JS -->
               </tbody>
             </table>
@@ -884,35 +909,39 @@
       <form id="form-project">
         <input type="hidden" id="project-id">
         <div class="form-group">
-          <label for="project-name">Project Name</label>
-          <input type="text" id="project-name" placeholder="Project Name (e.g., SJ-Gimbal-01)" required>
+          <label for="project-name">Project Name <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 40 chars)</span></label>
+          <input type="text" id="project-name" placeholder="Project Name (e.g., SJ-Gimbal-01)" maxlength="40" required>
         </div>
         <div class="form-group">
-          <label for="project-client">Client</label>
-          <input type="text" id="project-client" placeholder="Customer Name">
+          <label for="project-client">Client <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 20 chars)</span></label>
+          <input type="text" id="project-client" placeholder="Customer Name" maxlength="20">
         </div>
         <div class="form-group">
-          <label for="project-manager">Project Manager</label>
-          <input type="text" id="project-manager" placeholder="PM Name">
+          <label for="project-manager">Project Manager <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 20 chars)</span></label>
+          <input type="text" id="project-manager" placeholder="PM Name" maxlength="20">
         </div>
         <div class="form-group">
-          <label for="project-desc">Description</label>
-          <textarea id="project-desc" rows="3" placeholder="Project overview..."></textarea>
+          <label for="project-start-date">Project Start Date</label>
+          <input type="date" id="project-start-date">
+        </div>
+        <div class="form-group">
+          <label for="project-desc">Description <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 200 chars)</span></label>
+          <textarea id="project-desc" rows="3" placeholder="Project overview..." maxlength="200"></textarea>
         </div>
         <div class="settings-section">
-          <h3>Department / Slot Names</h3>
+          <h3>Department / Slot Names <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 15 chars each)</span></h3>
           <div class="settings-actions-grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept1" placeholder="Slot 1 (e.g. SALES)" value="SALES">
+              <input type="text" id="project-dept1" placeholder="Slot 1 (e.g. SALES)" value="SALES" maxlength="15">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept2" placeholder="Slot 2 (e.g. DESIGN)" value="DESIGN">
+              <input type="text" id="project-dept2" placeholder="Slot 2 (e.g. DESIGN)" value="DESIGN" maxlength="15">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept3" placeholder="Slot 3 (e.g. PROCUR)" value="PROCUREMENT">
+              <input type="text" id="project-dept3" placeholder="Slot 3 (e.g. PROCUR)" value="PROCUREMENT" maxlength="15">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept4" placeholder="Slot 4 (e.g. ASSEMB)" value="ASSEMBLY">
+              <input type="text" id="project-dept4" placeholder="Slot 4 (e.g. ASSEMB)" value="ASSEMBLY" maxlength="15">
             </div>
           </div>
         </div>
@@ -921,6 +950,33 @@
           <div class="footer-right">
             <button type="button" class="btn btn-ghost" id="btn-cancel-project">Cancel</button>
             <button type="submit" class="btn btn-primary">Create Project</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Project Completion Modal -->
+  <div id="modal-complete-project" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>과제 완료 처리 (Complete Project)</h2>
+        <button class="btn-close" id="btn-close-complete-project">&times;</button>
+      </div>
+      <form id="form-complete-project">
+        <input type="hidden" id="complete-project-id">
+        <div class="form-group">
+          <label for="complete-project-date">과제 종료일 (Completion Date) <span style="color: var(--text-secondary); font-weight: normal;">*</span></label>
+          <input type="date" id="complete-project-date" required>
+        </div>
+        <div class="form-group">
+          <label for="complete-project-memo">완료 메모 / 피드백 (Description) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 200 chars)</span></label>
+          <textarea id="complete-project-memo" rows="4" placeholder="과제 수행에 대한 피드백 또는 완료 상세 메모를 입력해 주세요." maxlength="200"></textarea>
+        </div>
+        <div class="modal-footer">
+          <div class="footer-right">
+            <button type="button" class="btn btn-ghost" id="btn-cancel-complete-project">Cancel</button>
+            <button type="submit" class="btn btn-primary">저장 (Save)</button>
           </div>
         </div>
       </form>
@@ -939,16 +995,16 @@
         <input type="hidden" id="ms-project-id">
         <input type="hidden" id="ms-slot-number">
         <div class="form-group">
-          <label>Milestone Name</label>
-          <input type="text" id="ms-name" placeholder="e.g., Design Complete" required>
+          <label>Milestone Name <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 15 chars)</span></label>
+          <input type="text" id="ms-name" placeholder="e.g., Design Complete" maxlength="15" required>
         </div>
         <div class="form-group">
           <label>Deadline</label>
           <input type="date" id="ms-deadline" required>
         </div>
         <div class="form-group">
-          <label>Details / Content</label>
-          <textarea id="ms-content" rows="3" placeholder="Additional notes..."></textarea>
+          <label>Details / Content <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 100 chars)</span></label>
+          <textarea id="ms-content" rows="3" placeholder="Additional notes..." maxlength="100"></textarea>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -989,12 +1045,12 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Update Status (Title)</label>
-          <input type="text" id="log-title" placeholder="Brief status update (e.g., Material ordered)" required>
+          <label>Update Status (Title) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 20 chars)</span></label>
+          <input type="text" id="log-title" placeholder="Brief status update (e.g., Material ordered)" maxlength="20" required>
         </div>
         <div class="form-group">
-          <label>Content / Details</label>
-          <textarea id="log-content" rows="4" placeholder="Detailed update..."></textarea>
+          <label>Content / Details <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 200 chars)</span></label>
+          <textarea id="log-content" rows="4" placeholder="Detailed update..." maxlength="200"></textarea>
         </div>
         <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
           <div class="form-group" style="margin-bottom: 0;">
@@ -1007,8 +1063,8 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Manager (Optional)</label>
-          <input type="text" id="log-manager" placeholder="Person in charge">
+          <label>Manager (Optional) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 15 chars)</span></label>
+          <input type="text" id="log-manager" placeholder="Person in charge" maxlength="15">
         </div>
         <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
           <div class="footer-left" style="display: flex; gap: 8px;">
