@@ -618,7 +618,7 @@ impl Storage {
                 content: Some("Analyze SQLite query latency for the new shadow DB sync logic.".to_string()),
                 manager: Some("Perf Lead".to_string()),
                 start_date: Some(d_p1.clone()), due_date: Some(d_p3.clone()),
-                status: "Todo".to_string(), is_urgent: true, created_at: now.clone(),
+                status: "To-do".to_string(), is_urgent: true, created_at: now.clone(),
                 review_comment: None, task_tag: Some(format!("T{}-1420-04", &d_p1.replace("-", "")[2..])), is_deleted: false,
             }
         ];

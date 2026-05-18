@@ -983,6 +983,7 @@ function setupModals() {
                     const existingTask = currentTasks.find(t => t.id === parseInt(taskId));
                     if (existingTask) {
                         newTask.status = existingTask.status;
+                        if (newTask.status === 'Todo') newTask.status = 'To-do';
                         newTask.is_deleted = existingTask.is_deleted;
                         newTask.review_comment = existingTask.review_comment;
                         newTask.task_tag = existingTask.task_tag;
@@ -2245,6 +2246,7 @@ function renderKanban() {
 
     filteredTasks.forEach(t => {
         let displayStatus = t.status;
+        if (displayStatus === 'Todo') displayStatus = 'To-do';
         
         const col = document.querySelector(`.kanban-column[data-status="${displayStatus}"]`);
         if (col) {
