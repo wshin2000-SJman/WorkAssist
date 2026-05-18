@@ -592,7 +592,7 @@ impl Storage {
                 manager: Some("Wonseup Shin".to_string()),
                 start_date: Some(d_m2.clone()), due_date: Some(d_p3.clone()),
                 status: "Doing".to_string(), is_urgent: true, created_at: now.clone(),
-                review_comment: None, task_tag: Some("BUG-101".to_string()), is_deleted: false,
+                review_comment: None, task_tag: Some(format!("T{}-0930-01", &d_m2.replace("-", "")[2..])), is_deleted: false,
             },
             Task {
                 id: None, owner_id: Some(owner_id),
@@ -601,7 +601,7 @@ impl Storage {
                 manager: Some("Admin User".to_string()),
                 start_date: Some(d_m10.clone()), due_date: Some(d_p8.clone()),
                 status: "Note".to_string(), is_urgent: false, created_at: now.clone(),
-                review_comment: None, task_tag: Some("MGMT-05".to_string()), is_deleted: false,
+                review_comment: None, task_tag: Some(format!("T{}-1015-02", &d_m10.replace("-", "")[2..])), is_deleted: false,
             },
             Task {
                 id: None, owner_id: Some(owner_id),
@@ -610,7 +610,7 @@ impl Storage {
                 manager: Some("Wonseup Shin".to_string()),
                 start_date: Some(d_today.clone()), due_date: Some(d_p5.clone()),
                 status: "To-do".to_string(), is_urgent: false, created_at: now.clone(),
-                review_comment: None, task_tag: Some("DOC-42".to_string()), is_deleted: false,
+                review_comment: None, task_tag: Some(format!("T{}-1145-03", &d_today.replace("-", "")[2..])), is_deleted: false,
             },
             Task {
                 id: None, owner_id: Some(owner_id),
@@ -619,7 +619,7 @@ impl Storage {
                 manager: Some("Perf Lead".to_string()),
                 start_date: Some(d_p1.clone()), due_date: Some(d_p3.clone()),
                 status: "Todo".to_string(), is_urgent: true, created_at: now.clone(),
-                review_comment: None, task_tag: Some("PERF-01".to_string()), is_deleted: false,
+                review_comment: None, task_tag: Some(format!("T{}-1420-04", &d_p1.replace("-", "")[2..])), is_deleted: false,
             }
         ];
 
