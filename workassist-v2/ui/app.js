@@ -2083,8 +2083,7 @@ function renderMinutesCalendar() {
         meetingsForDay.forEach(m => {
             const meetingEl = document.createElement('div');
             meetingEl.className = 'calendar-meeting-item';
-            const tagPrefix = m.meeting_tag ? `[${m.meeting_tag}] ` : '';
-            meetingEl.textContent = `📝 ${tagPrefix}${m.title}`;
+            meetingEl.textContent = `📝 ${m.title}`;
             meetingEl.title = `${m.title} (${m.meeting_tag || 'No Tag'})`;
             meetingEl.onclick = (e) => {
                 e.stopPropagation();
