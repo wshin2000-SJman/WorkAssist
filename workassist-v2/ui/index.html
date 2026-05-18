@@ -173,6 +173,7 @@
                 <option value="manager">Manager</option>
               </select>
               <input type="text" id="kanban-search" placeholder="Search tasks...">
+              <span class="search-icon">🔍</span>
             </div>
           </div>
 
@@ -258,11 +259,11 @@
             <div class="header-left">
               <button class="btn btn-primary" id="btn-new-meeting">+ New Minutes</button>
               <button id="btn-minutes-trash" class="btn btn-secondary"><span>🗑️</span> Trash Bin</button>
+              <button id="btn-import-minutes-single-md" class="btn btn-outline-accent btn-import-export-md">Import MD<br>from File</button>
+              <button id="btn-import-minutes-md" class="btn btn-outline-accent btn-import-export-md">Import MD<br>from Folder</button>
+              <button id="btn-export-minutes-md" class="btn btn-outline-accent btn-import-export-md">Export MD<br>to Folder</button>
             </div>
-            <div class="header-search" style="display: flex; align-items: center;">
-              <button id="btn-import-minutes-single-md" class="btn btn-outline-accent btn-import-export-md" style="margin-right: 8px;">Import MD<br>from File</button>
-              <button id="btn-import-minutes-md" class="btn btn-outline-accent btn-import-export-md" style="margin-right: 8px;">Import MD<br>from Folder</button>
-              <button id="btn-export-minutes-md" class="btn btn-outline-accent btn-import-export-md" style="margin-right: 16px;">Export MD<br>to Folder</button>
+            <div class="header-search">
               <select id="minutes-search-type" class="search-type-select">
                 <option value="all">All</option>
                 <option value="title">Title</option>

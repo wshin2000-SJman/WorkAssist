@@ -1123,7 +1123,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .header-search {
   position: relative;
   flex: 1;
-  max-width: 480px;
+  max-width: 520px;
   display: flex;
 }
 
