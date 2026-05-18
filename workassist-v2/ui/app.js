@@ -728,8 +728,12 @@ function setupModals() {
                 if (btnEditProject) btnEditProject.classList.add('hidden');
                 const btnExportHtml = document.getElementById('pm-timetable-export-html');
                 if (btnExportHtml) btnExportHtml.classList.add('hidden');
-                document.getElementById('pm-milestones-container').innerHTML = '';
-                document.getElementById('pm-logs-tbody').innerHTML = '';
+                
+                currentProjectId = null;
+                const milestonesGrid = document.getElementById('milestones-grid');
+                if (milestonesGrid) milestonesGrid.innerHTML = '';
+                const pmTimetableContainer = document.getElementById('pm-timetable-container');
+                if (pmTimetableContainer) pmTimetableContainer.innerHTML = '';
             } catch (err) {
                 console.error("Complete Project Submit Error:", err);
                 alert(err);
