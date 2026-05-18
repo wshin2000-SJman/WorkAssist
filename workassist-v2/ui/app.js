@@ -2008,7 +2008,11 @@ function renderCalendar() {
             cell.classList.add('today');
         }
         
-        cell.innerHTML = `<div class="day-number">${i}</div>`;
+        cell.innerHTML = `
+            <div class="day-number">${i}</div>
+            <div class="calendar-day-items"></div>
+        `;
+        const itemsContainer = cell.querySelector('.calendar-day-items');
         
         // Find tasks for this day (based on due_date)
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
@@ -2024,7 +2028,7 @@ function renderCalendar() {
                 e.stopPropagation();
                 openTaskModal(t, false);
             };
-            cell.appendChild(taskEl);
+            itemsContainer.appendChild(taskEl);
         });
 
         grid.appendChild(cell);
@@ -2074,7 +2078,11 @@ function renderMinutesCalendar() {
             cell.classList.add('today');
         }
         
-        cell.innerHTML = `<div class="day-number">${i}</div>`;
+        cell.innerHTML = `
+            <div class="day-number">${i}</div>
+            <div class="calendar-day-items"></div>
+        `;
+        const itemsContainer = cell.querySelector('.calendar-day-items');
         
         // Find meetings for this day
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
@@ -2089,7 +2097,7 @@ function renderMinutesCalendar() {
                 e.stopPropagation();
                 openMeetingModal(m, false);
             };
-            cell.appendChild(meetingEl);
+            itemsContainer.appendChild(meetingEl);
         });
 
         grid.appendChild(cell);
