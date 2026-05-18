@@ -356,16 +356,16 @@
                   <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px; letter-spacing: 1px;">Department Slot Configuration</h4>
                   <div class="slot-config-bar" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
                     <div class="form-group" style="margin-bottom: 0;">
-                      <input type="text" id="project-dept1-name" placeholder="[Slot 1: Mech]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="15">
+                      <input type="text" id="project-dept1-name" placeholder="[Slot 1: Mech]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                      <input type="text" id="project-dept2-name" placeholder="[Slot 2: Control]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="15">
+                      <input type="text" id="project-dept2-name" placeholder="[Slot 2: Control]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                      <input type="text" id="project-dept3-name" placeholder="[Slot 3: Elec]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="15">
+                      <input type="text" id="project-dept3-name" placeholder="[Slot 3: Elec]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                      <input type="text" id="project-dept4-name" placeholder="[Slot 4: Sales]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="15">
+                      <input type="text" id="project-dept4-name" placeholder="[Slot 4: Sales]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
                     </div>
                   </div>
                 </div>
@@ -659,8 +659,8 @@
             <div id="task-status-info" class="status-badge-inline">Note</div>
           </div>
           <div class="form-group">
-            <label for="task-title">Title <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 40 chars)</span></label>
-            <input type="text" id="task-title" placeholder="What needs to be done?" maxlength="40" required>
+            <label for="task-title">Title <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 50 chars)</span></label>
+            <input type="text" id="task-title" placeholder="What needs to be done?" maxlength="50" required>
           </div>
         </div>
         <div class="form-group">
@@ -673,8 +673,8 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="task-manager">Manager <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 15 chars)</span></label>
-            <input type="text" id="task-manager" placeholder="Assignee" maxlength="15">
+            <label for="task-manager">Manager <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 50 chars)</span></label>
+            <input type="text" id="task-manager" placeholder="Assignee" maxlength="50">
           </div>
           <div class="form-group">
             <label>Priority</label>
@@ -943,35 +943,35 @@
           <input type="text" id="project-name" placeholder="Project Name (e.g., SJ-Gimbal-01)" maxlength="40" required>
         </div>
         <div class="form-group">
-          <label for="project-client">Client <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 20 chars)</span></label>
-          <input type="text" id="project-client" placeholder="Customer Name" maxlength="20">
+          <label for="project-client">Client <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 50 chars)</span></label>
+          <input type="text" id="project-client" placeholder="Customer Name" maxlength="50">
         </div>
         <div class="form-group">
-          <label for="project-manager">Project Manager <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 20 chars)</span></label>
-          <input type="text" id="project-manager" placeholder="PM Name" maxlength="20">
+          <label for="project-manager">Project Manager <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 50 chars)</span></label>
+          <input type="text" id="project-manager" placeholder="PM Name" maxlength="50">
         </div>
         <div class="form-group">
           <label for="project-start-date">Project Start Date</label>
           <input type="date" id="project-start-date">
         </div>
         <div class="form-group">
-          <label for="project-desc">Description <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 200 chars)</span></label>
-          <textarea id="project-desc" rows="3" placeholder="Project overview..." maxlength="200"></textarea>
+          <label for="project-desc">Description <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 1000 chars)</span></label>
+          <textarea id="project-desc" rows="3" placeholder="Project overview..." maxlength="1000"></textarea>
         </div>
         <div class="settings-section">
-          <h3>Department / Slot Names <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 15 chars each)</span></h3>
+          <h3>Department / Slot Names <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 30 chars each)</span></h3>
           <div class="settings-actions-grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept1" placeholder="Slot 1 (e.g. SALES)" value="SALES" maxlength="15">
+              <input type="text" id="project-dept1" placeholder="Slot 1 (e.g. SALES)" value="SALES" maxlength="30">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept2" placeholder="Slot 2 (e.g. DESIGN)" value="DESIGN" maxlength="15">
+              <input type="text" id="project-dept2" placeholder="Slot 2 (e.g. DESIGN)" value="DESIGN" maxlength="30">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept3" placeholder="Slot 3 (e.g. PROCUR)" value="PROCUREMENT" maxlength="15">
+              <input type="text" id="project-dept3" placeholder="Slot 3 (e.g. PROCUR)" value="PROCUREMENT" maxlength="30">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept4" placeholder="Slot 4 (e.g. ASSEMB)" value="ASSEMBLY" maxlength="15">
+              <input type="text" id="project-dept4" placeholder="Slot 4 (e.g. ASSEMB)" value="ASSEMBLY" maxlength="30">
             </div>
           </div>
         </div>
