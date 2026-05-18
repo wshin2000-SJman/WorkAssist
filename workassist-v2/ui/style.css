@@ -1370,6 +1370,45 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
 }
 
+.project-actions-bottom-mini {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+}
+
+.project-item:hover .project-actions-bottom-mini {
+  opacity: 1;
+}
+
+.project-actions-bottom-mini .btn-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #fff;
+}
+
+.project-actions-bottom-mini .export-project-btn:hover {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
 .project-item:hover,
 .project-item.active {
   border-color: var(--accent-color);

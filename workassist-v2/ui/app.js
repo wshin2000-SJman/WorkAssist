@@ -219,6 +219,29 @@ const init = () => {
         };
     }
 
+    const btnProjectImport = document.getElementById('btn-project-import');
+    if (btnProjectImport) {
+        btnProjectImport.onclick = async () => {
+            try {
+                const file = await window.__TAURI__.dialog.open({
+                    directory: false,
+                    multiple: false,
+                    title: "Select Project DB File to Import",
+                    filters: [{ name: 'Project DB', extensions: ['json'] }]
+                });
+                
+                if (file) {
+                    await invoke('plugin:pm|import_project_db', { ownerId: currentUser.id, filePath: file });
+                    alert("Project DB imported successfully!");
+                    refreshProjects();
+                }
+            } catch (err) {
+                console.error("Import Project DB Error:", err);
+                alert("Failed to import Project DB: " + err);
+            }
+        };
+    }
+
     const btnBackProjectCompleted = document.getElementById('btn-back-project-completed');
     if (btnBackProjectCompleted) {
         btnBackProjectCompleted.onclick = () => {
@@ -2676,6 +2699,9 @@ async function refreshProjects() {
                     <button class="btn-icon complete-project-btn" title="Complete Project">✓</button>
                     <button class="btn-icon delete-project-btn" title="Delete">🗑️</button>
                 </div>
+                <div class="project-actions-bottom-mini">
+                    <button class="btn-icon export-project-btn" title="Export DB">📤</button>
+                </div>
             `;
             item.addEventListener('click', () => loadProjectDetails(p.id));
 
@@ -2684,6 +2710,27 @@ async function refreshProjects() {
                 completeBtn.onclick = async (e) => {
                     e.stopPropagation();
                     openCompleteProjectModal(p);
+                };
+            }
+
+            const exportBtn = item.querySelector('.export-project-btn');
+            if (exportBtn) {
+                exportBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    try {
+                        const filePath = await window.__TAURI__.dialog.save({
+                            title: "Export Project DB",
+                            filters: [{ name: 'Project DB', extensions: ['json'] }],
+                            defaultPath: `${p.name.replace(/[\/\\?%*:|"<>\s]/g, '_')}_project_db.json`
+                        });
+                        if (filePath) {
+                            await invoke('plugin:pm|export_project_db', { projectId: p.id, filePath: filePath });
+                            alert("Project DB exported successfully!");
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert("Failed to export Project DB: " + err);
+                    }
                 };
             }
 

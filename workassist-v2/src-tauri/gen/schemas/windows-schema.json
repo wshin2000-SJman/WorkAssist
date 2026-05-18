@@ -6357,6 +6357,12 @@
           "markdownDescription": "Enables the import_minutes_md_bulk command without any pre-configured scope."
         },
         {
+          "description": "Enables the import_minutes_md_single command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:allow-import-minutes-md-single",
+          "markdownDescription": "Enables the import_minutes_md_single command without any pre-configured scope."
+        },
+        {
           "description": "Enables the restore_meeting command without any pre-configured scope.",
           "type": "string",
           "const": "minutes:allow-restore-meeting",
@@ -6423,6 +6429,12 @@
           "markdownDescription": "Denies the import_minutes_md_bulk command without any pre-configured scope."
         },
         {
+          "description": "Denies the import_minutes_md_single command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:deny-import-minutes-md-single",
+          "markdownDescription": "Denies the import_minutes_md_single command without any pre-configured scope."
+        },
+        {
           "description": "Denies the restore_meeting command without any pre-configured scope.",
           "type": "string",
           "const": "minutes:deny-restore-meeting",
@@ -6471,6 +6483,12 @@
           "markdownDescription": "Enables the delete_status_log_permanent command without any pre-configured scope."
         },
         {
+          "description": "Enables the export_project_db command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-export-project-db",
+          "markdownDescription": "Enables the export_project_db command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_completed_projects command without any pre-configured scope.",
           "type": "string",
           "const": "pm:allow-get-completed-projects",
@@ -6511,6 +6529,12 @@
           "type": "string",
           "const": "pm:allow-hard-delete-project-cmd",
           "markdownDescription": "Enables the hard_delete_project_cmd command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the import_project_db command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:allow-import-project-db",
+          "markdownDescription": "Enables the import_project_db command without any pre-configured scope."
         },
         {
           "description": "Enables the reactivate_project command without any pre-configured scope.",
@@ -6579,6 +6603,12 @@
           "markdownDescription": "Denies the delete_status_log_permanent command without any pre-configured scope."
         },
         {
+          "description": "Denies the export_project_db command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-export-project-db",
+          "markdownDescription": "Denies the export_project_db command without any pre-configured scope."
+        },
+        {
           "description": "Denies the get_completed_projects command without any pre-configured scope.",
           "type": "string",
           "const": "pm:deny-get-completed-projects",
@@ -6619,6 +6649,12 @@
           "type": "string",
           "const": "pm:deny-hard-delete-project-cmd",
           "markdownDescription": "Denies the hard_delete_project_cmd command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the import_project_db command without any pre-configured scope.",
+          "type": "string",
+          "const": "pm:deny-import-project-db",
+          "markdownDescription": "Denies the import_project_db command without any pre-configured scope."
         },
         {
           "description": "Denies the reactivate_project command without any pre-configured scope.",

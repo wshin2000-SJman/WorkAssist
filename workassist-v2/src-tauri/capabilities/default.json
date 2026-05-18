@@ -48,6 +48,8 @@
     "pm:allow-delete-status-log-permanent",
     "pm:allow-update-status-log-status",
     "pm:allow-update-status-log-deleted",
+    "pm:allow-export-project-db",
+    "pm:allow-import-project-db",
     "gateway:allow-get-ai-ready-tasks",
     "gateway:allow-process-ai-response",
     "engine:allow-manual-backup",

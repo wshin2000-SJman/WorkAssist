@@ -2,8 +2,16 @@ use crate::models::{Project, StatusLog, Milestone};
 use crate::storage::Storage;
 use rusqlite::{params, Result};
 use chrono::Utc;
+use serde::{Serialize, Deserialize};
 
 use std::sync::Arc;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectExportData {
+    pub project: Project,
+    pub milestones: Vec<Milestone>,
+    pub status_logs: Vec<StatusLog>,
+}
 
 pub struct PmModule {
     storage: Arc<Storage>,
@@ -407,6 +415,212 @@ impl PmModule {
 
         Ok(())
     }
+
+    pub fn export_project_db(&self, project_id: i64, file_path: String) -> Result<(), String> {
+        let conn = self.storage.conn.lock().unwrap();
+        
+        // 1. Fetch project
+        let mut stmt = conn.prepare(
+            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo 
+             FROM projects WHERE id = ?"
+        ).map_err(|e| e.to_string())?;
+        
+        let project = stmt.query_row(params![project_id], |row| {
+            Ok(Project {
+                id: Some(row.get(0)?),
+                owner_id: Some(row.get(1)?),
+                name: row.get(2)?,
+                description: row.get(3)?,
+                manager: row.get(4)?,
+                client: row.get(5)?,
+                start_date: row.get(6)?,
+                created_at: row.get(7)?,
+                status: row.get(8)?,
+                dept1_name: row.get(9)?,
+                dept2_name: row.get(10)?,
+                dept3_name: row.get(11)?,
+                dept4_name: row.get(12)?,
+                project_tag: row.get(13)?,
+                is_deleted: row.get(14)?,
+                completion_date: row.get(15)?,
+                completion_memo: row.get(16)?,
+            })
+        }).map_err(|e| format!("Project not found: {}", e))?;
+        
+        // 2. Fetch milestones
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, slot_number, name, deadline, content, is_saved, is_done 
+             FROM milestones WHERE project_id = ?"
+        ).map_err(|e| e.to_string())?;
+        
+        let milestones: Vec<Milestone> = stmt.query_map(params![project_id], |row| {
+            Ok(Milestone {
+                id: Some(row.get(0)?),
+                project_id: row.get(1)?,
+                slot_number: row.get(2)?,
+                name: row.get(3)?,
+                deadline: row.get(4)?,
+                content: row.get(5)?,
+                is_saved: row.get(6)?,
+                is_done: row.get(7)?,
+            })
+        }).map_err(|e| e.to_string())?
+        .filter_map(|m| m.ok())
+        .collect();
+        
+        // 3. Fetch status logs
+        let mut stmt = conn.prepare(
+            "SELECT id, project_id, department, text_content, timestamp, status, tag, title, manager, start_date, due_date, is_deleted 
+             FROM status_logs WHERE project_id = ?"
+        ).map_err(|e| e.to_string())?;
+        
+        let status_logs: Vec<StatusLog> = stmt.query_map(params![project_id], |row| {
+            Ok(StatusLog {
+                id: Some(row.get(0)?),
+                project_id: row.get(1)?,
+                department: row.get(2)?,
+                text_content: row.get(3)?,
+                timestamp: row.get(4)?,
+                status: row.get(5)?,
+                tag: row.get(6)?,
+                title: row.get(7)?,
+                manager: row.get(8)?,
+                start_date: row.get(9)?,
+                due_date: row.get(10)?,
+                is_deleted: row.get(11)?,
+            })
+        }).map_err(|e| e.to_string())?
+        .filter_map(|l| l.ok())
+        .collect();
+        
+        // Serialize
+        let export_data = ProjectExportData {
+            project,
+            milestones,
+            status_logs,
+        };
+        
+        let json_str = serde_json::to_string_pretty(&export_data)
+            .map_err(|e| format!("Failed to serialize data: {}", e))?;
+            
+        std::fs::write(&file_path, json_str)
+            .map_err(|e| format!("Failed to write file: {}", e))?;
+            
+        Ok(())
+    }
+
+    pub fn import_project_db(&self, owner_id: i64, file_path: String) -> Result<(), String> {
+        let json_str = std::fs::read_to_string(&file_path)
+            .map_err(|e| format!("Failed to read file: {}", e))?;
+            
+        let export_data: ProjectExportData = serde_json::from_str(&json_str)
+            .map_err(|e| format!("Failed to parse project DB file: {}", e))?;
+            
+        let conn = self.storage.conn.lock().unwrap();
+        
+        // 1. Insert Project with a brand new ID
+        let now = Utc::now();
+        let now_rfc = now.to_rfc3339();
+        let now_local = now.with_timezone(&chrono::Local);
+        
+        // Generate sequential tag
+        let project_tag = crate::storage::Storage::generate_sequential_tag(&conn, "projects", "P", &now_local);
+        
+        let mut imported_proj = export_data.project;
+        imported_proj.owner_id = Some(owner_id);
+        imported_proj.created_at = now_rfc.clone();
+        imported_proj.project_tag = Some(project_tag);
+        imported_proj.status = "active".to_string(); // Keep imported projects active initially
+        imported_proj.is_deleted = false;
+        
+        conn.execute(
+            "INSERT INTO projects (owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            params![
+                imported_proj.owner_id,
+                imported_proj.name,
+                imported_proj.description,
+                imported_proj.manager,
+                imported_proj.client,
+                imported_proj.start_date,
+                imported_proj.created_at,
+                imported_proj.status,
+                imported_proj.dept1_name,
+                imported_proj.dept2_name,
+                imported_proj.dept3_name,
+                imported_proj.dept4_name,
+                imported_proj.project_tag,
+                imported_proj.is_deleted,
+                imported_proj.completion_date,
+                imported_proj.completion_memo,
+            ],
+        ).map_err(|e| format!("Failed to insert project: {}", e))?;
+        
+        let new_project_id = conn.last_insert_rowid();
+        imported_proj.id = Some(new_project_id);
+        
+        // Sync shadow project
+        let _ = self.storage.save_project_dual(&conn, &imported_proj, new_project_id);
+        
+        // 2. Insert milestones
+        for milestone in export_data.milestones {
+            let mut ms = milestone;
+            ms.id = None; // Generate new ID
+            ms.project_id = new_project_id;
+            
+            conn.execute(
+                "INSERT INTO milestones (project_id, slot_number, name, deadline, content, is_saved, is_done)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)",
+                params![
+                    ms.project_id,
+                    ms.slot_number,
+                    ms.name,
+                    ms.deadline,
+                    ms.content,
+                    ms.is_saved,
+                    ms.is_done,
+                ],
+            ).map_err(|e| format!("Failed to insert milestone: {}", e))?;
+        }
+        
+        // 3. Insert status logs
+        for log in export_data.status_logs {
+            let mut l = log;
+            l.id = None;
+            l.project_id = new_project_id;
+            
+            let log_tag = crate::storage::Storage::generate_sequential_tag(&conn, "status_logs", "L", &now_local);
+            l.tag = Some(log_tag);
+            l.is_deleted = false;
+            
+            conn.execute(
+                "INSERT INTO status_logs (project_id, department, text_content, timestamp, status, tag, title, manager, start_date, due_date, owner_id, is_deleted)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![
+                    l.project_id,
+                    l.department,
+                    l.text_content,
+                    l.timestamp,
+                    l.status,
+                    l.tag,
+                    l.title,
+                    l.manager,
+                    l.start_date,
+                    l.due_date,
+                    Some(owner_id),
+                    l.is_deleted,
+                ],
+            ).map_err(|e| format!("Failed to insert status log: {}", e))?;
+            
+            let new_log_id = conn.last_insert_rowid();
+            l.id = Some(new_log_id);
+            
+            // Sync shadow log
+            let _ = self.storage.save_status_log_dual(&conn, &l, new_log_id);
+        }
+        
+        Ok(())
+    }
 }
 
 // --- PM Plugin Commands ---
@@ -501,6 +715,16 @@ pub async fn reactivate_project(api: tauri::State<'_, crate::api::Api>, project_
     api.pm().reactivate_project(project_id).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn export_project_db(api: tauri::State<'_, crate::api::Api>, project_id: i64, file_path: String) -> Result<(), String> {
+    api.pm().export_project_db(project_id, file_path)
+}
+
+#[tauri::command]
+pub async fn import_project_db(api: tauri::State<'_, crate::api::Api>, owner_id: i64, file_path: String) -> Result<(), String> {
+    api.pm().import_project_db(owner_id, file_path)
+}
+
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("pm")
         .invoke_handler(tauri::generate_handler![
@@ -521,7 +745,9 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             hard_delete_project_cmd,
             complete_project,
             get_completed_projects,
-            reactivate_project
+            reactivate_project,
+            export_project_db,
+            import_project_db
         ])
         .build()
 }
