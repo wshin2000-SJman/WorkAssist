@@ -18,6 +18,7 @@ let currentProjects = [];
 let currentView = 'nav-dashboard';
 let draggingTaskId = null;
 let currentCalendarDate = new Date();
+let currentMinutesCalendarDate = new Date();
 
 let currentUser = null;
 
@@ -228,6 +229,7 @@ const init = () => {
     setupModals();
     setupSettings();
     setupKanbanTabs();
+    setupMinutesTabs();
     initDragAndDrop();
 
     // Global escape key listener
@@ -1646,6 +1648,42 @@ function setupKanbanTabs() {
     }
 }
 
+function setupMinutesTabs() {
+    const tabs = document.querySelectorAll('#view-minutes .view-tab');
+    tabs.forEach(tab => {
+        tab.onclick = () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            const target = tab.getAttribute('data-view');
+            document.querySelectorAll('.minutes-tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`minutes-content-${target}`).classList.add('active');
+            
+            if (target === 'calendar') {
+                renderMinutesCalendar();
+            } else {
+                refreshMinutes();
+            }
+        };
+    });
+
+    // Minutes Calendar Navigation
+    const prevBtn = document.getElementById('minutes-calendar-prev');
+    const nextBtn = document.getElementById('minutes-calendar-next');
+    if (prevBtn) {
+        prevBtn.onclick = () => {
+            currentMinutesCalendarDate.setMonth(currentMinutesCalendarDate.getMonth() - 1);
+            renderMinutesCalendar();
+        };
+    }
+    if (nextBtn) {
+        nextBtn.onclick = () => {
+            currentMinutesCalendarDate.setMonth(currentMinutesCalendarDate.getMonth() + 1);
+            renderMinutesCalendar();
+        };
+    }
+}
+
 function openReviewModal(taskId) {
     document.getElementById('review-task-id').value = taskId;
     document.getElementById('modal-review').classList.remove('hidden');
@@ -2003,6 +2041,72 @@ function renderCalendar() {
     }
 }
 
+function renderMinutesCalendar() {
+    const grid = document.getElementById('minutes-calendar-grid');
+    const monthYear = document.getElementById('minutes-calendar-month-year');
+    if (!grid || !monthYear) return;
+
+    const year = currentMinutesCalendarDate.getFullYear();
+    const month = currentMinutesCalendarDate.getMonth();
+    
+    monthYear.textContent = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentMinutesCalendarDate);
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevDaysInMonth = new Date(year, month, 0).getDate();
+
+    grid.innerHTML = '';
+
+    // Previous month's days
+    for (let i = firstDay - 1; i >= 0; i--) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell other-month';
+        cell.innerHTML = `<div class="day-number">${prevDaysInMonth - i}</div>`;
+        grid.appendChild(cell);
+    }
+
+    // Current month's days
+    const today = new Date();
+    for (let i = 1; i <= daysInMonth; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell';
+        if (year === today.getFullYear() && month === today.getMonth() && i === today.getDate()) {
+            cell.classList.add('today');
+        }
+        
+        cell.innerHTML = `<div class="day-number">${i}</div>`;
+        
+        // Find meetings for this day
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const meetingsForDay = currentMeetings.filter(m => !m.is_deleted && m.date === dateStr);
+        
+        meetingsForDay.forEach(m => {
+            const meetingEl = document.createElement('div');
+            meetingEl.className = 'calendar-meeting-item';
+            const tagPrefix = m.meeting_tag ? `[${m.meeting_tag}] ` : '';
+            meetingEl.textContent = `📝 ${tagPrefix}${m.title}`;
+            meetingEl.title = `${m.title} (${m.meeting_tag || 'No Tag'})`;
+            meetingEl.onclick = (e) => {
+                e.stopPropagation();
+                openMeetingModal(m, false);
+            };
+            cell.appendChild(meetingEl);
+        });
+
+        grid.appendChild(cell);
+    }
+
+    // Next month's days
+    const totalCells = 42;
+    const remainingCells = totalCells - grid.children.length;
+    for (let i = 1; i <= remainingCells; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell other-month';
+        cell.innerHTML = `<div class="day-number">${i}</div>`;
+        grid.appendChild(cell);
+    }
+}
+
 async function loadDashboard() {
     await loadView('nav-dashboard');
 }
@@ -2190,6 +2294,14 @@ function createTaskCard(t) {
 async function refreshMinutes() {
     try {
         currentMeetings = await invoke('plugin:minutes|get_meetings', { ownerId: currentUser.id });
+        
+        const activeTab = document.querySelector('#view-minutes .view-tab.active');
+        const activeView = activeTab ? activeTab.getAttribute('data-view') : 'board';
+        if (activeView === 'calendar') {
+            renderMinutesCalendar();
+            return;
+        }
+
         const searchInput = document.getElementById('minutes-search');
         const searchType = document.getElementById('minutes-search-type');
         const query = searchInput ? searchInput.value.toLowerCase() : '';

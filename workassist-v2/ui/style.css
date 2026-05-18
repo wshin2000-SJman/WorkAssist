@@ -2428,13 +2428,13 @@ tr:has(.status-review) {
   padding: 8px;
 }
 
-/* Kanban Tabs */
-.kanban-tab-content {
+/* Kanban & Minutes Tabs */
+.kanban-tab-content, .minutes-tab-content {
   display: none;
   height: 100%;
 }
 
-.kanban-tab-content.active {
+.kanban-tab-content.active, .minutes-tab-content.active {
   display: block;
 }
 
@@ -2727,6 +2727,28 @@ tr:has(.status-review) {
 .calendar-task-item:hover {
   transform: scale(1.02);
   filter: brightness(1.1);
+}
+
+.calendar-meeting-item {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--accent-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: transform 0.1s, background-color 0.2s;
+  margin-top: 4px;
+}
+
+.calendar-meeting-item:hover {
+  transform: scale(1.02);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-color);
 }
 
 .calendar-task-item.todo {

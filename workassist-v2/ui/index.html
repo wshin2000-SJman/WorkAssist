@@ -263,6 +263,10 @@
               <button id="btn-import-minutes-md" class="btn btn-outline-accent btn-import-export-md">Import MD<br>from Folder</button>
               <button id="btn-export-minutes-md" class="btn btn-outline-accent btn-import-export-md">Export MD<br>to Folder</button>
             </div>
+            <div class="view-tabs">
+              <button class="view-tab active" data-view="board">BOARD</button>
+              <button class="view-tab" data-view="calendar">CALENDAR</button>
+            </div>
             <div class="header-search">
               <select id="minutes-search-type" class="search-type-select">
                 <option value="all">All</option>
@@ -274,8 +278,29 @@
               <span class="search-icon">🔍</span>
             </div>
           </div>
-          <div class="minutes-list" id="minutes-list">
-            <!-- Meeting cards will be rendered here -->
+          
+          <div id="minutes-content-board" class="minutes-tab-content active">
+            <div class="minutes-list" id="minutes-list">
+              <!-- Meeting cards will be rendered here -->
+            </div>
+          </div>
+
+          <div id="minutes-content-calendar" class="minutes-tab-content">
+            <div class="calendar-container">
+              <div class="calendar-header">
+                <div class="calendar-nav">
+                  <button id="minutes-calendar-prev" class="btn-icon">◀</button>
+                  <h3 id="minutes-calendar-month-year">May 2026</h3>
+                  <button id="minutes-calendar-next" class="btn-icon">▶</button>
+                </div>
+              </div>
+              <div class="calendar-grid-header">
+                <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+              </div>
+              <div class="calendar-grid" id="minutes-calendar-grid">
+                <!-- Calendar cells will be rendered here -->
+              </div>
+            </div>
           </div>
         </div>
 
