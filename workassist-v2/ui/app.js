@@ -4962,15 +4962,27 @@ function initDragAndDrop() {
 }
 
 function checkTaskLimits(task, isNew) {
+    // Exclude deleted or completed tasks from limit checks entirely
+    if (task.is_deleted || task.status === 'Done' || task.status === 'Review') {
+        return true;
+    }
+
+    // Filter current tasks to get only active pending tasks (excluding deleted & completed ones)
+    const activeTasks = currentTasks.filter(t => 
+        !t.is_deleted && 
+        t.status !== 'Done' && 
+        t.status !== 'Review'
+    );
+
     // 1. Total Limit: Max 200
-    if (isNew && currentTasks.length >= 200) {
+    if (isNew && activeTasks.length >= 200) {
         alert("Total active tasks limit exceeded: You can only have a maximum of 200 active tasks in total.");
         return false;
     }
 
     // 2. Status Limit: Max 50
     const status = task.status || 'Note';
-    const sameStatusCount = currentTasks.filter(t => t.status === status && t.id !== task.id).length;
+    const sameStatusCount = activeTasks.filter(t => t.status === status && t.id !== task.id).length;
     if (sameStatusCount >= 50) {
         alert(`Task status limit exceeded: Status '${status}' can only have a maximum of 50 tasks.`);
         return false;
@@ -4978,7 +4990,7 @@ function checkTaskLimits(task, isNew) {
 
     // 3. Same-Date Limit: Max 20
     if (task.start_date) {
-        const sameDateCount = currentTasks.filter(t => t.start_date === task.start_date && t.id !== task.id).length;
+        const sameDateCount = activeTasks.filter(t => t.start_date === task.start_date && t.id !== task.id).length;
         if (sameDateCount >= 20) {
             alert(`Task date limit exceeded: Selected start date (${task.start_date}) can only have a maximum of 20 tasks.`);
             return false;
