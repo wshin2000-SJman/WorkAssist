@@ -898,6 +898,8 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .form-row.meeting-meta {
   display: flex;
   grid-template-columns: none;
+  gap: 20px;
+  margin-bottom: 20px;
 }
 
 .form-row.meeting-meta .form-group {
