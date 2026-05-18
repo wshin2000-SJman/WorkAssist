@@ -630,12 +630,12 @@
           </div>
           <div class="form-group">
             <label for="task-title">Title</label>
-            <input type="text" id="task-title" placeholder="What needs to be done?" required>
+            <input type="text" id="task-title" placeholder="What needs to be done?" maxlength="30" required>
           </div>
         </div>
         <div class="form-group">
           <label for="task-content">Content</label>
-          <textarea id="task-content" rows="4" placeholder="Describe the task details..."></textarea>
+          <textarea id="task-content" rows="4" placeholder="Describe the task details..." maxlength="500"></textarea>
         </div>
         <div class="form-group hidden" id="task-review-group">
           <label>Review Feedback</label>
@@ -644,7 +644,7 @@
         <div class="form-row">
           <div class="form-group">
             <label for="task-manager">Manager</label>
-            <input type="text" id="task-manager" placeholder="Assignee">
+            <input type="text" id="task-manager" placeholder="Assignee" maxlength="15">
           </div>
           <div class="form-group">
             <label>Priority</label>

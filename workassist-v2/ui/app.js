@@ -937,6 +937,20 @@ function setupModals() {
                 return;
             }
 
+            // Character length validation
+            if (newTask.title.length > 30) {
+                alert("Task title cannot exceed 30 characters.");
+                return;
+            }
+            if (newTask.content.length > 500) {
+                alert("Task content cannot exceed 500 characters.");
+                return;
+            }
+            if (newTask.manager.length > 15) {
+                alert("Task manager cannot exceed 15 characters.");
+                return;
+            }
+
             try {
                 if (taskId) {
                     // Update existing task
