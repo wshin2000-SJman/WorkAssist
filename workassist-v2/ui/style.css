@@ -1227,37 +1227,35 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .project-actions-mini .btn-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
+  font-size: 13px;
+  flex: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
   cursor: pointer;
   transition: all 0.2s;
-}
-
-.project-actions-mini .delete-project-btn {
-  background: rgba(255, 68, 68, 0.1);
-  color: #ff4444;
+  color: #fff;
 }
 
 .project-actions-mini .delete-project-btn:hover {
-  background: #ff4444;
-  color: #fff;
+  background: #f87171;
+  color: white;
+  border-color: #f87171;
   transform: scale(1.1);
-}
-
-.project-actions-mini .complete-project-btn {
-  background: rgba(0, 200, 83, 0.1);
-  color: #00c853;
+  box-shadow: 0 0 10px rgba(248, 113, 113, 0.4);
 }
 
 .project-actions-mini .complete-project-btn:hover {
-  background: #00c853;
-  color: #fff;
+  background: #34d399;
+  color: white;
+  border-color: #34d399;
   transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
 }
 
 .project-item:hover, .project-item.active {

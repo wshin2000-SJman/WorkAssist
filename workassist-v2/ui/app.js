@@ -2457,12 +2457,8 @@ async function refreshProjects() {
                 <h4>${p.name}</h4>
                 <div class="client">${p.client || 'Internal Project'}</div>
                 <div class="project-actions-mini">
-                    <button class="btn-icon complete-project-btn" title="Complete Project" style="margin-right: 8px;">
-                        ✅
-                    </button>
-                    <button class="btn-icon delete-project-btn" title="Delete">
-                        🗑️
-                    </button>
+                    <button class="btn-icon complete-project-btn" title="Complete Project">✓</button>
+                    <button class="btn-icon delete-project-btn" title="Delete">🗑️</button>
                 </div>
             `;
             item.addEventListener('click', () => loadProjectDetails(p.id));
