@@ -2334,7 +2334,7 @@ async function loadCompletedProjects() {
                 <td>
                     <div class="action-buttons">
                         <button class="btn-restore" data-id="${p.id}" title="Reactivate Project">🔄 Reactivate</button>
-                        <button class="btn-delete-log-permanent" data-id="${p.id}" title="Move to Trash" style="background-color: var(--btn-danger-bg) !important; color: white !important;">🗑️ Trash</button>
+                        <button class="btn-hard-del btn-delete-log-permanent" data-id="${p.id}" title="Move to Trash">🗑️ Trash</button>
                     </div>
                 </td>
             `;
