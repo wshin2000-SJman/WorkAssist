@@ -523,10 +523,29 @@ impl PmModule {
         let now_rfc = now.to_rfc3339();
         let now_local = now.with_timezone(&chrono::Local);
         
-        // Generate sequential tag
-        let project_tag = crate::storage::Storage::generate_sequential_tag(&conn, "projects", "P", &now_local);
-        
         let mut imported_proj = export_data.project;
+        
+        // Retain original tag if present, otherwise generate a fresh sequential tag
+        let project_tag = if let Some(ref tag) = imported_proj.project_tag {
+            tag.clone()
+        } else {
+            crate::storage::Storage::generate_sequential_tag(&conn, "projects", "P", &now_local)
+        };
+        
+        // Prevent duplicate imports of the same project (check if a project with this tag already exists)
+        let exists: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM projects WHERE project_tag = ?)",
+            params![&project_tag],
+            |row| row.get(0)
+        ).unwrap_or(false);
+        
+        if exists {
+            return Err(format!(
+                "The project with Tag '{}' has already been imported or exists.",
+                project_tag
+            ));
+        }
+        
         imported_proj.owner_id = Some(owner_id);
         imported_proj.created_at = now_rfc.clone();
         imported_proj.project_tag = Some(project_tag);
