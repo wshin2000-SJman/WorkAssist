@@ -964,8 +964,8 @@ function setupModals() {
             }
 
             // Character length validation
-            if (newTask.title.length > 30) {
-                alert("Task title cannot exceed 30 characters.");
+            if (newTask.title.length > 40) {
+                alert("Task title cannot exceed 40 characters.");
                 return;
             }
             if (newTask.content.length > 500) {
@@ -1045,8 +1045,8 @@ function setupModals() {
             };
 
             // Character length validation
-            if (meetingData.title && meetingData.title.length > 30) {
-                alert("Meeting title cannot exceed 30 characters.");
+            if (meetingData.title && meetingData.title.length > 40) {
+                alert("Meeting title cannot exceed 40 characters.");
                 return;
             }
             if (meetingData.location && meetingData.location.length > 30) {
