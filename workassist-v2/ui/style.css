@@ -422,6 +422,20 @@ body {
   color: var(--bg-dark);
 }
 
+.btn-import-export-md {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 48px;
+  line-height: 1.1;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 16px;
+  white-space: nowrap;
+}
+
 .status-indicator {
   display: flex;
   align-items: center;
