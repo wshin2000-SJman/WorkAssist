@@ -2078,7 +2078,7 @@ function renderMinutesCalendar() {
         
         // Find meetings for this day
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        const meetingsForDay = currentMeetings.filter(m => !m.is_deleted && m.date === dateStr);
+        const meetingsForDay = currentMeetings.filter(m => !m.is_deleted && m.date && m.date.startsWith(dateStr));
         
         meetingsForDay.forEach(m => {
             const meetingEl = document.createElement('div');
