@@ -9,7 +9,7 @@ mod storage;
 use api::Api;
 use std::sync::Arc;
 use storage::Storage;
-use tauri::{State, Manager, AppHandle};
+use tauri::{State, Manager};
 
 // --- Core Engine Commands (Stay in main for now) ---
 

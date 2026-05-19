@@ -1,6 +1,6 @@
 use crate::storage::Storage;
 use crate::storage::security::SecurityEngine;
-use rusqlite::{params, Result};
+use rusqlite::Result;
 use std::sync::Arc;
 use serde::{Serialize, Deserialize};
 
