@@ -125,6 +125,11 @@ fn main() {
         builder = builder.plugin(crate::modules::pm::init());
     }
 
+    #[cfg(feature = "rag")]
+    {
+        builder = builder.plugin(crate::modules::rag::init());
+    }
+
     builder
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {

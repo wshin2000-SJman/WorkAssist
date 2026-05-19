@@ -9,3 +9,5 @@ pub mod kanban;
 pub mod minutes;
 #[cfg(feature = "pm")]
 pub mod pm;
+#[cfg(feature = "rag")]
+pub mod rag;

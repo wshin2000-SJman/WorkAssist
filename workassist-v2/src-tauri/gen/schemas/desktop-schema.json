@@ -6729,6 +6729,18 @@
           "markdownDescription": "Denies the update_status_log_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the invoke_sidecar_test command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:allow-invoke-sidecar-test",
+          "markdownDescription": "Enables the invoke_sidecar_test command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the invoke_sidecar_test command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:deny-invoke-sidecar-test",
+          "markdownDescription": "Denies the invoke_sidecar_test command without any pre-configured scope."
+        },
+        {
           "description": "This permission set configures which\nshell functionality is exposed by default.\n\n#### Granted Permissions\n\nIt allows to use the `open` functionality with a reasonable\nscope pre-configured. It will allow opening `http(s)://`,\n`tel:` and `mailto:` links.\n\n#### This default permission set includes:\n\n- `allow-open`",
           "type": "string",
           "const": "shell:default",

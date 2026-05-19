@@ -24,6 +24,12 @@ tauri-plugin-dialog = "2.7.1"
 tauri-plugin-fs = "2.5.1"
 open = "5.1"
 
+# RAG Engine & Sidecar
+tokio = { version = "1.37.0", features = ["full"] }
+lancedb = "0.29.0"
+petgraph = "0.6.5"
+ort = "2.0.0-rc.12"
+
 [build-dependencies]
 tauri-build = { version = "2.0.0", features = [] }
 
@@ -31,7 +37,8 @@ tauri-build = { version = "2.0.0", features = [] }
 tempfile = "3.10"
 
 [features]
-default = ["kanban", "minutes", "pm"]
+default = ["kanban", "minutes", "pm", "rag"]
 kanban = []
 minutes = []
 pm = []
+rag = []
