@@ -1854,7 +1854,7 @@ async function loadDeletedTasks() {
             row.onclick = () => openTaskModal(t, true);
 
             const statusClass = t.status.toLowerCase().replace('-', '');
-            const isDone = t.status === 'Done' || t.status === 'Review';
+            const isDone = t.status === 'Done';
             
             if (isDone) row.classList.add('completed-row');
             
@@ -2001,7 +2001,7 @@ async function refreshStats() {
                 const tasks = await invoke('plugin:kanban|get_tasks', { ownerId: currentUser.id });
                 currentTasks = tasks; // Sync global state
                 
-                const pendingTasks = tasks.filter(t => t.status !== 'Done' && t.status !== 'Review');
+                const pendingTasks = tasks.filter(t => t.status !== 'Done');
                 const pendingCount = pendingTasks.length;
                 
                 const statTasks = document.getElementById('stat-tasks');
@@ -2014,7 +2014,7 @@ async function refreshStats() {
                 }
                 
                 // Group tasks by status for the donut chart
-                const counts = { 'Note': 0, 'Todo': 0, 'Doing': 0, 'Review': 0, 'Done': 0 };
+                const counts = { 'Note': 0, 'Todo': 0, 'Doing': 0, 'Done': 0 };
                 tasks.forEach(t => {
                     if (counts[t.status] !== undefined) counts[t.status]++;
                 });
@@ -2023,7 +2023,6 @@ async function refreshStats() {
                     { label: 'Note', value: counts['Note'], color: '#64748b' },
                     { label: 'Todo', value: counts['Todo'], color: '#3b82f6' },
                     { label: 'Doing', value: counts['Doing'], color: '#f59e0b' },
-                    { label: 'Review', value: counts['Review'], color: '#a855f7' },
                     { label: 'Done', value: counts['Done'], color: '#10b981' }
                 ];
                 
@@ -2453,7 +2452,7 @@ function hideChartTooltip() {
 }
 
 function updateSidebarStatus(tasks) {
-    const pendingTasks = tasks.filter(t => t.status !== 'Done' && t.status !== 'Review');
+    const pendingTasks = tasks.filter(t => t.status !== 'Done');
     const pendingCount = pendingTasks.length;
     const statusEl = document.getElementById('sidebar-status-info');
     if (statusEl) statusEl.textContent = `v2.1.0 | ${pendingCount} Pending`;
@@ -2839,7 +2838,7 @@ function createTaskCard(t) {
             <div class="task-date"><span>📅</span> ${t.due_date || '-'}</div>
         </div>
         <div class="task-actions">
-            ${(t.status === 'Done' || t.status === 'Review')
+            ${(t.status === 'Done')
                 ? `<button class="btn-task-review compact" data-id="${t.id}" title="Review & Archive">🔍</button>`
                 : `<button class="btn-task-del compact" data-id="${t.id}" title="Delete">🗑️</button>`
             }
@@ -6073,15 +6072,14 @@ function initDragAndDrop() {
 
 function checkTaskLimits(task, isNew) {
     // Exclude deleted or completed tasks from limit checks entirely
-    if (task.is_deleted || task.status === 'Done' || task.status === 'Review') {
+    if (task.is_deleted || task.status === 'Done') {
         return true;
     }
 
     // Filter current tasks to get only active pending tasks (excluding deleted & completed ones)
     const activeTasks = currentTasks.filter(t => 
         !t.is_deleted && 
-        t.status !== 'Done' && 
-        t.status !== 'Review'
+        t.status !== 'Done'
     );
 
     // 1. Total Limit: Max 200
