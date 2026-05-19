@@ -1163,7 +1163,27 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   z-index: 2;
 }
 
+#minutes-category-filter {
+  min-width: 130px !important;
+  max-width: 140px !important;
+  border-radius: 12px 0 0 12px !important;
+  border-right: 1px solid var(--card-border) !important;
+  padding-right: 22px !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+#minutes-search-type {
+  min-width: 80px !important;
+  max-width: 90px !important;
+  border-radius: 0 !important;
+  border-right: 1px solid var(--card-border) !important;
+  border-left: none !important;
+}
+
 .header-search input {
+  border-left: none !important;
   flex: 1;
   width: 100%;
   padding: 10px 40px 10px 16px !important;
@@ -1323,8 +1343,8 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   position: relative;
 }
 
-/* Hover Delete & Complete Button for Project Cards */
-.project-actions-mini {
+/* Hover Delete, Complete, & Export Group for Project Cards */
+.project-actions-group {
   position: absolute;
   top: 15px;
   right: 15px;
@@ -1332,14 +1352,14 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   transition: opacity 0.2s;
   z-index: 10;
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
-.project-item:hover .project-actions-mini {
+.project-item:hover .project-actions-group {
   opacity: 1;
 }
 
-.project-actions-mini .btn-icon {
+.project-actions-group .btn-icon {
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -1355,7 +1375,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   color: #fff;
 }
 
-.project-actions-mini .delete-project-btn:hover {
+.project-actions-group .delete-project-btn:hover {
   background: #f87171;
   color: white;
   border-color: #f87171;
@@ -1363,7 +1383,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   box-shadow: 0 0 10px rgba(248, 113, 113, 0.4);
 }
 
-.project-actions-mini .complete-project-btn:hover {
+.project-actions-group .complete-project-btn:hover {
   background: #34d399;
   color: white;
   border-color: #34d399;
@@ -1371,38 +1391,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
 }
 
-.project-actions-bottom-mini {
-  position: absolute;
-  bottom: 15px;
-  right: 15px;
-  opacity: 0;
-  transition: opacity 0.2s;
-  z-index: 10;
-  display: flex;
-  gap: 8px;
-}
-
-.project-item:hover .project-actions-bottom-mini {
-  opacity: 1;
-}
-
-.project-actions-bottom-mini .btn-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  flex: none;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--card-border);
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #fff;
-}
-
-.project-actions-bottom-mini .export-project-btn:hover {
+.project-actions-group .export-project-btn:hover {
   background: #3b82f6;
   color: white;
   border-color: #3b82f6;
@@ -1423,11 +1412,30 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .project-item h4 {
   font-size: 15px;
   margin-bottom: 4px;
+  padding-right: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .project-item .client {
   font-size: 12px;
   color: var(--text-secondary);
+  padding-right: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-item .project-start-date {
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  margin-top: 4px;
+  padding-right: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pm-details {
@@ -2113,21 +2121,46 @@ tr:has(.status-review) {
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid var(--card-border);
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pm-details-header-top {
+  display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
   flex-wrap: wrap;
   gap: 20px;
 }
 
-.project-info-main h2 {
+.project-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 280px;
+  flex-wrap: wrap;
+}
+
+.project-title-row h2 {
   font-size: 24px;
-  margin-bottom: 4px;
+  margin: 0;
   color: var(--accent-color);
 }
 
-.project-info-main p {
+.pm-details-header-bottom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.pm-details-header-bottom p {
   font-size: 14px;
   color: var(--text-secondary);
+  margin: 0;
 }
 
 .pm-tabs {
@@ -3564,3 +3597,451 @@ tr:has(.status-review) {
   background: rgba(59, 130, 246, 0.1);
   border-color: #3b82f6;
 }
+
+/* --- Minutes Categories Styles --- */
+.minutes-list.grouped-view {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 15px;
+  align-items: flex-start;
+  min-height: 500px;
+}
+
+.minutes-category-lane {
+  flex: 0 0 320px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 65vh;
+  max-height: 70vh;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.minutes-category-lane-cards {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding-right: 4px;
+}
+
+/* Premium micro-scrollbar for category lane cards */
+.minutes-category-lane-cards::-webkit-scrollbar {
+  width: 4px;
+}
+
+.minutes-category-lane-cards::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.minutes-category-lane-cards::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.minutes-category-lane-cards::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.minutes-category-lane-cards .meeting-card {
+  flex-shrink: 0 !important;
+}
+
+.minutes-category-lane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+}
+
+.minutes-category-lane-title {
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+
+.minutes-category-lane-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.minutes-category-lane-count {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.meeting-card-category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+  margin-bottom: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid currentColor;
+}
+
+.category-manager-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+}
+
+.category-manager-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--accent);
+}
+
+.category-manager-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.category-manager-color-bubble {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.category-manager-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.category-manager-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-category-action {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.btn-category-action:hover {
+  color: var(--text-primary);
+  transform: scale(1.15);
+}
+
+/* Premium Form Category Select Custom Styling */
+#meeting-category {
+  width: 100% !important;
+  height: 44px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: 10px !important;
+  padding: 10px 32px 10px 14px !important;
+  color: var(--text-primary) !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: normal !important;
+  cursor: pointer !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23f97316' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  transition: border-color 0.2s !important;
+}
+
+#meeting-category:focus {
+  outline: none !important;
+  border-color: var(--accent-color) !important;
+}
+
+#meeting-category option {
+  background-color: #1a1e26 !important;
+  color: white !important;
+}
+
+#meeting-category:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+/* ==========================================
+   Premium Dashboard v2.2 Styles
+   ========================================== */
+
+.dashboard-charts-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+  width: 100%;
+}
+
+.chart-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.01), 0 8px 32px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.03) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.chart-card:hover {
+  border-color: rgba(99, 102, 241, 0.2);
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02), 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.chart-card h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.donut-chart-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  min-height: 180px;
+}
+
+.donut-chart-wrapper .svg-container {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.donut-chart-wrapper svg {
+  filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.15));
+}
+
+#svg-task-donut circle {
+  transform-origin: center;
+  cursor: pointer;
+}
+
+.chart-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.legend-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.legend-label {
+  flex: 1;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.legend-value {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dashboard-right-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.workload-list, .categories-workload-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.workload-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.workload-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.workload-label {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workload-val {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.workload-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.workload-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* Category Mini-Row styling */
+.category-bubble-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.category-chart-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.category-chart-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.category-chart-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.category-chart-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.category-chart-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.category-chart-count {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.category-chart-pct {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* Global Floating Tooltip for Charts */
+#chart-tooltip {
+  position: absolute;
+  padding: 6px 12px;
+  background: rgba(11, 14, 20, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 10000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  font-family: inherit;
+  backdrop-filter: blur(8px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .dashboard-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}

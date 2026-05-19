@@ -151,6 +151,52 @@
               </div>
             </div>
           </div>
+
+          <!-- Premium Dashboard Charts Grid -->
+          <div class="dashboard-charts-grid">
+            <!-- 1. Task Status Donut Chart Card -->
+            <div class="chart-card" id="chart-card-tasks">
+              <h3>🎯 Task Status Pipeline</h3>
+              <div class="donut-chart-wrapper">
+                <div class="svg-container">
+                  <svg id="svg-task-donut" viewBox="0 0 160 160" width="160" height="160"></svg>
+                </div>
+                <div class="chart-legend" id="legend-task-donut"></div>
+              </div>
+            </div>
+            
+            <!-- Right side column for Workload and Category Charts -->
+            <div class="dashboard-right-charts">
+              <!-- 2. Departmental Workload Card -->
+              <div class="chart-card" id="chart-card-workload">
+                <div class="chart-card-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                  <h3 style="margin-bottom: 0;">⚡ Departmental Workload</h3>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <!-- Metric Select (Logs vs Planned Days) -->
+                    <select id="dashboard-workload-metric-select" class="form-select project-dropdown-compact" style="max-width: 120px; height: 32px; padding: 4px 28px 4px 10px; font-size: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); color: var(--text-primary); cursor: pointer; font-family: inherit; font-weight: 500; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'10\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'3\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 10px center; transition: all 0.2s ease;">
+                      <option value="logs" selected>Log Count</option>
+                      <option value="days">Planned Days</option>
+                    </select>
+
+                    <select id="dashboard-workload-project-select" class="form-select project-dropdown-compact" style="max-width: 180px; height: 32px; padding: 4px 28px 4px 10px; font-size: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); color: var(--text-primary); cursor: pointer; font-family: inherit; font-weight: 500; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'10\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'3\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 10px center; transition: all 0.2s ease;">
+                      <!-- Populated dynamically via JS -->
+                    </select>
+                  </div>
+                </div>
+                <div class="workload-list" id="workload-bar-list">
+                  <!-- Generated dynamically in JS -->
+                </div>
+              </div>
+              
+              <!-- 3. Meeting Categories Card -->
+              <div class="chart-card" id="chart-card-categories">
+                <h3>📅 Meeting Categories</h3>
+                <div class="categories-workload-list" id="categories-chart-list">
+                  <!-- Generated dynamically in JS -->
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Kanban View (Initially Hidden) -->
@@ -258,16 +304,20 @@
           <div class="view-header">
             <div class="header-left">
               <button class="btn btn-primary" id="btn-new-meeting">+ New Minutes</button>
+              <button id="btn-manage-categories" class="btn btn-secondary"><span>🏷️</span> Categories</button>
               <button id="btn-minutes-trash" class="btn btn-secondary"><span>🗑️</span> Trash Bin</button>
-              <button id="btn-import-minutes-single-md" class="btn btn-outline-accent btn-import-export-md">Import MD<br>from File</button>
-              <button id="btn-import-minutes-md" class="btn btn-outline-accent btn-import-export-md">Import MD<br>from Folder</button>
-              <button id="btn-export-minutes-md" class="btn btn-outline-accent btn-import-export-md">Export MD<br>to Folder</button>
+              <button id="btn-export-minutes-md" class="btn btn-outline-accent btn-import-export-md" style="margin-left: 8px;">Export All MD<br>to Folder</button>
             </div>
             <div class="view-tabs">
               <button class="view-tab active" data-view="board">BOARD</button>
               <button class="view-tab" data-view="calendar">CALENDAR</button>
             </div>
             <div class="header-search">
+              <select id="minutes-category-filter" class="search-type-select">
+                <option value="all">All Categories</option>
+                <option value="none">Uncategorized</option>
+                <!-- Dynamically populated -->
+              </select>
               <select id="minutes-search-type" class="search-type-select">
                 <option value="all">All</option>
                 <option value="title">Title</option>
@@ -325,22 +375,25 @@
             </div>
             <div class="pm-details" id="pm-details">
               <div class="pm-details-header">
-                <div class="project-info-main" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; flex: 1; min-width: 280px; width: 100%;">
-                  <span id="detail-project-tag" class="tag-badge hidden"></span>
-                  <div style="display: flex; align-items: center; gap: 16px; width: 100%; flex-wrap: wrap;">
-                    <h2 id="detail-project-name" style="margin: 0; font-size: 26px; font-weight: 800; color: var(--accent-color); overflow-wrap: break-word; word-break: keep-all; flex: 1; min-width: 200px;">Select a Project</h2>
+                <div class="pm-details-header-top">
+                  <div class="project-title-row">
+                    <h2 id="detail-project-name" style="margin: 0; font-size: 26px; font-weight: 800; color: var(--accent-color); overflow-wrap: break-word; word-break: keep-all; min-width: 200px;">Select a Project</h2>
                     <div class="project-title-actions" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                       <button id="btn-edit-project" class="btn btn-secondary btn-sm hidden" style="padding: 6px 12px; font-size: 12px; height: 32px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">✏️ Edit</button>
                       <button id="pm-timetable-export-html" class="btn btn-outline-accent btn-sm hidden" style="padding: 6px 12px; font-size: 12px; height: 32px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">Export HTML</button>
+                      <button id="pm-timetable-export-md" class="btn btn-outline-accent btn-sm hidden" style="padding: 6px 12px; font-size: 12px; height: 32px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">Export MD</button>
                     </div>
                   </div>
-                  <p id="detail-project-meta" style="margin: 0;">Client: - | Manager: -</p>
+                  <div class="pm-tabs">
+                    <button class="pm-tab active" data-tab="status">STATUS</button>
+                    <button class="pm-tab" data-tab="timetable">TIME TABLE</button>
+                    <button class="pm-tab" data-tab="done-logs">DONE LOGS</button>
+                    <button class="pm-tab" data-tab="deleted-logs">DELETED LOGS</button>
+                  </div>
                 </div>
-                <div class="pm-tabs">
-                  <button class="pm-tab active" data-tab="status">STATUS</button>
-                  <button class="pm-tab" data-tab="timetable">TIME TABLE</button>
-                  <button class="pm-tab" data-tab="done-logs">DONE LOGS</button>
-                  <button class="pm-tab" data-tab="deleted-logs">DELETED LOGS</button>
+                <div class="pm-details-header-bottom">
+                  <span id="detail-project-tag" class="tag-badge hidden"></span>
+                  <p id="detail-project-meta" style="margin: 0;">Client: - | Manager: -</p>
                 </div>
               </div>
 
@@ -786,6 +839,13 @@
           <input type="text" id="meeting-title" placeholder="What was the meeting about?" maxlength="40" required>
         </div>
         <div class="form-row meeting-meta">
+          <div class="form-group" style="flex: 2">
+            <label for="meeting-category">Category</label>
+            <select id="meeting-category">
+              <option value="">Uncategorized</option>
+              <!-- Dynamically populated -->
+            </select>
+          </div>
           <div class="form-group" style="flex: 2">
             <label for="meeting-date">Date</label>
             <input type="date" id="meeting-date">
@@ -1265,7 +1325,41 @@
     </div>
   </div>
 
+  <!-- Category Management Modal -->
+  <div id="modal-categories" class="modal hidden">
+    <div class="modal-content medium" style="max-width: 500px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h2>Manage Categories</h2>
+          <span id="category-count-badge" class="tag-badge" style="background: var(--accent); padding: 2px 8px; border-radius: 12px; font-size: 11px;">0 / 50</span>
+        </div>
+        <button class="btn-close" id="btn-close-categories">&times;</button>
+      </div>
+      
+      <!-- New Category Form -->
+      <div class="category-add-form" style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center;">
+        <input type="text" id="new-category-name" placeholder="New Category (Max 15 chars)" maxlength="15" style="flex: 1; height: 38px; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); color: var(--text-primary); padding: 0 10px;">
+        
+        <input type="color" id="new-category-color" value="#3b82f6" style="width: 38px; height: 38px; padding: 0; border: none; border-radius: 50%; cursor: pointer; background: transparent;">
+        
+        <button id="btn-add-category" class="btn btn-primary" style="height: 38px; padding: 0 16px; border-radius: 8px; font-weight: 500;">+ Add</button>
+      </div>
+
+      <!-- Categories List Scrollable Container -->
+      <div class="categories-list-container" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; background: rgba(0, 0, 0, 0.15);">
+        <div id="categories-list-items" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="margin-top: 20px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" id="btn-close-categories-footer">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div id="global-timetable-tooltip" class="timetable-tooltip"></div>
+  <div id="chart-tooltip"></div>
   <script src="app.js"></script>
 </body>
 </html>

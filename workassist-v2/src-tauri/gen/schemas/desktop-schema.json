@@ -6309,6 +6309,12 @@
           "markdownDescription": "Denies the update_task_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the delete_category command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:allow-delete-category",
+          "markdownDescription": "Enables the delete_category command without any pre-configured scope."
+        },
+        {
           "description": "Enables the delete_meeting command without any pre-configured scope.",
           "type": "string",
           "const": "minutes:allow-delete-meeting",
@@ -6325,6 +6331,12 @@
           "type": "string",
           "const": "minutes:allow-export-minutes-md-bulk",
           "markdownDescription": "Enables the export_minutes_md_bulk command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_categories command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:allow-get-categories",
+          "markdownDescription": "Enables the get_categories command without any pre-configured scope."
         },
         {
           "description": "Enables the get_deleted_meetings command without any pre-configured scope.",
@@ -6369,6 +6381,12 @@
           "markdownDescription": "Enables the restore_meeting command without any pre-configured scope."
         },
         {
+          "description": "Enables the save_category command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:allow-save-category",
+          "markdownDescription": "Enables the save_category command without any pre-configured scope."
+        },
+        {
           "description": "Enables the save_meeting command without any pre-configured scope.",
           "type": "string",
           "const": "minutes:allow-save-meeting",
@@ -6379,6 +6397,12 @@
           "type": "string",
           "const": "minutes:allow-save-text-file",
           "markdownDescription": "Enables the save_text_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the delete_category command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:deny-delete-category",
+          "markdownDescription": "Denies the delete_category command without any pre-configured scope."
         },
         {
           "description": "Denies the delete_meeting command without any pre-configured scope.",
@@ -6397,6 +6421,12 @@
           "type": "string",
           "const": "minutes:deny-export-minutes-md-bulk",
           "markdownDescription": "Denies the export_minutes_md_bulk command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_categories command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:deny-get-categories",
+          "markdownDescription": "Denies the get_categories command without any pre-configured scope."
         },
         {
           "description": "Denies the get_deleted_meetings command without any pre-configured scope.",
@@ -6439,6 +6469,12 @@
           "type": "string",
           "const": "minutes:deny-restore-meeting",
           "markdownDescription": "Denies the restore_meeting command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_category command without any pre-configured scope.",
+          "type": "string",
+          "const": "minutes:deny-save-category",
+          "markdownDescription": "Denies the save_category command without any pre-configured scope."
         },
         {
           "description": "Denies the save_meeting command without any pre-configured scope.",

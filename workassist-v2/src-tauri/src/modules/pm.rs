@@ -13,6 +13,15 @@ pub struct ProjectExportData {
     pub status_logs: Vec<StatusLog>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImportProjectResult {
+    pub status: String,
+    pub tag: Option<String>,
+    #[serde(rename = "projectName")]
+    pub project_name: Option<String>,
+    pub message: String,
+}
+
 pub struct PmModule {
     storage: Arc<Storage>,
 }
@@ -509,7 +518,7 @@ impl PmModule {
         Ok(())
     }
 
-    pub fn import_project_db(&self, owner_id: i64, file_path: String) -> Result<(), String> {
+    pub fn import_project_db(&self, owner_id: i64, file_path: String, overwrite: bool) -> Result<ImportProjectResult, String> {
         let json_str = std::fs::read_to_string(&file_path)
             .map_err(|e| format!("Failed to read file: {}", e))?;
             
@@ -518,38 +527,185 @@ impl PmModule {
             
         let conn = self.storage.conn.lock().unwrap();
         
-        // 1. Insert Project with a brand new ID
         let now = Utc::now();
         let now_rfc = now.to_rfc3339();
         let now_local = now.with_timezone(&chrono::Local);
         
         let mut imported_proj = export_data.project;
+        if imported_proj.name.trim().is_empty() {
+            return Err("Project name cannot be empty.".to_string());
+        }
         
-        // Retain original tag if present, otherwise generate a fresh sequential tag
+        // Retain original tag if present (and not empty), otherwise generate a fresh sequential tag
         let project_tag = if let Some(ref tag) = imported_proj.project_tag {
-            tag.clone()
+            if tag.trim().is_empty() {
+                crate::storage::Storage::generate_sequential_tag(&conn, "projects", "P", &now_local)
+            } else {
+                tag.clone()
+            }
         } else {
             crate::storage::Storage::generate_sequential_tag(&conn, "projects", "P", &now_local)
         };
         
-        // Prevent duplicate imports of the same project (check if a project with this tag already exists)
-        let exists: bool = conn.query_row(
-            "SELECT EXISTS(SELECT 1 FROM projects WHERE project_tag = ?)",
-            params![&project_tag],
-            |row| row.get(0)
-        ).unwrap_or(false);
+        // 1. Check if same tag exists in Trash Bin (is_deleted = 1)
+        let trash_projects: Vec<i64> = {
+            let mut stmt = conn.prepare("SELECT id FROM projects WHERE project_tag = ? AND is_deleted = 1").unwrap();
+            let rows = stmt.query_map(params![&project_tag], |r| r.get(0)).unwrap();
+            rows.filter_map(|r| r.ok()).collect()
+        };
         
-        if exists {
-            return Err(format!(
-                "The project with Tag '{}' has already been imported or exists.",
+        let mut trash_deleted_msg = None;
+        if !trash_projects.is_empty() {
+            for p_id in &trash_projects {
+                let _ = self.storage.delete_project_dual(&conn, *p_id);
+            }
+            trash_deleted_msg = Some(format!(
+                "An identical project with tag '{}' in the Trash Bin has been permanently deleted.",
                 project_tag
             ));
         }
         
+        // 2. Check if project with this tag already exists (active or completed, not deleted)
+        let existing_project_id: Option<i64> = conn.query_row(
+            "SELECT id FROM projects WHERE project_tag = ? AND is_deleted = 0",
+            params![&project_tag],
+            |row| row.get(0)
+        ).ok();
+        
+        if let Some(target_id) = existing_project_id {
+            if !overwrite {
+                return Ok(ImportProjectResult {
+                    status: "duplicate".to_string(),
+                    tag: Some(project_tag),
+                    project_name: Some(imported_proj.name),
+                    message: "Duplicate project tag detected.".to_string(),
+                });
+            }
+            
+            // OVERWRITING EXISTING PROJECT!
+            // 1. Delete existing milestones
+            conn.execute("DELETE FROM milestones WHERE project_id = ?", params![target_id])
+                .map_err(|e| format!("Failed to delete existing milestones: {}", e))?;
+                
+            // 2. Delete existing status logs (raw & shadow)
+            conn.execute("DELETE FROM status_logs WHERE project_id = ?", params![target_id])
+                .map_err(|e| format!("Failed to delete existing status logs: {}", e))?;
+            conn.execute("DELETE FROM shadow_status_logs WHERE project_id = ?", params![target_id])
+                .map_err(|e| format!("Failed to delete existing shadow status logs: {}", e))?;
+                
+            // 3. Update existing project
+            imported_proj.owner_id = Some(owner_id);
+            imported_proj.project_tag = Some(project_tag);
+            imported_proj.id = Some(target_id);
+            imported_proj.is_deleted = false;
+            
+            conn.execute(
+                "UPDATE projects SET 
+                    owner_id = ?, name = ?, description = ?, manager = ?, client = ?, 
+                    start_date = ?, status = ?, dept1_name = ?, dept2_name = ?, 
+                    dept3_name = ?, dept4_name = ?, project_tag = ?, is_deleted = ?, 
+                    completion_date = ?, completion_memo = ? 
+                 WHERE id = ?",
+                params![
+                    imported_proj.owner_id,
+                    imported_proj.name,
+                    imported_proj.description,
+                    imported_proj.manager,
+                    imported_proj.client,
+                    imported_proj.start_date,
+                    imported_proj.status,
+                    imported_proj.dept1_name,
+                    imported_proj.dept2_name,
+                    imported_proj.dept3_name,
+                    imported_proj.dept4_name,
+                    imported_proj.project_tag,
+                    imported_proj.is_deleted,
+                    imported_proj.completion_date,
+                    imported_proj.completion_memo,
+                    target_id
+                ],
+            ).map_err(|e| format!("Failed to update existing project: {}", e))?;
+            
+            // Sync shadow project (Overwrite)
+            let _ = self.storage.save_project_dual(&conn, &imported_proj, target_id);
+            
+            // 4. Re-insert milestones
+            for milestone in export_data.milestones {
+                let mut ms = milestone;
+                ms.id = None;
+                ms.project_id = target_id;
+                
+                conn.execute(
+                    "INSERT INTO milestones (project_id, slot_number, name, deadline, content, is_saved, is_done)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    params![
+                        ms.project_id,
+                        ms.slot_number,
+                        ms.name,
+                        ms.deadline,
+                        ms.content,
+                        ms.is_saved,
+                        ms.is_done,
+                    ],
+                ).map_err(|e| format!("Failed to insert milestone: {}", e))?;
+            }
+            
+            // 5. Re-insert status logs (raw & shadow)
+            for log in export_data.status_logs {
+                let mut l = log;
+                l.id = None;
+                l.project_id = target_id;
+                
+                let log_tag = crate::storage::Storage::generate_sequential_tag(&conn, "status_logs", "L", &now_local);
+                l.tag = Some(log_tag);
+                l.is_deleted = false;
+                
+                conn.execute(
+                    "INSERT INTO status_logs (project_id, department, text_content, timestamp, status, tag, title, manager, start_date, due_date, owner_id, is_deleted)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    params![
+                        l.project_id,
+                        l.department,
+                        l.text_content,
+                        l.timestamp,
+                        l.status,
+                        l.tag,
+                        l.title,
+                        l.manager,
+                        l.start_date,
+                        l.due_date,
+                        Some(owner_id),
+                        l.is_deleted,
+                    ],
+                ).map_err(|e| format!("Failed to insert status log: {}", e))?;
+                
+                let new_log_id = conn.last_insert_rowid();
+                l.id = Some(new_log_id);
+                
+                let _ = self.storage.save_status_log_dual(&conn, &l, new_log_id);
+            }
+            
+            let success_msg = if let Some(ref t_msg) = trash_deleted_msg {
+                format!("{}\nProject successfully overwritten and updated.", t_msg)
+            } else {
+                "Project successfully overwritten and updated.".to_string()
+            };
+            
+            return Ok(ImportProjectResult {
+                status: "success".to_string(),
+                tag: Some(imported_proj.project_tag.unwrap()),
+                project_name: Some(imported_proj.name),
+                message: success_msg,
+            });
+        }
+        
+        // NO DUPLICATE - FRESH INSERT
         imported_proj.owner_id = Some(owner_id);
         imported_proj.created_at = now_rfc.clone();
         imported_proj.project_tag = Some(project_tag);
-        imported_proj.status = "active".to_string(); // Keep imported projects active initially
+        if imported_proj.status.trim().is_empty() {
+            imported_proj.status = "active".to_string();
+        }
         imported_proj.is_deleted = false;
         
         conn.execute(
@@ -578,13 +734,11 @@ impl PmModule {
         let new_project_id = conn.last_insert_rowid();
         imported_proj.id = Some(new_project_id);
         
-        // Sync shadow project
         let _ = self.storage.save_project_dual(&conn, &imported_proj, new_project_id);
         
-        // 2. Insert milestones
         for milestone in export_data.milestones {
             let mut ms = milestone;
-            ms.id = None; // Generate new ID
+            ms.id = None;
             ms.project_id = new_project_id;
             
             conn.execute(
@@ -602,7 +756,6 @@ impl PmModule {
             ).map_err(|e| format!("Failed to insert milestone: {}", e))?;
         }
         
-        // 3. Insert status logs
         for log in export_data.status_logs {
             let mut l = log;
             l.id = None;
@@ -634,11 +787,21 @@ impl PmModule {
             let new_log_id = conn.last_insert_rowid();
             l.id = Some(new_log_id);
             
-            // Sync shadow log
             let _ = self.storage.save_status_log_dual(&conn, &l, new_log_id);
         }
         
-        Ok(())
+        let success_msg = if let Some(ref t_msg) = trash_deleted_msg {
+            format!("{}\nProject successfully imported as a new project.", t_msg)
+        } else {
+            "Project successfully imported as a new project.".to_string()
+        };
+        
+        Ok(ImportProjectResult {
+            status: "success".to_string(),
+            tag: Some(imported_proj.project_tag.unwrap()),
+            project_name: Some(imported_proj.name),
+            message: success_msg,
+        })
     }
 }
 
@@ -740,8 +903,8 @@ pub async fn export_project_db(api: tauri::State<'_, crate::api::Api>, project_i
 }
 
 #[tauri::command]
-pub async fn import_project_db(api: tauri::State<'_, crate::api::Api>, owner_id: i64, file_path: String) -> Result<(), String> {
-    api.pm().import_project_db(owner_id, file_path)
+pub async fn import_project_db(api: tauri::State<'_, crate::api::Api>, owner_id: i64, file_path: String, overwrite: bool) -> Result<ImportProjectResult, String> {
+    api.pm().import_project_db(owner_id, file_path, overwrite)
 }
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {

@@ -154,3 +154,23 @@ pub const CREATE_SHADOW_STATUS_LOGS_TABLE: &str = "
         manager TEXT
     );
 ";
+
+pub const CREATE_MEETING_CATEGORIES_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS meeting_categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        color TEXT NOT NULL DEFAULT '#3b82f6',
+        order_seq INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (owner_id) REFERENCES users(id),
+        UNIQUE(owner_id, name)
+    );
+";
+
+pub const CREATE_SHADOW_MEETING_CATEGORIES_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS shadow_meeting_categories (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL
+    );
+";

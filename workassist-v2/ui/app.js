@@ -14,7 +14,10 @@ try {
 
 let currentTasks = [];
 let currentMeetings = [];
+let currentCategories = [];
 let currentProjects = [];
+let currentProjectsWithLogs = [];
+let selectedWorkloadProjectId = null;
 let currentView = 'nav-dashboard';
 let draggingTaskId = null;
 let currentCalendarDate = new Date();
@@ -142,52 +145,7 @@ const init = () => {
         };
     }
 
-    const btnImportMinutesSingleMd = document.getElementById('btn-import-minutes-single-md');
-    if (btnImportMinutesSingleMd) {
-        btnImportMinutesSingleMd.onclick = async () => {
-            try {
-                const file = await window.__TAURI__.dialog.open({
-                    directory: false,
-                    multiple: false,
-                    title: "Select Markdown File to Import",
-                    filters: [{ name: 'Markdown', extensions: ['md'] }]
-                });
-                
-                if (file) {
-                    await invoke('plugin:minutes|import_minutes_md_single', { filePath: file, ownerId: currentUser.id });
-                    alert("Successfully imported the meeting minutes.");
-                    refreshMinutes(); // refresh the list
-                }
-            } catch (err) {
-                console.error("Import MD File Error:", err);
-                alert(err);
-                if (typeof refreshMinutes === 'function') refreshMinutes();
-            }
-        };
-    }
 
-    const btnImportMinutesMd = document.getElementById('btn-import-minutes-md');
-    if (btnImportMinutesMd) {
-        btnImportMinutesMd.onclick = async () => {
-            try {
-                const dir = await window.__TAURI__.dialog.open({
-                    directory: true,
-                    multiple: false,
-                    title: "Select Directory to Import MD files"
-                });
-                
-                if (dir) {
-                    const count = await invoke('plugin:minutes|import_minutes_md_bulk', { dirPath: dir, ownerId: currentUser.id });
-                    alert(`Successfully imported ${count} minutes.`);
-                    refreshMinutes(); // refresh the list
-                }
-            } catch (err) {
-                console.error("Import MD Error:", err);
-                alert(err);
-                if (typeof refreshMinutes === 'function') refreshMinutes();
-            }
-        };
-    }
 
     const btnBackMinutes = document.getElementById('btn-back-minutes');
     if (btnBackMinutes) {
@@ -231,9 +189,31 @@ const init = () => {
                 });
                 
                 if (file) {
-                    await invoke('plugin:pm|import_project_db', { ownerId: currentUser.id, filePath: file });
-                    alert("Project DB imported successfully!");
-                    refreshProjects();
+                    const res = await invoke('plugin:pm|import_project_db', { 
+                        ownerId: currentUser.id, 
+                        filePath: file, 
+                        overwrite: false 
+                    });
+                    
+                    if (res && res.status === 'duplicate') {
+                        const confirmOverwrite = await window.__TAURI__.dialog.ask(
+                            `프로젝트 태그 '${res.tag}' (${res.projectName || '이름 없음'})이(가) 이미 존재합니다.\n기존 데이터를 새로 가져오는 프로젝트의 데이터로 덮어쓰시겠습니까?`,
+                            { title: '프로젝트 가져오기 중복 감지', type: 'warning' }
+                        );
+                        
+                        if (confirmOverwrite) {
+                            const res2 = await invoke('plugin:pm|import_project_db', { 
+                                ownerId: currentUser.id, 
+                                filePath: file, 
+                                overwrite: true 
+                            });
+                            alert(res2.message);
+                            refreshProjects();
+                        }
+                    } else {
+                        alert(res.message);
+                        refreshProjects();
+                    }
                 }
             } catch (err) {
                 console.error("Import Project DB Error:", err);
@@ -604,6 +584,7 @@ function openMeetingModal(m, readOnly = false) {
     document.getElementById('meeting-date').value = mDate || '';
     document.getElementById('meeting-time').value = mTime || '';
     document.getElementById('meeting-location').value = m.location || '';
+    document.getElementById('meeting-category').value = m.category_id || '';
     document.getElementById('meeting-participants').value = m.participants || '';
     document.getElementById('meeting-memo').value = m.memo || '';
     document.getElementById('meeting-decisions').value = m.decisions || '';
@@ -635,7 +616,7 @@ function openMeetingModal(m, readOnly = false) {
 
     // Handle read-only state for inputs
     const formMeeting = document.getElementById('form-meeting');
-    const inputs = formMeeting.querySelectorAll('input, textarea');
+    const inputs = formMeeting.querySelectorAll('input, textarea, select');
     inputs.forEach(input => {
         input.disabled = readOnly;
     });
@@ -777,6 +758,8 @@ function setupModals() {
                 if (btnEditProject) btnEditProject.classList.add('hidden');
                 const btnExportHtml = document.getElementById('pm-timetable-export-html');
                 if (btnExportHtml) btnExportHtml.classList.add('hidden');
+                const btnPmExportMd = document.getElementById('pm-timetable-export-md');
+                if (btnPmExportMd) btnPmExportMd.classList.add('hidden');
                 
                 currentProjectId = null;
                 const milestonesGrid = document.getElementById('milestones-grid');
@@ -787,6 +770,40 @@ function setupModals() {
                 console.error("Complete Project Submit Error:", err);
                 alert(err);
             }
+        };
+    }
+
+    // Categories Modal
+    const btnManageCategories = document.getElementById('btn-manage-categories');
+    const modalCategories = document.getElementById('modal-categories');
+    const btnCloseCategories = document.getElementById('btn-close-categories');
+    const btnCloseCategoriesFooter = document.getElementById('btn-close-categories-footer');
+    const btnAddCategory = document.getElementById('btn-add-category');
+    const filterSelect = document.getElementById('minutes-category-filter');
+
+    if (btnManageCategories) {
+        btnManageCategories.onclick = () => {
+            openCategoriesModal();
+        };
+    }
+    if (btnCloseCategories) {
+        btnCloseCategories.onclick = () => {
+            modalCategories.classList.add('hidden');
+        };
+    }
+    if (btnCloseCategoriesFooter) {
+        btnCloseCategoriesFooter.onclick = () => {
+            modalCategories.classList.add('hidden');
+        };
+    }
+    if (btnAddCategory) {
+        btnAddCategory.onclick = () => {
+            addCategory();
+        };
+    }
+    if (filterSelect) {
+        filterSelect.onchange = () => {
+            refreshMinutes();
         };
     }
 
@@ -956,51 +973,59 @@ function setupModals() {
     if (formTask) {
         formTask.onsubmit = async (e) => {
             e.preventDefault();
-            console.log("Task Form Submitted!");
-            const taskId = document.getElementById('task-id').value;
-            const newTask = {
-                id: taskId ? parseInt(taskId) : null,
-                owner_id: currentUser.id, 
-                title: document.getElementById('task-title').value,
-                content: document.getElementById('task-content').value, 
-                manager: document.getElementById('task-manager').value,
-                start_date: document.getElementById('task-start').value, 
-                due_date: document.getElementById('task-due').value,
-                status: 'Note', 
-                is_urgent: document.getElementById('task-urgent').checked,
-                created_at: "", 
-                review_comment: "", 
-                task_tag: "",
-                is_deleted: false
-            };
-
-            // Mandatory fields validation
-            if (!newTask.title || !newTask.content || !newTask.manager || !newTask.start_date || !newTask.due_date) {
-                alert("Please fill in all fields (Title, Content, Manager, Start Date, and Due Date).");
-                return;
-            }
-
-            // Date validation
-            if (newTask.due_date && newTask.start_date && newTask.due_date < newTask.start_date) {
-                alert("Due date cannot be earlier than start date.");
-                return;
-            }
-
-            // Character length validation
-            if (newTask.title.length > 50) {
-                alert("Task title cannot exceed 50 characters.");
-                return;
-            }
-            if (newTask.content.length > 500) {
-                alert("Task content cannot exceed 500 characters.");
-                return;
-            }
-            if (newTask.manager.length > 50) {
-                alert("Task manager cannot exceed 50 characters.");
-                return;
+            
+            const submitBtn = formTask.querySelector('button[type="submit"]');
+            const originalText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Saving...';
             }
 
             try {
+                console.log("Task Form Submitted!");
+                const taskId = document.getElementById('task-id').value;
+                const newTask = {
+                    id: taskId ? parseInt(taskId) : null,
+                    owner_id: currentUser.id, 
+                    title: document.getElementById('task-title').value,
+                    content: document.getElementById('task-content').value, 
+                    manager: document.getElementById('task-manager').value,
+                    start_date: document.getElementById('task-start').value, 
+                    due_date: document.getElementById('task-due').value,
+                    status: 'Note', 
+                    is_urgent: document.getElementById('task-urgent').checked,
+                    created_at: "", 
+                    review_comment: "", 
+                    task_tag: "",
+                    is_deleted: false
+                };
+
+                // Mandatory fields validation
+                if (!newTask.title || !newTask.content || !newTask.manager || !newTask.start_date || !newTask.due_date) {
+                    alert("Please fill in all fields (Title, Content, Manager, Start Date, and Due Date).");
+                    return;
+                }
+
+                // Date validation
+                if (newTask.due_date && newTask.start_date && newTask.due_date < newTask.start_date) {
+                    alert("Due date cannot be earlier than start date.");
+                    return;
+                }
+
+                // Character length validation
+                if (newTask.title.length > 50) {
+                    alert("Task title cannot exceed 50 characters.");
+                    return;
+                }
+                if (newTask.content.length > 500) {
+                    alert("Task content cannot exceed 500 characters.");
+                    return;
+                }
+                if (newTask.manager.length > 50) {
+                    alert("Task manager cannot exceed 50 characters.");
+                    return;
+                }
+
                 if (taskId) {
                     // Update existing task
                     const existingTask = currentTasks.find(t => t.id === parseInt(taskId));
@@ -1035,6 +1060,11 @@ function setupModals() {
                 }
             } catch (err) { 
                 console.error("Save Task Error:", err); 
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
             }
         };
     }
@@ -1054,51 +1084,78 @@ function setupModals() {
     if (formMeeting) {
         formMeeting.onsubmit = async (e) => {
             e.preventDefault();
-            const meetingData = {
-                id: document.getElementById('meeting-id').value ? parseInt(document.getElementById('meeting-id').value) : null,
-                owner_id: currentUser.id, title: document.getElementById('meeting-title').value,
-                date: document.getElementById('meeting-date').value + ' ' + document.getElementById('meeting-time').value, 
-                location: document.getElementById('meeting-location').value,
-                participants: document.getElementById('meeting-participants').value, 
-                decisions: document.getElementById('meeting-decisions').value, 
-                action_items: document.getElementById('meeting-actions').value,
-                memo: document.getElementById('meeting-memo').value, 
-                meeting_tag: document.getElementById('meeting-tag').value || "",
-                created_at: "",
-                is_deleted: false
-            };
-
-            // Character length validation
-            if (meetingData.title && meetingData.title.length > 40) {
-                alert("Meeting title cannot exceed 40 characters.");
-                return;
-            }
-            if (meetingData.location && meetingData.location.length > 30) {
-                alert("Meeting location cannot exceed 30 characters.");
-                return;
-            }
-            if (meetingData.participants && meetingData.participants.length > 50) {
-                alert("Meeting participants cannot exceed 50 characters.");
-                return;
-            }
-            if (meetingData.memo && meetingData.memo.length > 3000) {
-                alert("Meeting agenda cannot exceed 3000 characters.");
-                return;
-            }
-            if (meetingData.decisions && meetingData.decisions.length > 3000) {
-                alert("Meeting decisions cannot exceed 3000 characters.");
-                return;
-            }
-            if (meetingData.action_items && meetingData.action_items.length > 3000) {
-                alert("Meeting action items cannot exceed 3000 characters.");
-                return;
+            
+            const submitBtn = formMeeting.querySelector('button[type="submit"]');
+            const originalText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Saving...';
             }
 
             try {
+                const catVal = document.getElementById('meeting-category').value;
+                const meetingData = {
+                    id: document.getElementById('meeting-id').value ? parseInt(document.getElementById('meeting-id').value) : null,
+                    owner_id: currentUser.id, title: document.getElementById('meeting-title').value,
+                    date: document.getElementById('meeting-date').value + ' ' + document.getElementById('meeting-time').value, 
+                    location: document.getElementById('meeting-location').value,
+                    participants: document.getElementById('meeting-participants').value, 
+                    decisions: document.getElementById('meeting-decisions').value, 
+                    action_items: document.getElementById('meeting-actions').value,
+                    memo: document.getElementById('meeting-memo').value, 
+                    meeting_tag: document.getElementById('meeting-tag').value || "",
+                    category_id: catVal ? parseInt(catVal) : null,
+                    created_at: "",
+                    is_deleted: false
+                };
+
+                // Character length validation
+                if (meetingData.title && meetingData.title.length > 40) {
+                    alert("Meeting title cannot exceed 40 characters.");
+                    return;
+                }
+                if (meetingData.location && meetingData.location.length > 30) {
+                    alert("Meeting location cannot exceed 30 characters.");
+                    return;
+                }
+                if (meetingData.participants && meetingData.participants.length > 50) {
+                    alert("Meeting participants cannot exceed 50 characters.");
+                    return;
+                }
+                if (meetingData.memo && meetingData.memo.length > 3000) {
+                    alert("Meeting agenda cannot exceed 3000 characters.");
+                    return;
+                }
+                if (meetingData.decisions && meetingData.decisions.length > 3000) {
+                    alert("Meeting decisions cannot exceed 3000 characters.");
+                    return;
+                }
+                if (meetingData.action_items && meetingData.action_items.length > 3000) {
+                    alert("Meeting action items cannot exceed 3000 characters.");
+                    return;
+                }
+
+                // Enforce 99 minutes limit per category
+                if (meetingData.category_id) {
+                    const catId = parseInt(meetingData.category_id);
+                    const currentCatCount = currentMeetings.filter(m => m.category_id === catId && m.id !== meetingData.id).length;
+                    if (currentCatCount >= 99) {
+                        alert("Category limit exceeded: A category can only hold a maximum of 99 minutes. (카테고리당 최대 99개의 회의록만 저장할 수 있습니다.)");
+                        return;
+                    }
+                }
+
                 await invoke('plugin:minutes|save_meeting', { meeting: meetingData });
                 closeMeeting();
                 await refreshMinutes();
-            } catch (err) { console.error("Save Meeting Error:", err); }
+            } catch (err) { 
+                console.error("Save Meeting Error:", err); 
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            }
         };
     }
 
@@ -1235,6 +1292,8 @@ function setupModals() {
                             if (btnEditProject) btnEditProject.classList.add('hidden');
                             const btnExportHtml = document.getElementById('pm-timetable-export-html');
                             if (btnExportHtml) btnExportHtml.classList.add('hidden');
+                            const btnPmExportMd = document.getElementById('pm-timetable-export-md');
+                            if (btnPmExportMd) btnPmExportMd.classList.add('hidden');
 
                             await refreshProjects();
                         } catch (err) {
@@ -1262,24 +1321,33 @@ function setupModals() {
     if (formProject) {
         formProject.onsubmit = async (e) => {
             e.preventDefault();
-            const idVal = document.getElementById('project-id').value;
-            const projectData = {
-                id: idVal ? parseInt(idVal) : null,
-                owner_id: currentUser.id,
-                name: document.getElementById('project-name').value,
-                description: document.getElementById('project-desc').value,
-                manager: document.getElementById('project-manager').value,
-                client: document.getElementById('project-client').value,
-                start_date: document.getElementById('project-start-date').value,
-                created_at: "",
-                status: 'active',
-                dept1_name: document.getElementById('project-dept1').value,
-                dept2_name: document.getElementById('project-dept2').value,
-                dept3_name: document.getElementById('project-dept3').value,
-                dept4_name: document.getElementById('project-dept4').value,
-                project_tag: idVal ? (currentProjects.find(p => p.id === parseInt(idVal))?.project_tag || null) : null
-            };
+            
+            const submitBtn = formProject.querySelector('button[type="submit"]');
+            const originalText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Saving...';
+            }
+
             try {
+                const idVal = document.getElementById('project-id').value;
+                const projectData = {
+                    id: idVal ? parseInt(idVal) : null,
+                    owner_id: currentUser.id,
+                    name: document.getElementById('project-name').value,
+                    description: document.getElementById('project-desc').value,
+                    manager: document.getElementById('project-manager').value,
+                    client: document.getElementById('project-client').value,
+                    start_date: document.getElementById('project-start-date').value,
+                    created_at: "",
+                    status: 'active',
+                    dept1_name: document.getElementById('project-dept1').value,
+                    dept2_name: document.getElementById('project-dept2').value,
+                    dept3_name: document.getElementById('project-dept3').value,
+                    dept4_name: document.getElementById('project-dept4').value,
+                    project_tag: idVal ? (currentProjects.find(p => p.id === parseInt(idVal))?.project_tag || null) : null
+                };
+                
                 const newId = await invoke('plugin:pm|add_project', { project: projectData });
                 closeProject();
                 await refreshProjects();
@@ -1288,7 +1356,14 @@ function setupModals() {
                 } else if (newId) {
                     await loadProjectDetails(newId);
                 }
-            } catch (err) { console.error("Save Project Error:", err); }
+            } catch (err) { 
+                console.error("Save Project Error:", err); 
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            }
         };
     }
 
@@ -1463,6 +1538,44 @@ function setupModals() {
         };
     }
 
+    const btnPmExportMd = document.getElementById('pm-timetable-export-md');
+    if (btnPmExportMd) {
+        btnPmExportMd.onclick = async () => {
+            if (!currentProjectId) {
+                alert("Please select a project before exporting.");
+                return;
+            }
+
+            const project = currentProjects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            try {
+                const logs = await invoke('plugin:pm|get_status_logs', { projectId: currentProjectId });
+                const milestones = await invoke('plugin:pm|get_milestones', { projectId: currentProjectId });
+
+                const mdContent = generateProjectMd(project, milestones, logs);
+
+                if (window.__TAURI__ && window.__TAURI__.dialog) {
+                    const savePath = await window.__TAURI__.dialog.save({
+                        filters: [{ name: 'Markdown Document', extensions: ['md'] }],
+                        defaultPath: `Project_Report_${project.name}.md`
+                    });
+
+                    if (savePath) {
+                        await invoke('plugin:minutes|save_text_file', { path: savePath, content: mdContent });
+                        alert("Project Markdown Export Successful!\nSaved to: " + savePath);
+                    }
+                } else {
+                    console.log("Mock Export (No Tauri):", mdContent);
+                    alert("Export feature only works in the desktop Tauri application.");
+                }
+            } catch (err) {
+                console.error("Export MD Error:", err);
+                alert("Failed to export Markdown: " + err);
+            }
+        };
+    }
+
     // PM Tabs
     const pmTabs = document.querySelectorAll('.pm-tab');
     pmTabs.forEach(tab => {
@@ -1505,7 +1618,8 @@ function setupModals() {
                 'modal-signup', 'modal-hint', 'modal-change-pw', 'modal-task',
                 'modal-meeting', 'modal-review', 'modal-project', 'modal-privacy',
                 'modal-terms', 'modal-contact', 'modal-about', 'modal-milestone',
-                'modal-log', 'modal-settings', 'modal-done-log-detail'
+                'modal-log', 'modal-settings', 'modal-done-log-detail',
+                'modal-complete-project', 'modal-categories'
             ];
             modals.forEach(id => {
                 const el = document.getElementById(id);
@@ -1876,34 +1990,466 @@ async function loadView(viewId) {
 }
 
 async function refreshStats() {
+    if (!currentUser) return;
     try {
-        // Fetch fresh tasks to ensure accuracy
-        const tasks = await invoke('plugin:kanban|get_tasks', { ownerId: currentUser.id });
-        currentTasks = tasks; // Sync global state
-
-        const m = await invoke('plugin:minutes|get_meeting_count', { ownerId: currentUser.id });
-        const p = await invoke('plugin:pm|get_project_count', { ownerId: currentUser.id });
+        // Query enabled features first to respect UI Synchronization principles
+        const enabledFeatures = await invoke('plugin:engine|get_enabled_features');
         
-        // Calculate pending tasks (Not Done and Not Review)
-        const pendingTasks = tasks.filter(t => t.status !== 'Done' && t.status !== 'Review');
-        const pendingCount = pendingTasks.length;
-
-        // Update Dashboard
-        const statTasks = document.getElementById('stat-tasks');
-        if (statTasks) {
-            statTasks.textContent = pendingCount;
-            // Optionally update the label to be more clear
-            const label = statTasks.previousElementSibling;
-            if (label && label.classList.contains('stat-label')) {
-                label.textContent = 'Pending Tasks';
+        // 1. Kanban Module (Tasks Donut Chart)
+        if (enabledFeatures.includes('kanban')) {
+            try {
+                const tasks = await invoke('plugin:kanban|get_tasks', { ownerId: currentUser.id });
+                currentTasks = tasks; // Sync global state
+                
+                const pendingTasks = tasks.filter(t => t.status !== 'Done' && t.status !== 'Review');
+                const pendingCount = pendingTasks.length;
+                
+                const statTasks = document.getElementById('stat-tasks');
+                if (statTasks) {
+                    statTasks.textContent = pendingCount;
+                    const label = statTasks.previousElementSibling;
+                    if (label && label.classList.contains('stat-label')) {
+                        label.textContent = 'Pending Tasks';
+                    }
+                }
+                
+                // Group tasks by status for the donut chart
+                const counts = { 'Note': 0, 'Todo': 0, 'Doing': 0, 'Review': 0, 'Done': 0 };
+                tasks.forEach(t => {
+                    if (counts[t.status] !== undefined) counts[t.status]++;
+                });
+                
+                const donutData = [
+                    { label: 'Note', value: counts['Note'], color: '#64748b' },
+                    { label: 'Todo', value: counts['Todo'], color: '#3b82f6' },
+                    { label: 'Doing', value: counts['Doing'], color: '#f59e0b' },
+                    { label: 'Review', value: counts['Review'], color: '#a855f7' },
+                    { label: 'Done', value: counts['Done'], color: '#10b981' }
+                ];
+                
+                drawDonutChart('svg-task-donut', donutData);
+                const taskCard = document.getElementById('chart-card-tasks');
+                if (taskCard) taskCard.style.display = 'block';
+                
+                updateSidebarStatus(tasks);
+            } catch (err) {
+                console.error("Dashboard Kanban stats load error:", err);
             }
+        } else {
+            const taskCard = document.getElementById('chart-card-tasks');
+            if (taskCard) taskCard.style.display = 'none';
+        }
+
+        // 2. Minutes Module (Meeting Categories radial breakdown)
+        if (enabledFeatures.includes('minutes')) {
+            try {
+                const m = await invoke('plugin:minutes|get_meeting_count', { ownerId: currentUser.id });
+                const statMeetings = document.getElementById('stat-meetings');
+                if (statMeetings) statMeetings.textContent = m;
+                
+                const meetings = await invoke('plugin:minutes|get_meetings', { ownerId: currentUser.id });
+                const categories = await invoke('plugin:minutes|get_categories', { ownerId: currentUser.id });
+                
+                drawMeetingCategories('categories-chart-list', meetings, categories);
+                const categoriesCard = document.getElementById('chart-card-categories');
+                if (categoriesCard) categoriesCard.style.display = 'block';
+            } catch (err) {
+                console.error("Dashboard Minutes stats load error:", err);
+            }
+        } else {
+            const categoriesCard = document.getElementById('chart-card-categories');
+            if (categoriesCard) categoriesCard.style.display = 'none';
+        }
+
+        // 3. PM Module (Departmental Workload Progress Bars)
+        if (enabledFeatures.includes('pm')) {
+            try {
+                const p = await invoke('plugin:pm|get_project_count', { ownerId: currentUser.id });
+                const statProjects = document.getElementById('stat-projects');
+                if (statProjects) statProjects.textContent = p;
+                
+                const projects = await invoke('plugin:pm|get_projects', { ownerId: currentUser.id });
+                const activeProjects = projects.filter(proj => !proj.is_deleted);
+                
+                const projectsWithLogs = [];
+                // Load logs in parallel for performance
+                await Promise.all(activeProjects.map(async (proj) => {
+                    try {
+                        const logs = await invoke('plugin:pm|get_status_logs', { projectId: proj.id });
+                        projectsWithLogs.push({ project: proj, logs: logs });
+                    } catch (err) {
+                        console.error(`Error loading logs for project ID ${proj.id}:`, err);
+                    }
+                }));
+                
+                // Store globally
+                currentProjectsWithLogs = projectsWithLogs;
+                
+                // Populate Dropdown
+                const projectSelect = document.getElementById('dashboard-workload-project-select');
+                if (projectSelect) {
+                    projectSelect.innerHTML = '';
+                    if (activeProjects.length === 0) {
+                        const opt = document.createElement('option');
+                        opt.value = "";
+                        opt.textContent = "No Projects";
+                        projectSelect.appendChild(opt);
+                        selectedWorkloadProjectId = null;
+                    } else {
+                        activeProjects.forEach(proj => {
+                            const opt = document.createElement('option');
+                            opt.value = proj.id;
+                            opt.textContent = `[${proj.project_tag}] ${proj.name}`;
+                            projectSelect.appendChild(opt);
+                        });
+                        
+                        // Select appropriate default
+                        if (selectedWorkloadProjectId === null || !activeProjects.some(pr => pr.id === selectedWorkloadProjectId)) {
+                            selectedWorkloadProjectId = activeProjects[0].id;
+                        }
+                        projectSelect.value = selectedWorkloadProjectId;
+                    }
+                }
+                
+                // Draw workload for selected project
+                const selectedProjItem = projectsWithLogs.find(p => p.project.id === selectedWorkloadProjectId);
+                drawDepartmentWorkload('workload-bar-list', selectedProjItem);
+                
+                // Bind dropdown change event
+                if (projectSelect) {
+                    projectSelect.onchange = (e) => {
+                        const val = e.target.value;
+                        if (!val) {
+                            selectedWorkloadProjectId = null;
+                            drawDepartmentWorkload('workload-bar-list', null);
+                            return;
+                        }
+                        selectedWorkloadProjectId = parseInt(val);
+                        const item = currentProjectsWithLogs.find(p => p.project.id === selectedWorkloadProjectId);
+                        drawDepartmentWorkload('workload-bar-list', item);
+                    };
+                }
+
+                // Bind metric select change event
+                const metricSelect = document.getElementById('dashboard-workload-metric-select');
+                if (metricSelect) {
+                    metricSelect.onchange = () => {
+                        const item = currentProjectsWithLogs.find(p => p.project.id === selectedWorkloadProjectId);
+                        drawDepartmentWorkload('workload-bar-list', item);
+                    };
+                }
+                
+                const workloadCard = document.getElementById('chart-card-workload');
+                if (workloadCard) workloadCard.style.display = 'block';
+            } catch (err) {
+                console.error("Dashboard PM stats load error:", err);
+            }
+        } else {
+            const workloadCard = document.getElementById('chart-card-workload');
+            if (workloadCard) workloadCard.style.display = 'none';
         }
         
-        document.getElementById('stat-meetings').textContent = m;
-        document.getElementById('stat-projects').textContent = p;
+    } catch (err) {
+        console.error("Refresh Stats Main Error:", err);
+    }
+}
 
-        updateSidebarStatus(tasks);
-    } catch (err) { console.error("Refresh Stats Error:", err); }
+/* ==========================================================================
+   Zero-Dependency SVG Chart Drawing Functions (v2.2 Dashboard Upgrade)
+   ========================================================================== */
+
+function drawDonutChart(svgId, data) {
+    const svg = document.getElementById(svgId);
+    if (!svg) return;
+    svg.innerHTML = '';
+    
+    const legend = document.getElementById('legend-task-donut');
+    if (legend) legend.innerHTML = '';
+
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    if (total === 0) {
+        svg.innerHTML = `
+            <circle cx="80" cy="80" r="55" fill="transparent" stroke="rgba(255,255,255,0.05)" stroke-width="12"></circle>
+            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-size="12" font-weight="600">No Tasks</text>
+        `;
+        return;
+    }
+
+    const cx = 80;
+    const cy = 80;
+    const radius = 55;
+    const strokeWidth = 12;
+    const circumference = 2 * Math.PI * radius;
+    
+    let currentOffset = 0;
+    
+    data.forEach((item) => {
+        // Draw Legend Item
+        if (legend) {
+            const legItem = document.createElement('div');
+            legItem.className = 'legend-item';
+            legItem.innerHTML = `
+                <span class="legend-color" style="color: ${item.color}; background: ${item.color};"></span>
+                <span class="legend-label">${item.label}</span>
+                <span class="legend-value">${item.value}</span>
+            `;
+            legend.appendChild(legItem);
+        }
+
+        if (item.value === 0) return;
+        
+        const percentage = item.value / total;
+        const strokeLength = percentage * circumference;
+        
+        // Circular Segment
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", cx);
+        circle.setAttribute("cy", cy);
+        circle.setAttribute("r", radius);
+        circle.setAttribute("fill", "transparent");
+        circle.setAttribute("stroke", item.color);
+        circle.setAttribute("stroke-width", strokeWidth);
+        circle.setAttribute("stroke-dasharray", `${strokeLength} ${circumference}`);
+        circle.setAttribute("stroke-dashoffset", -currentOffset);
+        circle.setAttribute("transform", `rotate(-90 ${cx} ${cy})`);
+        circle.setAttribute("class", "donut-segment");
+        circle.style.transition = "stroke-width 0.2s ease, stroke 0.2s ease";
+        
+        // Micro-animations & Interactive tooltips
+        circle.onmouseenter = (e) => {
+            circle.setAttribute("stroke-width", strokeWidth + 3);
+            showChartTooltip(e, `${item.label}: ${item.value} tasks (${Math.round(percentage * 100)}%)`);
+        };
+        circle.onmouseleave = () => {
+            circle.setAttribute("stroke-width", strokeWidth);
+            hideChartTooltip();
+        };
+        
+        svg.appendChild(circle);
+        currentOffset += strokeLength;
+    });
+    
+    // Total count value in the center
+    const textVal = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    textVal.setAttribute("x", "50%");
+    textVal.setAttribute("y", "47%");
+    textVal.setAttribute("dominant-baseline", "middle");
+    textVal.setAttribute("text-anchor", "middle");
+    textVal.setAttribute("fill", "#ffffff");
+    textVal.setAttribute("font-size", "22px");
+    textVal.setAttribute("font-weight", "800");
+    textVal.textContent = total;
+    svg.appendChild(textVal);
+
+    // TOTAL label under value
+    const textLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    textLabel.setAttribute("x", "50%");
+    textLabel.setAttribute("y", "63%");
+    textLabel.setAttribute("dominant-baseline", "middle");
+    textLabel.setAttribute("text-anchor", "middle");
+    textLabel.setAttribute("fill", "#9ca3af");
+    textLabel.setAttribute("font-size", "10px");
+    textLabel.setAttribute("font-weight", "700");
+    textLabel.setAttribute("letter-spacing", "0.5px");
+    textLabel.textContent = "TOTAL";
+    svg.appendChild(textLabel);
+}
+
+function getPlannedDays(startDateStr, dueDateStr) {
+    if (!startDateStr || !dueDateStr) return 0;
+    const start = new Date(startDateStr);
+    const due = new Date(dueDateStr);
+    if (isNaN(start.getTime()) || isNaN(due.getTime())) return 0;
+    const diffTime = due - start;
+    if (diffTime < 0) return 1; // Fallback if dates are inverted
+    return Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+}
+
+function drawDepartmentWorkload(containerId, selectedProjItem) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!selectedProjItem) {
+        container.innerHTML = `
+            <div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 20px 0;">
+                No active project selected.
+            </div>
+        `;
+        return;
+    }
+
+    const proj = selectedProjItem.project;
+    const logs = selectedProjItem.logs || [];
+    
+    // Resolve project custom department names
+    const d1 = (proj.dept1_name || 'Mech').trim();
+    const d2 = (proj.dept2_name || 'Control').trim();
+    const d3 = (proj.dept3_name || 'Elec').trim();
+    const d4 = (proj.dept4_name || 'Sales').trim();
+
+    // Read the active metric from the DOM
+    const metricSelect = document.getElementById('dashboard-workload-metric-select');
+    const metric = metricSelect ? metricSelect.value : 'logs';
+
+    // Initialize counts with user-defined department names!
+    const depts = {
+        'Mech': { value: 0, color: '#3b82f6', label: d1 },
+        'Control': { value: 0, color: '#f59e0b', label: d2 },
+        'Elec': { value: 0, color: '#10b981', label: d3 },
+        'Sales': { value: 0, color: '#ec4899', label: d4 }
+    };
+
+    logs.forEach(log => {
+        if (log.is_deleted) return;
+        
+        let increment = 1;
+        if (metric === 'days') {
+            increment = getPlannedDays(log.start_date, log.due_date);
+        }
+
+        const logDept = (log.department || '').trim();
+        if (logDept === d1 || logDept === 'Mech') depts['Mech'].value += increment;
+        else if (logDept === d2 || logDept === 'Control') depts['Control'].value += increment;
+        else if (logDept === d3 || logDept === 'Elec') depts['Elec'].value += increment;
+        else if (logDept === d4 || logDept === 'Sales') depts['Sales'].value += increment;
+    });
+
+    const totalVal = Object.values(depts).reduce((sum, d) => sum + d.value, 0);
+
+    if (totalVal === 0) {
+        const emptyMsg = metric === 'days' 
+            ? 'No planned days found in project logs (or start/due dates are not set).'
+            : 'No active status logs found for this project.';
+        container.innerHTML = `
+            <div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 20px 0;">
+                ${emptyMsg}
+            </div>
+        `;
+        return;
+    }
+
+    Object.keys(depts).forEach(key => {
+        const dept = depts[key];
+        const pct = totalVal > 0 ? Math.round((dept.value / totalVal) * 100) : 0;
+        
+        const labelStr = metric === 'days' ? `${dept.value} days` : `${dept.value} logs`;
+        const tooltipStr = metric === 'days' 
+            ? `${dept.label}: ${dept.value} planned days (${pct}% of project schedule duration)`
+            : `${dept.label}: ${dept.value} active status logs (${pct}% of project workload)`;
+
+        const item = document.createElement('div');
+        item.className = 'workload-item';
+        item.innerHTML = `
+            <div class="workload-meta">
+                <span class="workload-label">
+                    <span class="category-bubble-indicator" style="color: ${dept.color}; background: ${dept.color};"></span>
+                    ${dept.label}
+                </span>
+                <span class="workload-val">${labelStr} (${pct}%)</span>
+            </div>
+            <div class="workload-bar-bg">
+                <div class="workload-bar-fill" style="width: ${pct}%; color: ${dept.color}; background: linear-gradient(90deg, ${dept.color}bb, ${dept.color});"></div>
+            </div>
+        `;
+        
+        // Add interactive tooltips to bars
+        item.onmouseenter = (e) => {
+            showChartTooltip(e, tooltipStr);
+        };
+        item.onmouseleave = () => {
+            hideChartTooltip();
+        };
+
+        container.appendChild(item);
+    });
+}
+
+function drawMeetingCategories(containerId, meetings, categories) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+
+    const activeMeetings = meetings.filter(m => !m.is_deleted);
+    const categoryCounts = {};
+    
+    // Seed default Uncategorized bucket
+    categoryCounts[0] = { name: 'Uncategorized', color: '#64748b', count: 0 };
+    
+    categories.forEach(cat => {
+        categoryCounts[cat.id] = { name: cat.name, color: cat.color || '#3b82f6', count: 0 };
+    });
+
+    activeMeetings.forEach(m => {
+        const catId = m.category_id || 0;
+        if (categoryCounts[catId]) {
+            categoryCounts[catId].count++;
+        } else {
+            categoryCounts[0].count++;
+        }
+    });
+
+    // Filter out categories with zero meetings, but keep Uncategorized if it has items
+    const sortedCats = Object.values(categoryCounts)
+        .filter(c => c.count > 0 || c.name === 'Uncategorized')
+        .sort((a, b) => b.count - a.count);
+
+    const totalActive = activeMeetings.length;
+
+    if (totalActive === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 20px 0;">
+                No minutes recorded yet.
+            </div>
+        `;
+        return;
+    }
+
+    sortedCats.forEach(cat => {
+        const pct = totalActive > 0 ? Math.round((cat.count / totalActive) * 100) : 0;
+        
+        const item = document.createElement('div');
+        item.className = 'category-chart-item';
+        item.innerHTML = `
+            <div class="category-chart-left">
+                <span class="category-bubble-indicator" style="color: ${cat.color}; background: ${cat.color};"></span>
+                <span class="category-chart-name">${cat.name}</span>
+            </div>
+            <div class="category-chart-right">
+                <span class="category-chart-count">${cat.count} min</span>
+                <span class="category-chart-pct">${pct}%</span>
+            </div>
+        `;
+
+        item.onmouseenter = (e) => {
+            showChartTooltip(e, `Category "${cat.name}": ${cat.count} minutes (${pct}% of total meetings)`);
+        };
+        item.onmouseleave = () => {
+            hideChartTooltip();
+        };
+
+        container.appendChild(item);
+    });
+}
+
+function showChartTooltip(e, text) {
+    const tooltip = document.getElementById('chart-tooltip');
+    if (!tooltip) return;
+    tooltip.textContent = text;
+    tooltip.style.opacity = '1';
+    
+    // Position the tooltip slightly above and to the right of the pointer
+    const x = e.pageX + 12;
+    const y = e.pageY - 12;
+    tooltip.style.left = `${x}px`;
+    tooltip.style.top = `${y}px`;
+}
+
+function hideChartTooltip() {
+    const tooltip = document.getElementById('chart-tooltip');
+    if (tooltip) {
+        tooltip.style.opacity = '0';
+    }
 }
 
 function updateSidebarStatus(tasks) {
@@ -2325,6 +2871,7 @@ function createTaskCard(t) {
 
 async function refreshMinutes() {
     try {
+        await refreshCategories();
         currentMeetings = await invoke('plugin:minutes|get_meetings', { ownerId: currentUser.id });
         
         const activeTab = document.querySelector('#view-minutes .view-tab.active');
@@ -2363,41 +2910,202 @@ function renderMeetingsList(meetings) {
     if (!list) return;
     list.innerHTML = '';
     
-    meetings.forEach(m => {
-        const card = document.createElement('div');
-        card.className = 'meeting-card';
-        card.dataset.id = m.id;
-        const tagBadge = m.meeting_tag ? `<span class="tag-badge-mini">${m.meeting_tag}</span>` : '';
-        card.innerHTML = `
-            <div class="meeting-date-badge">${m.date || 'No Date'}</div> 
-            ${tagBadge} 
-            <div class="meeting-title">${m.title}</div>
-            <div class="meeting-info">
-                <span>📍 ${m.location || 'Remote'}</span>
-                <span>👥 ${m.participants || 'N/A'}</span>
+    const filterSelect = document.getElementById('minutes-category-filter');
+    const selectedFilter = filterSelect ? filterSelect.value : 'all';
+
+    // Set grouped view layout style class
+    list.className = 'minutes-list grouped-view';
+
+    // 1. Group meetings by category
+    let lanesToRender = [];
+    
+    if (selectedFilter === 'all') {
+        // Render all categories lanes + uncategorized lane
+        lanesToRender = currentCategories.map(cat => ({
+            id: cat.id,
+            name: cat.name,
+            color: cat.color,
+            meetings: meetings.filter(m => m.category_id === cat.id)
+        }));
+        // Add Uncategorized lane to the very beginning
+        const uncategorizedMeetings = meetings.filter(m => !m.category_id);
+        lanesToRender.unshift({
+            id: 'none',
+            name: 'Uncategorized',
+            color: '#6b7280',
+            meetings: uncategorizedMeetings
+        });
+    } else if (selectedFilter === 'none') {
+        lanesToRender = [{
+            id: 'none',
+            name: 'Uncategorized',
+            color: '#6b7280',
+            meetings: meetings.filter(m => !m.category_id)
+        }];
+    } else {
+        const catId = parseInt(selectedFilter);
+        const cat = currentCategories.find(c => c.id === catId);
+        if (cat) {
+            lanesToRender = [{
+                id: cat.id,
+                name: cat.name,
+                color: cat.color,
+                meetings: meetings.filter(m => m.category_id === cat.id)
+            }];
+        }
+    }
+
+    lanesToRender.forEach(lane => {
+        const laneEl = document.createElement('div');
+        laneEl.className = 'minutes-category-lane';
+        
+        laneEl.innerHTML = `
+            <div class="minutes-category-lane-header">
+                <div class="minutes-category-lane-title">
+                    <span class="minutes-category-lane-dot" style="background-color: ${lane.color}; color: ${lane.color};"></span>
+                    <span>${lane.name}</span>
+                </div>
+                <span class="minutes-category-lane-count">${lane.meetings.length}</span>
             </div>
-            <div class="meeting-actions-mini">
-                <button class="btn-icon delete-meeting-btn" title="Delete">
-                    🗑️
+            <div class="lane-import-actions" style="display: flex; gap: 8px; padding: 0 2px;">
+                <button class="btn btn-outline-accent btn-lane-import-single" style="flex: 1; font-size: 11px; padding: 6px 4px; line-height: 1.2; height: auto; display: flex; align-items: center; justify-content: center; gap: 4px; border-radius: 6px;" title="Import MD from File">
+                    <span>📄</span> Import File
+                </button>
+                <button class="btn btn-outline-accent btn-lane-import-bulk" style="flex: 1; font-size: 11px; padding: 6px 4px; line-height: 1.2; height: auto; display: flex; align-items: center; justify-content: center; gap: 4px; border-radius: 6px;" title="Import MD from Folder">
+                    <span>📁</span> Import Folder
                 </button>
             </div>
+            <div class="minutes-category-lane-cards" style="display: flex; flex-direction: column; gap: 12px; min-height: 100px;">
+                <!-- Cards go here -->
+            </div>
         `;
-        
-        card.addEventListener('click', () => {
-            openMeetingModal(m, false);
-        });
 
-        const delBtn = card.querySelector('.delete-meeting-btn');
-        if (delBtn) {
-            delBtn.onclick = async (e) => {
-                e.stopPropagation();
-                if (await askConfirm('Move this meeting to Trash?')) {
-                    deleteMeeting(m.id);
+        const cardsContainer = laneEl.querySelector('.minutes-category-lane-cards');
+
+        // Wire up import buttons for this lane
+        const btnSingle = laneEl.querySelector('.btn-lane-import-single');
+        const btnBulk = laneEl.querySelector('.btn-lane-import-bulk');
+        const categoryId = lane.id === 'none' ? null : lane.id;
+
+        btnSingle.onclick = async (e) => {
+            e.stopPropagation();
+            try {
+                const file = await window.__TAURI__.dialog.open({
+                    directory: false,
+                    multiple: false,
+                    title: `Select Markdown File to Import to "${lane.name}"`,
+                    filters: [{ name: 'Markdown', extensions: ['md'] }]
+                });
+                
+                if (file) {
+                    const warning = await invoke('plugin:minutes|import_minutes_md_single', { 
+                        filePath: file, 
+                        ownerId: currentUser.id,
+                        categoryId: categoryId
+                    });
+                    if (warning) {
+                        alert(warning);
+                    } else {
+                        alert(`Successfully imported the meeting minutes to "${lane.name}".`);
+                    }
+                    refreshMinutes(); // refresh the list
                 }
-            };
+            } catch (err) {
+                console.error("Import MD File Error:", err);
+                alert(err);
+                if (typeof refreshMinutes === 'function') refreshMinutes();
+            }
+        };
+
+        btnBulk.onclick = async (e) => {
+            e.stopPropagation();
+            try {
+                const dir = await window.__TAURI__.dialog.open({
+                    directory: true,
+                    multiple: false,
+                    title: `Select Directory to Import MD files to "${lane.name}"`
+                });
+                
+                if (dir) {
+                    const resultMsg = await invoke('plugin:minutes|import_minutes_md_bulk', { 
+                        dirPath: dir, 
+                        ownerId: currentUser.id,
+                        categoryId: categoryId
+                    });
+                    alert(resultMsg);
+                    refreshMinutes(); // refresh the list
+                }
+            } catch (err) {
+                console.error("Import MD Error:", err);
+                alert(err);
+                if (typeof refreshMinutes === 'function') refreshMinutes();
+            }
+        };
+
+        if (lane.meetings.length === 0) {
+            const emptyEl = document.createElement('div');
+            emptyEl.style.textAlign = 'center';
+            emptyEl.style.color = 'var(--text-secondary)';
+            emptyEl.style.fontSize = '12px';
+            emptyEl.style.padding = '20px 10px';
+            emptyEl.style.border = '1px dashed rgba(255, 255, 255, 0.05)';
+            emptyEl.style.borderRadius = '12px';
+            emptyEl.textContent = 'No minutes in this category.';
+            cardsContainer.appendChild(emptyEl);
         }
 
-        list.appendChild(card);
+        lane.meetings.forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'meeting-card';
+            card.dataset.id = m.id;
+            
+            const tagBadge = m.meeting_tag ? `<span class="tag-badge-mini">${m.meeting_tag}</span>` : '';
+            
+            // Get category badge if any
+            let catBadge = '';
+            const mCat = currentCategories.find(c => c.id === m.category_id);
+            if (mCat) {
+                catBadge = `<span class="meeting-card-category-badge" style="color: ${mCat.color};">${mCat.name}</span>`;
+            }
+
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                    <div class="meeting-date-badge">${m.date || 'No Date'}</div>
+                </div>
+                ${tagBadge} 
+                <div class="meeting-title" style="margin-bottom: 8px;">${m.title}</div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto;">
+                    <div class="meeting-info" style="margin-top: 0;">
+                        <span>📍 ${m.location || 'Remote'}</span>
+                        <span>👥 ${m.participants || 'N/A'}</span>
+                    </div>
+                    ${catBadge}
+                </div>
+                <div class="meeting-actions-mini">
+                    <button class="btn-icon delete-meeting-btn" title="Delete">
+                        🗑️
+                    </button>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => {
+                openMeetingModal(m, false);
+            });
+
+            const delBtn = card.querySelector('.delete-meeting-btn');
+            if (delBtn) {
+                delBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (await askConfirm('Move this meeting to Trash?')) {
+                        deleteMeeting(m.id);
+                    }
+                };
+            }
+
+            cardsContainer.appendChild(card);
+        });
+
+        list.appendChild(laneEl);
     });
 }
 
@@ -2692,16 +3400,18 @@ async function refreshProjects() {
             // Render Tag Badge if exists
             const tagBadge = p.project_tag ? `<span class="tag-badge-mini" style="margin-left: 0; margin-bottom: 6px; display: inline-block;">${p.project_tag}</span>` : '';
             
+            // Format start date beautifully
+            const formattedDate = p.start_date ? `📅 Start: ${p.start_date}` : '📅 Start: -';
+            
             item.innerHTML = `
                 ${tagBadge}
                 <h4>${p.name}</h4>
                 <div class="client">${p.client || 'Internal Project'}</div>
-                <div class="project-actions-mini">
+                <div class="project-start-date">${formattedDate}</div>
+                <div class="project-actions-group">
                     <button class="btn-icon complete-project-btn" title="Complete Project">✓</button>
-                    <button class="btn-icon delete-project-btn" title="Delete">🗑️</button>
-                </div>
-                <div class="project-actions-bottom-mini">
                     <button class="btn-icon export-project-btn" title="Export DB">📤</button>
+                    <button class="btn-icon delete-project-btn" title="Delete">🗑️</button>
                 </div>
             `;
             item.addEventListener('click', () => loadProjectDetails(p.id));
@@ -2755,6 +3465,8 @@ async function refreshProjects() {
                                 if (btnEditProject) btnEditProject.classList.add('hidden');
                                 const btnExportHtml = document.getElementById('pm-timetable-export-html');
                                 if (btnExportHtml) btnExportHtml.classList.add('hidden');
+                                const btnPmExportMd = document.getElementById('pm-timetable-export-md');
+                                if (btnPmExportMd) btnPmExportMd.classList.add('hidden');
                             }
                             
                             await refreshProjects();
@@ -2807,6 +3519,10 @@ async function loadProjectDetails(projectId) {
     const btnExportHtml = document.getElementById('pm-timetable-export-html');
     if (btnExportHtml) {
         btnExportHtml.classList.remove('hidden');
+    }
+    const btnPmExportMd = document.getElementById('pm-timetable-export-md');
+    if (btnPmExportMd) {
+        btnPmExportMd.classList.remove('hidden');
     }
     document.getElementById('detail-project-meta').textContent = `Client: ${project.client || '-'} | Manager: ${project.manager || '-'} | Start Date: ${project.start_date || '-'}`;
 
@@ -3133,7 +3849,8 @@ async function renderTimeTable() {
     if (!scaleSelect || !container) return;
     const scale = scaleSelect.value;
 
-    container.innerHTML = '';
+    // Show a clean loading state while fetching backend data
+    container.innerHTML = '<div style="padding: 20px; color: var(--text-secondary); text-align: center; font-size: 14px;">Loading timetable data...</div>';
 
     // Fetch live data from backend
     let logs = [];
@@ -3155,8 +3872,12 @@ async function renderTimeTable() {
         }
     } catch (err) {
         console.error("Fetch live timetable data error:", err);
+        container.innerHTML = '<div style="padding: 20px; color: #ef4444; text-align: center; font-size: 14px;">Failed to load timetable data.</div>';
         return;
     }
+
+    // Clear loading state synchronously right before building DOM nodes to prevent race conditions
+    container.innerHTML = '';
 
     // Determine date range and scale
     const now = new Date();
@@ -5074,6 +5795,147 @@ function generateProjectHtml(project, milestones, logs) {
 </html>`;
 }
 
+function generateProjectMd(project, milestones, logs) {
+    const sortedMilestones = [...milestones].filter(m => m.is_saved && (m.name || m.deadline)).sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
+    const activeLogs = [...logs].filter(l => !l.is_deleted && l.status !== 'done').sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const doneLogs = [...logs].filter(l => !l.is_deleted && l.status === 'done').sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const deletedLogs = [...logs].filter(l => l.is_deleted).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    let md = `# 📝 Project Report: ${project.name}\n\n`;
+    md += `- **Client:** ${project.client || '-'}\n`;
+    md += `- **Manager:** ${project.manager || '-'}\n`;
+    md += `- **Start Date:** ${project.start_date || '-'}\n`;
+    md += `- **Generated:** ${new Date().toLocaleString()}\n\n`;
+
+    md += `> ### Project Overview\n> ${project.description ? project.description.replace(/\n/g, '\n> ') : 'No description available.'}\n\n`;
+
+    // 1. Gantt Chart using Mermaid
+    md += `## 📊 Project Timetable (Gantt Chart)\n\n`;
+    md += `\`\`\`mermaid\ngantt\n`;
+    md += `    title Project Timetable\n`;
+    md += `    dateFormat YYYY-MM-DD\n`;
+    md += `    axisFormat %Y-%m\n\n`;
+
+    // Add milestones to Gantt as milestones
+    if (sortedMilestones.length > 0) {
+        md += `    section Milestones\n`;
+        sortedMilestones.forEach(m => {
+            const deadline = m.deadline || new Date().toISOString().split('T')[0];
+            const cleanName = (m.name || 'Milestone').replace(/:/g, ' ');
+            const statusTag = m.is_done ? 'done' : 'active';
+            md += `    ${cleanName} : milestone, ${statusTag}, ${deadline}, 1d\n`;
+        });
+        md += `\n`;
+    }
+
+    // Add departments as sections
+    const depts = [
+        { name: project.dept1_name || 'Mech', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept1_name || 'Mech').toLowerCase()) },
+        { name: project.dept2_name || 'Control', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept2_name || 'Control').toLowerCase()) },
+        { name: project.dept3_name || 'Elec', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept3_name || 'Elec').toLowerCase()) },
+        { name: project.dept4_name || 'Sales', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept4_name || 'Sales').toLowerCase()) }
+    ];
+
+    depts.forEach(dept => {
+        if (dept.logs.length > 0) {
+            md += `    section ${dept.name.toUpperCase()}\n`;
+            dept.logs.forEach(l => {
+                const start = l.start_date || project.start_date || new Date().toISOString().split('T')[0];
+                const due = l.due_date || start;
+                const cleanTitle = (l.title || 'Log').replace(/:/g, ' ');
+                let statusTag = '';
+                if (l.status === 'doing') statusTag = 'active, ';
+                else if (l.status === 'review') statusTag = 'crit, ';
+                md += `    ${cleanTitle} : ${statusTag}${start}, ${due}\n`;
+            });
+            md += `\n`;
+        }
+    });
+
+    md += `\`\`\`\n\n`;
+
+    // 2. Departmental Status Board
+    md += `## 📋 Departmental Status Board\n\n`;
+    depts.forEach(dept => {
+        md += `### 🔹 ${dept.name.toUpperCase()}\n\n`;
+        if (dept.logs.length === 0) {
+            md += `*No active logs*\n\n`;
+        } else {
+            dept.logs.forEach(l => {
+                md += `#### 📌 ${l.title}\n`;
+                if (l.text_content) {
+                    md += `${l.text_content.trim()}\n\n`;
+                }
+                md += `- **PIC:** ${l.manager || '-'}\n`;
+                md += `- **Duration:** ${(l.start_date || l.due_date) ? (l.start_date || '-') + ' ~ ' + (l.due_date || '-') : '-'}\n\n`;
+            });
+        }
+    });
+
+    // 3. Project Milestones
+    md += `## 🎯 Project Milestones\n\n`;
+    md += `| Slot | Milestone Name | Deadline | Status |\n`;
+    md += `| :--- | :--- | :--- | :--- |\n`;
+    if (sortedMilestones.length === 0) {
+        md += `| - | No milestones defined. | - | - |\n`;
+    } else {
+        sortedMilestones.forEach((m, idx) => {
+            const slot = (idx + 1) < 10 ? '0' + (idx + 1) : (idx + 1);
+            const status = m.is_done ? '✓ Done' : '⏳ Pending';
+            md += `| ${slot} | ${m.name || '-'} | ${m.deadline || '-'} | ${status} |\n`;
+        });
+    }
+    md += `\n`;
+
+    // Helper to render logs table
+    const renderLogsTable = (logList, showStatusColumn) => {
+        let table = `| Slot | Title | Details | PIC | Duration |`;
+        if (showStatusColumn) table += ` Status |`;
+        table += `\n| :--- | :--- | :--- | :--- | :--- |`;
+        if (showStatusColumn) table += ` :--- |`;
+        table += `\n`;
+
+        if (logList.length === 0) {
+            table += `| - | No logs recorded. | - | - | - |`;
+            if (showStatusColumn) table += ` - |`;
+            table += `\n`;
+        } else {
+            logList.forEach(l => {
+                const slot = `[${l.department.toUpperCase()}]`;
+                const title = l.title || '-';
+                const details = (l.text_content || '').replace(/\n/g, '<br>');
+                const pic = l.manager || '-';
+                const duration = (l.start_date || l.due_date) ? `${l.start_date || '-'} ~ ${l.due_date || '-'}` : '-';
+                
+                table += `| ${slot} | ${title} | ${details} | ${pic} | ${duration} |`;
+                if (showStatusColumn) {
+                    const statusText = l.is_deleted ? '🗑 Deleted' : '✓ Done';
+                    table += ` ${statusText} |`;
+                }
+                table += `\n`;
+            });
+        }
+        return table;
+    };
+
+    // 4. Active Status Logs
+    md += `## ⚡ Active Status Logs\n\n`;
+    md += renderLogsTable(activeLogs, false);
+    md += `\n`;
+
+    // 5. Done Status Logs
+    md += `## ✅ Done Status Logs\n\n`;
+    md += renderLogsTable(doneLogs, true);
+    md += `\n`;
+
+    // 6. Deleted Status Logs
+    md += `## 🗑 Deleted Status Logs\n\n`;
+    md += renderLogsTable(deletedLogs, true);
+    md += `\n`;
+
+    return md;
+}
+
 function initDragAndDrop() {
     const board = document.querySelector('.kanban-board');
     if (!board) return;
@@ -5246,4 +6108,263 @@ function checkTaskLimits(task, isNew) {
     }
 
     return true;
+}
+
+// --- Category Management Helper Functions ---
+async function refreshCategories() {
+    try {
+        if (!currentUser) return;
+        currentCategories = await invoke('plugin:minutes|get_categories', { ownerId: currentUser.id });
+        
+        // Update the counter badge in manage categories modal if open
+        const countBadge = document.getElementById('category-count-badge');
+        if (countBadge) {
+            countBadge.textContent = `${currentCategories.length} / 50`;
+        }
+
+        // Populate meeting-category dropdown in Editor Modal
+        const editorSelect = document.getElementById('meeting-category');
+        if (editorSelect) {
+            const currentSelVal = editorSelect.value;
+            editorSelect.innerHTML = '<option value="">Uncategorized</option>';
+            currentCategories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat.id;
+                opt.textContent = cat.name;
+                editorSelect.appendChild(opt);
+            });
+            editorSelect.value = currentSelVal;
+        }
+
+        // Populate minutes-category-filter dropdown in Minutes Header
+        const filterSelect = document.getElementById('minutes-category-filter');
+        if (filterSelect) {
+            const currentFilterVal = filterSelect.value;
+            filterSelect.innerHTML = `
+                <option value="all">All Categories</option>
+                <option value="none">Uncategorized</option>
+            `;
+            currentCategories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat.id;
+                opt.textContent = cat.name;
+                filterSelect.appendChild(opt);
+            });
+            // Try to restore previous selection
+            filterSelect.value = filterSelect.querySelector(`option[value="${currentFilterVal}"]`) ? currentFilterVal : 'all';
+        }
+    } catch (err) {
+        console.error("Refresh Categories Error:", err);
+    }
+}
+
+function openCategoriesModal() {
+    const modal = document.getElementById('modal-categories');
+    if (!modal) return;
+    
+    // Clear inputs
+    document.getElementById('new-category-name').value = '';
+    document.getElementById('new-category-color').value = '#3b82f6';
+    
+    renderCategoriesList();
+    
+    modal.classList.remove('hidden');
+}
+
+function renderCategoriesList() {
+    const container = document.getElementById('categories-list-items');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (currentCategories.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">No categories created.</div>';
+        return;
+    }
+    
+    currentCategories.forEach(cat => {
+        const item = document.createElement('div');
+        item.className = 'category-manager-item';
+        
+        item.innerHTML = `
+            <div class="category-manager-info">
+                <span class="category-manager-color-bubble" style="background-color: ${cat.color}; color: ${cat.color};"></span>
+                <span class="category-manager-name">${cat.name}</span>
+            </div>
+            <div class="category-manager-actions">
+                <button class="btn-category-action edit-cat-btn" title="Rename">✏️</button>
+                <button class="btn-category-action delete-cat-btn" title="Delete">🗑️</button>
+            </div>
+        `;
+        
+        const editBtn = item.querySelector('.edit-cat-btn');
+        if (editBtn) {
+            editBtn.onclick = (e) => {
+                e.stopPropagation();
+                
+                const infoDiv = item.querySelector('.category-manager-info');
+                const actionsDiv = item.querySelector('.category-manager-actions');
+                if (!infoDiv || !actionsDiv) return;
+                
+                const originalName = cat.name;
+                
+                // Switch to inline editor mode
+                infoDiv.innerHTML = `
+                    <span class="category-manager-color-bubble" style="background-color: ${cat.color}; color: ${cat.color};"></span>
+                    <input type="text" class="category-manager-edit-input" value="${originalName}" maxlength="15" style="
+                        background: rgba(0, 0, 0, 0.4);
+                        border: 1px solid var(--accent-color);
+                        border-radius: 6px;
+                        color: var(--text-primary);
+                        padding: 3px 8px;
+                        font-size: 13px;
+                        font-family: inherit;
+                        width: 140px;
+                        outline: none;
+                        box-shadow: 0 0 10px rgba(249, 115, 22, 0.15);
+                        transition: all 0.2s;
+                    ">
+                `;
+                
+                actionsDiv.innerHTML = `
+                    <button class="btn-category-action save-edit-btn" title="Save" style="color: #10b981; font-weight: bold; font-size: 13px; padding: 4px 6px;">✔️</button>
+                    <button class="btn-category-action cancel-edit-btn" title="Cancel" style="color: #ef4444; font-weight: bold; font-size: 13px; padding: 4px 6px;">❌</button>
+                `;
+                
+                const input = infoDiv.querySelector('.category-manager-edit-input');
+                input.focus();
+                input.select();
+                
+                const saveFn = async () => {
+                    const newName = input.value.trim();
+                    if (!newName) {
+                        alert('Category name cannot be empty.');
+                        return;
+                    }
+                    
+                    if (newName.length > 15) {
+                        alert('Category name must be 15 characters or less.');
+                        return;
+                    }
+                    
+                    if (newName === originalName) {
+                        renderCategoriesList();
+                        return;
+                    }
+                    
+                    // Uniqueness check
+                    const exists = currentCategories.some(c => c.id !== cat.id && c.name.toLowerCase() === newName.toLowerCase());
+                    if (exists) {
+                        alert(`A category named "${newName}" already exists.`);
+                        return;
+                    }
+                    
+                    const updatedCategory = {
+                        id: cat.id,
+                        name: newName,
+                        color: cat.color,
+                        order_seq: cat.order_seq,
+                        owner_id: currentUser.id,
+                        created_at: cat.created_at
+                    };
+                    
+                    try {
+                        await invoke('plugin:minutes|save_category', { category: updatedCategory });
+                        await refreshCategories();
+                        renderCategoriesList();
+                        await refreshMinutes();
+                    } catch (err) {
+                        alert(err.toString());
+                    }
+                };
+                
+                input.onkeydown = (ev) => {
+                    if (ev.key === 'Enter') {
+                        saveFn();
+                    } else if (ev.key === 'Escape') {
+                        // Prevent the Escape key from closing the whole modal, just close the inline edit
+                        ev.stopPropagation();
+                        renderCategoriesList();
+                    }
+                };
+                
+                // Also prevent general keydowns from propagating up to window when typing in this input
+                input.onkeyup = (ev) => {
+                    if (ev.key === 'Escape') {
+                        ev.stopPropagation();
+                    }
+                };
+                
+                actionsDiv.querySelector('.save-edit-btn').onclick = (ev) => {
+                    ev.stopPropagation();
+                    saveFn();
+                };
+                
+                actionsDiv.querySelector('.cancel-edit-btn').onclick = (ev) => {
+                    ev.stopPropagation();
+                    renderCategoriesList();
+                };
+            };
+        }
+        
+        const delBtn = item.querySelector('.delete-cat-btn');
+        if (delBtn) {
+            delBtn.onclick = async () => {
+                if (await askConfirm(`Are you sure you want to delete category "${cat.name}"?\nAssociated minutes will be uncategorized.`)) {
+                    try {
+                        await invoke('plugin:minutes|delete_category', { categoryId: cat.id });
+                        await refreshCategories();
+                        renderCategoriesList();
+                        await refreshMinutes();
+                    } catch (err) {
+                        alert(err.toString());
+                    }
+                }
+            };
+        }
+        
+        container.appendChild(item);
+    });
+    
+    // Update badge count
+    const countBadge = document.getElementById('category-count-badge');
+    if (countBadge) {
+        countBadge.textContent = `${currentCategories.length} / 50`;
+    }
+}
+
+async function addCategory() {
+    const nameInput = document.getElementById('new-category-name');
+    const colorInput = document.getElementById('new-category-color');
+    if (!nameInput || !colorInput) return;
+    
+    const name = nameInput.value.trim();
+    const color = colorInput.value;
+    
+    if (!name) {
+        alert('Please enter a category name.');
+        return;
+    }
+    
+    if (currentCategories.length >= 50) {
+        alert('You have reached the maximum limit of 50 categories.');
+        return;
+    }
+    
+    const category = {
+        name: name,
+        color: color,
+        order_seq: currentCategories.length + 1,
+        owner_id: currentUser.id,
+        created_at: new Date().toISOString()
+    };
+    
+    try {
+        await invoke('plugin:minutes|save_category', { category });
+        nameInput.value = '';
+        await refreshCategories();
+        renderCategoriesList();
+        await refreshMinutes();
+    } catch (err) {
+        alert(err.toString());
+    }
 }

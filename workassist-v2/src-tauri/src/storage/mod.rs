@@ -187,6 +187,8 @@ impl Storage {
         conn.execute(schema::CREATE_SHADOW_MEETINGS_TABLE, [])?;
         conn.execute(schema::CREATE_SHADOW_PROJECTS_TABLE, [])?;
         conn.execute(schema::CREATE_SHADOW_STATUS_LOGS_TABLE, [])?;
+        conn.execute(schema::CREATE_MEETING_CATEGORIES_TABLE, [])?;
+        conn.execute(schema::CREATE_SHADOW_MEETING_CATEGORIES_TABLE, [])?;
 
         // Column Migrations
         let tasks_info: Vec<String> = {
@@ -218,6 +220,9 @@ impl Storage {
         if !meetings_info.contains(&"is_deleted".to_string()) {
             conn.execute("ALTER TABLE meetings ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT 0", [])?;
         }
+        if !meetings_info.contains(&"category_id".to_string()) {
+            conn.execute("ALTER TABLE meetings ADD COLUMN category_id INTEGER REFERENCES meeting_categories(id) ON DELETE SET NULL", [])?;
+        }
 
         let shadow_meetings_info: Vec<String> = {
             let mut stmt = conn.prepare("PRAGMA table_info(shadow_meetings)")?;
@@ -226,6 +231,9 @@ impl Storage {
         };
         if !shadow_meetings_info.contains(&"meeting_tag".to_string()) {
             conn.execute("ALTER TABLE shadow_meetings ADD COLUMN meeting_tag TEXT", [])?;
+        }
+        if !shadow_meetings_info.contains(&"category_id".to_string()) {
+            conn.execute("ALTER TABLE shadow_meetings ADD COLUMN category_id INTEGER", [])?;
         }
 
         let logs_info: Vec<String> = {
@@ -375,9 +383,9 @@ impl Storage {
 
         // 2. Write to shadow
         conn.execute(
-            "INSERT OR REPLACE INTO shadow_meetings (id, title, participants, location, decisions, action_items, memo, meeting_tag) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            params![meeting_id, s_title, s_participants, s_location, s_decisions, s_action, s_memo, meeting.meeting_tag],
+            "INSERT OR REPLACE INTO shadow_meetings (id, title, participants, location, decisions, action_items, memo, meeting_tag, category_id) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            params![meeting_id, s_title, s_participants, s_location, s_decisions, s_action, s_memo, meeting.meeting_tag, meeting.category_id],
         )?;
 
         Ok(())
@@ -445,6 +453,21 @@ impl Storage {
         Ok(())
     }
 
+    pub fn save_category_dual(&self, conn: &rusqlite::Connection, name: &str, category_id: i64) -> Result<()> {
+        let s_name = SecurityEngine::tokenize(conn, name);
+        conn.execute(
+            "INSERT OR REPLACE INTO shadow_meeting_categories (id, name) VALUES (?, ?)",
+            params![category_id, s_name],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_category_dual(&self, conn: &rusqlite::Connection, category_id: i64) -> Result<()> {
+        conn.execute("DELETE FROM shadow_meeting_categories WHERE id = ?", params![category_id])?;
+        conn.execute("DELETE FROM meeting_categories WHERE id = ?", params![category_id])?;
+        Ok(())
+    }
+
     pub fn seed_demo_data(&self) -> Result<()> {
         let owner_id = 999;
         let now_dt = chrono::Local::now();
@@ -468,18 +491,39 @@ impl Storage {
         conn.execute("DELETE FROM shadow_meetings WHERE id IN (SELECT id FROM meetings WHERE owner_id = ?)", [owner_id])?;
         conn.execute("DELETE FROM shadow_projects WHERE id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
         conn.execute("DELETE FROM shadow_status_logs WHERE id IN (SELECT id FROM status_logs WHERE owner_id = ?)", [owner_id])?;
+        conn.execute("DELETE FROM shadow_meeting_categories WHERE id IN (SELECT id FROM meeting_categories WHERE owner_id = ?)", [owner_id])?;
 
         conn.execute("DELETE FROM status_logs WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM milestones WHERE project_id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
         conn.execute("DELETE FROM projects WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM tasks WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM meetings WHERE owner_id = ?", [owner_id])?;
+        conn.execute("DELETE FROM meeting_categories WHERE owner_id = ?", [owner_id])?;
 
         // Ensure demo user exists
         conn.execute(
             "INSERT OR IGNORE INTO users (id, username, password_hash, password_hint) VALUES (?, ?, ?, ?)",
             params![owner_id, "demo_user", "demo", "demo"],
         )?;
+
+        // Seed demo categories
+        let demo_categories = vec![
+            ("업무", "#3b82f6", 1),
+            ("개인", "#10b981", 2),
+            ("회의", "#8b5cf6", 3),
+            ("프로젝트", "#f59e0b", 4),
+        ];
+        
+        let mut cat_ids = Vec::new();
+        for (name, color, seq) in demo_categories {
+            conn.execute(
+                "INSERT INTO meeting_categories (owner_id, name, color, order_seq, created_at) VALUES (?, ?, ?, ?, ?)",
+                params![owner_id, name, color, seq, now],
+            )?;
+            let cid = conn.last_insert_rowid();
+            self.save_category_dual(&conn, name, cid)?;
+            cat_ids.push(cid);
+        }
 
         let projects = vec![
             Project {
@@ -647,6 +691,7 @@ impl Storage {
                 memo: Some("Crucial meeting to finalize the Antigravity security layer.".to_string()),
                 created_at: now.clone(),
                 meeting_tag: Some(format!("M{}-1400-01", &d_m2.replace("-", "")[2..])),
+                category_id: Some(cat_ids[0]),
                 is_deleted: false,
             },
             Meeting {
@@ -660,15 +705,16 @@ impl Storage {
                 memo: Some("High-level strategic alignment for the next expansion phase.".to_string()),
                 created_at: now.clone(),
                 meeting_tag: Some(format!("M{}-1000-02", &d_today.replace("-", "")[2..])),
+                category_id: Some(cat_ids[2]),
                 is_deleted: false,
             }
         ];
 
         for mut m in meetings {
             conn.execute(
-                "INSERT INTO meetings (owner_id, title, date, participants, location, decisions, action_items, memo, created_at, meeting_tag) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                params![m.owner_id, m.title, m.date, m.participants, m.location, m.decisions, m.action_items, m.memo, m.created_at, m.meeting_tag],
+                "INSERT INTO meetings (owner_id, title, date, participants, location, decisions, action_items, memo, created_at, meeting_tag, category_id) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![m.owner_id, m.title, m.date, m.participants, m.location, m.decisions, m.action_items, m.memo, m.created_at, m.meeting_tag, m.category_id],
             )?;
             let mid = conn.last_insert_rowid();
             m.id = Some(mid);
@@ -687,6 +733,7 @@ impl Storage {
         conn.execute("DELETE FROM shadow_meetings WHERE id IN (SELECT id FROM meetings WHERE owner_id = ?)", [owner_id])?;
         conn.execute("DELETE FROM shadow_projects WHERE id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
         conn.execute("DELETE FROM shadow_status_logs WHERE id IN (SELECT id FROM status_logs WHERE owner_id = ?)", [owner_id])?;
+        conn.execute("DELETE FROM shadow_meeting_categories WHERE id IN (SELECT id FROM meeting_categories WHERE owner_id = ?)", [owner_id])?;
 
         // Delete from primary tables (Referencing tables first to prevent foreign key errors)
         conn.execute("DELETE FROM status_logs WHERE owner_id = ?", [owner_id])?;
@@ -694,6 +741,7 @@ impl Storage {
         conn.execute("DELETE FROM projects WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM tasks WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM meetings WHERE owner_id = ?", [owner_id])?;
+        conn.execute("DELETE FROM meeting_categories WHERE owner_id = ?", [owner_id])?;
         
         Ok(())
     }

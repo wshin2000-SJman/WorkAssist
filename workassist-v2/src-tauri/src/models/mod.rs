@@ -28,6 +28,16 @@ pub struct Task {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MeetingCategory {
+    pub id: Option<i64>,
+    pub owner_id: Option<i64>,
+    pub name: String,
+    pub color: String,
+    pub order_seq: i32,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Meeting {
     pub id: Option<i64>,
     pub owner_id: Option<i64>,
@@ -40,6 +50,7 @@ pub struct Meeting {
     pub memo: Option<String>,
     pub created_at: String,
     pub meeting_tag: Option<String>,
+    pub category_id: Option<i64>,
     #[serde(default)]
     pub is_deleted: bool,
 }
