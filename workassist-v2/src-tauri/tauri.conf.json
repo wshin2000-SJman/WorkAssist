@@ -34,6 +34,10 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": {
+      "bin/jre": "bin/jre",
+      "bin/opendataloader-pdf-cli.jar": "bin/opendataloader-pdf-cli.jar"
+    }
   }
 }

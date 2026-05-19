@@ -61,6 +61,7 @@
     "engine:allow-initialize-data",
     "engine:allow-get-enabled-features",
     "engine:allow-seed-demo-data-cmd",
-    "engine:allow-clear-demo-data-cmd"
+    "engine:allow-clear-demo-data-cmd",
+    "rag:allow-invoke-sidecar-test"
   ]
 }
