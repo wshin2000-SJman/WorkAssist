@@ -2030,6 +2030,7 @@ async function refreshStats() {
                 const taskCard = document.getElementById('chart-card-tasks');
                 if (taskCard) taskCard.style.display = 'block';
                 
+                renderImminentTasks(tasks);
                 updateSidebarStatus(tasks);
             } catch (err) {
                 console.error("Dashboard Kanban stats load error:", err);
@@ -2449,6 +2450,75 @@ function hideChartTooltip() {
     if (tooltip) {
         tooltip.style.opacity = '0';
     }
+}
+
+function renderImminentTasks(tasks) {
+    const container = document.getElementById('imminent-tasks-list');
+    if (!container) return;
+
+    // Filter tasks that are Todo or Doing and have a due date
+    const imminentTasks = tasks.filter(t => 
+        !t.is_deleted && (t.status === 'Todo' || t.status === 'Doing') && t.due_date
+    );
+
+    if (imminentTasks.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 16px 0;">🎉 No imminent tasks due soon.</div>`;
+        return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Map and calculate diffDays
+    const mappedTasks = imminentTasks.map(t => {
+        const due = new Date(t.due_date);
+        due.setHours(0, 0, 0, 0);
+        const diffTime = due.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return { ...t, diffDays };
+    });
+
+    // Sort ascending by due date (most overdue/imminent first)
+    mappedTasks.sort((a, b) => a.diffDays - b.diffDays);
+
+    container.innerHTML = '';
+    
+    mappedTasks.forEach(t => {
+        const item = document.createElement('div');
+        item.className = `imminent-task-item ${t.diffDays < 0 ? 'overdue' : ''}`;
+        
+        // Status Badge
+        const statusClass = t.status === 'Todo' ? 'task-badge-todo' : 'task-badge-doing';
+        const statusBadge = `<span class="task-badge-status ${statusClass}">${t.status}</span>`;
+        
+        // D-Day Badge
+        let ddayBadge = '';
+        if (t.diffDays < 0) {
+            ddayBadge = `<span class="dday-badge overdue">D+${Math.abs(t.diffDays)}</span>`;
+        } else if (t.diffDays === 0) {
+            ddayBadge = `<span class="dday-badge today">D-Day</span>`;
+        } else {
+            ddayBadge = `<span class="dday-badge future">D-${t.diffDays}</span>`;
+        }
+        
+        item.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+                <span style="font-family: monospace; font-size: 11px; color: var(--accent-color); font-weight: 600; white-space: nowrap;">${t.task_tag || 'TAG'}</span>
+                <span style="font-size: 12px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;" title="${t.title}">${t.title}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                ${statusBadge}
+                ${ddayBadge}
+            </div>
+        `;
+        
+        item.onclick = (e) => {
+            e.preventDefault();
+            openTaskModal(t, false);
+        };
+        
+        container.appendChild(item);
+    });
 }
 
 function updateSidebarStatus(tasks) {
