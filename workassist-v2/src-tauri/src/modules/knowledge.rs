@@ -606,6 +606,13 @@ async fn get_graph_data(
             let o = sol.get("o");
 
             if let (Some(s_term), Some(p_term), Some(o_term)) = (s, p, o) {
+                // 1. 그래프 시각화 단순화: 리터럴(상수값) 데이터 노드들을 제외합니다.
+                // 리터럴 정보는 해당 부품/프로젝트 엔티티 노드를 클릭했을 때 세부 창(Inspector)에만 로드되도록 우회하여
+                // 수백 개의 중복 노드(부품명, 메이커, 수량 등)로 인해 그래프가 지저분해지는 현상을 원천 방지합니다.
+                if let Term::Literal(_) = o_term {
+                    continue;
+                }
+
                 let s_str = match s_term {
                     Term::NamedNode(n) => n.as_str().to_string(),
                     other => other.to_string()
@@ -630,8 +637,10 @@ async fn get_graph_data(
                 let p_short = shorten(&p_str);
                 let o_short = shorten(&o_str);
 
-                // Skip standard high-frequency triples if they clutter visual graph
-                if p_short == "rdf:type" && o_short == "wa:BOMItem" {
+                // 2. rdf:type 고주파 연결 관계 스킵: 노드 색상으로 구분이 가능하므로
+                // 'wa:Component' 또는 'wa:BOMItem'과 같은 중앙 마스터 타입 노드에 모든 노드가 몰려
+                // 그래프가 거미줄처럼 뭉치는 현상을 차단합니다.
+                if p_short == "rdf:type" {
                     continue;
                 }
 
