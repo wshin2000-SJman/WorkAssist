@@ -7415,7 +7415,7 @@ SELECT DISTINCT ?속성명 ?값 WHERE {
 
             let html = `
             <div style="overflow-x: auto; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2); box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 800px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 100%;">
                     <thead>
                         <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--accent-color);">
                             <th style="padding: 14px 16px; font-weight: 600;">부품 번호</th>
