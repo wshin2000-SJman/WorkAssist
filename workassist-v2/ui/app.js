@@ -7304,7 +7304,8 @@ SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
                 tableResult.querySelector('thead').innerHTML = theadHtml;
 
                 results.forEach(row => {
-                    let trHtml = `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">`;
+                    const targetUri = row.대상 ? row.대상.value : '';
+                    let trHtml = `<tr data-target="${targetUri}" style="border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.04)'" onmouseout="this.style.backgroundColor='transparent'">`;
                     keys.forEach(k => {
                         const cell = row[k];
                         const val = cell ? cell.value : '';
@@ -7331,6 +7332,140 @@ SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
                 btnRunSparql.click();
             }
         });
+
+        // 지식 DB 검색 결과 행 클릭 시 상세 팝업 바인딩
+        tbodyResult.onclick = async (e) => {
+            const tr = e.target.closest('tr');
+            if (!tr) return;
+            const targetUri = tr.getAttribute('data-target');
+            if (!targetUri) return;
+            
+            await showKnowledgeDetail(targetUri);
+        };
+    }
+
+    // 지식 DB 상세정보 모달 제어
+    const modalDetail = document.getElementById('modal-knowledge-detail');
+    const btnCloseDetail = document.getElementById('btn-close-knowledge-detail');
+    const btnCloseDetailFooter = document.getElementById('btn-close-knowledge-detail-footer');
+    const detailContent = document.getElementById('knowledge-detail-content');
+
+    const closeModalDetail = () => {
+        if (modalDetail) {
+            modalDetail.classList.add('hidden');
+        }
+    };
+
+    if (btnCloseDetail) btnCloseDetail.onclick = closeModalDetail;
+    if (btnCloseDetailFooter) btnCloseDetailFooter.onclick = closeModalDetail;
+    if (modalDetail) {
+        modalDetail.onclick = (e) => {
+            if (e.target === modalDetail) {
+                closeModalDetail();
+            }
+        };
+    }
+
+    async function showKnowledgeDetail(targetUri) {
+        if (!modalDetail || !detailContent) return;
+        
+        detailContent.innerHTML = `<div style="text-align: center; color: var(--accent-color); padding: 24px;">세부 정보를 불러오는 중...</div>`;
+        modalDetail.classList.remove('hidden');
+
+        // SPARQL 쿼리를 통해 대상의 속성 긁어오기 (Component와 BOMItem 연동 매핑)
+        const queryStr = `PREFIX wa: <http://workassist.local/ontology/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT ?속성명 ?값 WHERE {
+  {
+    ?대상 ?속성명 ?값 .
+    FILTER(str(?대상) = "${targetUri}")
+  } UNION {
+    ?bomItem wa:refersToComponent ?대상 .
+    ?대상 ?속성명 ?값 .
+    FILTER(str(?bomItem) = "${targetUri}")
+  }
+}`;
+
+        try {
+            const results = await invoke('plugin:knowledge|query_knowledge', { query: queryStr });
+            detailContent.innerHTML = "";
+
+            if (!results || results.length === 0) {
+                detailContent.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 24px;">속성 정보가 존재하지 않습니다.</div>`;
+                return;
+            }
+
+            const properties = {};
+            results.forEach(row => {
+                const prop = row.속성명 ? row.속성명.value : '';
+                const val = row.값 ? row.값.value : '';
+                if (prop && val) {
+                    properties[prop] = val;
+                }
+            });
+
+            // 카드 형식 디자인으로 출력
+            let html = `<div style="display: flex; flex-direction: column; gap: 12px;">`;
+            
+            const orderedProps = [
+                { uri: "http://workassist.local/ontology/partNumber", label: "부품번호", icon: "🆔" },
+                { uri: "http://workassist.local/ontology/category", label: "분류", icon: "📁" },
+                { uri: "http://workassist.local/ontology/itemName", label: "품명", icon: "🏷️" },
+                { uri: "http://workassist.local/ontology/maker", label: "제조사", icon: "🏭" },
+                { uri: "http://workassist.local/ontology/spec", label: "규격 및 상세 사양", icon: "📐" },
+                { uri: "http://workassist.local/ontology/description", label: "견적 비용 및 비고", icon: "💰" }
+            ];
+
+            orderedProps.forEach(item => {
+                const val = properties[item.uri] || "-";
+                html += `
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); font-weight: 500;">
+                        <span>${item.icon}</span>
+                        <span>${item.label}</span>
+                    </div>
+                    <div style="font-size: 15px; color: var(--text-primary); font-weight: 500; word-break: break-all; white-space: pre-wrap;">
+                        ${val}
+                    </div>
+                </div>`;
+            });
+
+            // 추가 정보가 있는 경우
+            let hasExtra = false;
+            let extraHtml = `<div style="margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">추가 지식 정보</div>`;
+            
+            Object.keys(properties).forEach(propUri => {
+                if (!orderedProps.some(item => item.uri === propUri)) {
+                    hasExtra = true;
+                    const label = propUri.replace("http://workassist.local/ontology/", "wa:").replace("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:");
+                    const val = properties[propUri].replace("http://workassist.local/ontology/", "wa:");
+                    extraHtml += `
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 6px; align-items: center; gap: 10px;">
+                        <span style="color: var(--text-secondary); font-family: monospace; font-size: 11px;">${label}</span>
+                        <span style="color: var(--text-primary); font-family: monospace; font-size: 11px; text-align: right; word-break: break-all;">${val}</span>
+                    </div>`;
+                }
+            });
+            extraHtml += `</div>`;
+
+            if (hasExtra) {
+                html += extraHtml;
+            }
+
+            html += `</div>`;
+            detailContent.innerHTML = html;
+
+            const titleElem = document.getElementById('knowledge-detail-title');
+            if (titleElem) {
+                const shortenedUri = targetUri.replace("http://workassist.local/ontology/", "wa:");
+                titleElem.innerText = `지식 DB 부품 상세 정보 (${shortenedUri})`;
+            }
+
+        } catch (err) {
+            detailContent.innerHTML = `<div style="text-align: center; color: #f87171; padding: 24px;">상세 정보 조회 오류:<br>${err}</div>`;
+        }
     }
 
     // 8. 추천 검색어 입력 및 자동 검색 기능
