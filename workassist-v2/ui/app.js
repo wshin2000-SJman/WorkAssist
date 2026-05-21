@@ -7354,8 +7354,22 @@ function renderD3Graph(graphData) {
     svg.selectAll("*").remove(); // Clear previous drawing
 
     const container = document.getElementById("history-graph-canvas");
-    const width = container.clientWidth || 500;
-    const height = container.clientHeight || 450;
+    let width = container.clientWidth;
+    let height = container.clientHeight;
+
+    // 탭 전환 또는 렌더링 시점에 크기가 0으로 측정되는 문제를 방지하기 위해 getComputedStyle 활용
+    if (!width || width < 50) {
+        const style = window.getComputedStyle(container);
+        width = parseInt(style.width) || 800;
+    }
+    if (!height || height < 50) {
+        const style = window.getComputedStyle(container);
+        height = parseInt(style.minHeight) || parseInt(style.height) || 700;
+    }
+
+    svg.attr("width", "100%")
+       .attr("height", "100%")
+       .attr("viewBox", `0 0 ${width} ${height}`);
 
     // Define Arrow Marker
     svg.append("defs").append("marker")
