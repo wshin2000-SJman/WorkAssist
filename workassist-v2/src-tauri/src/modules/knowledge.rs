@@ -681,8 +681,15 @@ async fn delete_knowledge_entity(
     {
         let store_guard = state.lock().map_err(|e| e.to_string())?;
 
-        let delete_q1 = format!("DELETE WHERE {{ <{}> ?p ?o }}", entity_uri);
-        let delete_q2 = format!("DELETE WHERE {{ ?s ?p <{}> }}", entity_uri);
+        let escaped_uri = entity_uri.replace("\\", "\\\\").replace("\"", "\\\"");
+        let delete_q1 = format!(
+            "DELETE {{ ?s ?p ?o }} WHERE {{ ?s ?p ?o . FILTER(str(?s) = \"{}\") }}",
+            escaped_uri
+        );
+        let delete_q2 = format!(
+            "DELETE {{ ?s ?p ?o }} WHERE {{ ?s ?p ?o . FILTER(str(?o) = \"{}\") }}",
+            escaped_uri
+        );
 
         store_guard.store.update(&delete_q1).map_err(|e| e.to_string())?;
         store_guard.store.update(&delete_q2).map_err(|e| e.to_string())?;

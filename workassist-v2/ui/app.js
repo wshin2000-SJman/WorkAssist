@@ -7484,6 +7484,18 @@ function renderD3Graph(graphData) {
         const content = document.getElementById("history-inspector-content");
         if (!content) return;
 
+        // Literal 노드는 하위 관계를 갖지 않는 순수 값이므로 SPARQL 조회를 차단하고 즉시 정보 표시
+        if (d.group === "Literal") {
+            content.innerHTML = `
+                <div style="margin-bottom: 8px; word-break: break-all;">
+                    <strong>Literal Value:</strong> <span style="font-family:monospace; color:var(--accent-color); font-size:12px;">${d.label}</span>
+                    <span style="margin-left: 6px;" class="tag-badge" style="background: #f1fa8c; color: #000;">${d.group}</span>
+                </div>
+                <div style="color: var(--text-secondary); margin-top:8px;">리터럴(상수값) 노드는 하위 관계 트리플 속성을 가질 수 없습니다.</div>
+            `;
+            return;
+        }
+
         content.innerHTML = `
             <div style="display:flex; justify-content:center; align-items:center; padding: 12px; gap:8px;">
                 <div class="spinner" style="border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--accent-color); width: 14px; height: 14px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
@@ -7495,10 +7507,25 @@ function renderD3Graph(graphData) {
             // Expand subject URI
             const uri = d.id.replace("wa:", "http://workassist.local/ontology/");
             
+            // URI 안전성 검증: 올바른 URI 형식이 아닐 경우 오류 방지를 위해 쿼리 생략
+            if (!uri.startsWith("http://") && !uri.startsWith("https://")) {
+                content.innerHTML = `
+                    <div style="margin-bottom: 8px; word-break: break-all;">
+                        <strong>Value:</strong> <span style="font-family:monospace; color:var(--accent-color); font-size:12px;">${d.label}</span>
+                        <span style="margin-left: 6px;" class="tag-badge">${d.group}</span>
+                    </div>
+                    <div style="color: var(--text-secondary); margin-top:8px;">유효한 RDF 엔티티 URI 형식이 아니므로 하위 관계를 조회할 수 없습니다.</div>
+                `;
+                return;
+            }
+
             // SPARQL to query all properties of this subject
+            // 특수문자나 공백이 포함된 URI가 SPARQL IRIREF 파싱 에러를 유발하지 않도록 BIND/FILTER 문자열 매칭으로 우회합니다.
+            const escapedUri = uri.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
             const sparql = `
                 SELECT ?p ?o WHERE {
-                    <${uri}> ?p ?o .
+                    ?s ?p ?o .
+                    FILTER(str(?s) = "${escapedUri}")
                 } LIMIT 15
             `;
             
