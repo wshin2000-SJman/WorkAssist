@@ -7201,30 +7201,35 @@ function setupHistory() {
     // 7. 지식 데이터베이스(DB) 검색 실행
     const btnRunSparql = document.getElementById('btn-history-run-sparql');
     const inputKeyword = document.getElementById('history-db-search-keyword');
+    const selectProject = document.getElementById('history-db-search-proj-select');
     const tbodyResult = document.getElementById('history-sparql-tbody');
     const tableResult = document.getElementById('history-sparql-table');
 
     if (btnRunSparql && inputKeyword && tbodyResult) {
         btnRunSparql.onclick = async () => {
             const keyword = inputKeyword.value.trim();
+            const projectCode = selectProject ? selectProject.value : "";
             btnRunSparql.disabled = true;
             tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-color); padding: 24px;">지식 데이터베이스 검색 중...</td></tr>`;
 
             // 키워드가 있으면 대소문자 구분 없이 필터링 쿼리 생성, 없으면 전체 조회 쿼리 생성
             let queryStr = "";
-            if (!keyword) {
-                queryStr = `PREFIX wa: <http://workassist.local/ontology/>
+            const safeKeyword = keyword.replace(/"/g, '\\"');
+
+            if (!projectCode) {
+                // 1) 전체 프로젝트 대상 검색
+                if (!keyword) {
+                    queryStr = `PREFIX wa: <http://workassist.local/ontology/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
-SELECT ?대상 ?속성명 ?값 WHERE {
+SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
   ?대상 ?속성명 ?값 .
 } LIMIT 50`;
-            } else {
-                const safeKeyword = keyword.replace(/"/g, '\\"');
-                queryStr = `PREFIX wa: <http://workassist.local/ontology/>
+                } else {
+                    queryStr = `PREFIX wa: <http://workassist.local/ontology/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
-SELECT ?대상 ?속성명 ?값 WHERE {
+SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
   ?대상 ?속성명 ?값 .
   FILTER (
     CONTAINS(LCASE(STR(?대상)), LCASE("${safeKeyword}")) ||
@@ -7232,6 +7237,50 @@ SELECT ?대상 ?속성명 ?값 WHERE {
     CONTAINS(LCASE(STR(?값)), LCASE("${safeKeyword}"))
   )
 } LIMIT 100`;
+                }
+            } else {
+                // 2) 특정 프로젝트 범위 내 검색 (BOM 아이템 및 관련 컴포넌트, 프로젝트 메타데이터까지 아우름)
+                const sanitizedCode = projectCode.trim().replace(/ /g, "_");
+                if (!keyword) {
+                    queryStr = `PREFIX wa: <http://workassist.local/ontology/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
+  {
+    BIND(wa:Project_${sanitizedCode} AS ?대상)
+    ?대상 ?속성명 ?값 .
+  } UNION {
+    wa:Project_${sanitizedCode} wa:hasBOMItem ?대상 .
+    ?대상 ?속성명 ?값 .
+  } UNION {
+    wa:Project_${sanitizedCode} wa:hasBOMItem ?bom .
+    ?bom wa:refersToComponent ?대상 .
+    ?대상 ?속성명 ?값 .
+  }
+} LIMIT 50`;
+                } else {
+                    queryStr = `PREFIX wa: <http://workassist.local/ontology/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
+  {
+    BIND(wa:Project_${sanitizedCode} AS ?대상)
+    ?대상 ?속성명 ?값 .
+  } UNION {
+    wa:Project_${sanitizedCode} wa:hasBOMItem ?대상 .
+    ?대상 ?속성명 ?값 .
+  } UNION {
+    wa:Project_${sanitizedCode} wa:hasBOMItem ?bom .
+    ?bom wa:refersToComponent ?대상 .
+    ?대상 ?속성명 ?값 .
+  }
+  FILTER (
+    CONTAINS(LCASE(STR(?대상)), LCASE("${safeKeyword}")) ||
+    CONTAINS(LCASE(STR(?속성명)), LCASE("${safeKeyword}")) ||
+    CONTAINS(LCASE(STR(?값)), LCASE("${safeKeyword}"))
+  )
+} LIMIT 100`;
+                }
             }
 
             try {
@@ -7327,6 +7376,7 @@ async function refreshHistory() {
         const projects = await invoke('plugin:knowledge|get_all_projects');
         const bomProjSelect = document.getElementById('history-bom-proj-select');
         const docProjSelect = document.getElementById('history-doc-proj-select');
+        const searchProjSelect = document.getElementById('history-db-search-proj-select');
 
         // Populate drop-downs
         if (bomProjSelect && docProjSelect) {
@@ -7339,6 +7389,14 @@ async function refreshHistory() {
             };
             bomProjSelect.innerHTML = buildOptions();
             docProjSelect.innerHTML = buildOptions();
+        }
+
+        if (searchProjSelect) {
+            let html = `<option value="" selected>— 전체 프로젝트 검색 —</option>`;
+            projects.forEach(p => {
+                html += `<option value="${p.project_code}">${p.project_name} [${p.project_code}]</option>`;
+            });
+            searchProjSelect.innerHTML = html;
         }
 
         // Fetch graph data for D3 and render it
