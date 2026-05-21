@@ -7208,12 +7208,12 @@ function setupHistory() {
         btnRunSparql.onclick = async () => {
             const queryStr = textareaQuery.value.trim();
             if (!queryStr) {
-                alert("SPARQL 쿼리를 입력해 주세요.");
+                alert("검색 명령어를 입력해 주세요.");
                 return;
             }
 
             btnRunSparql.disabled = true;
-            tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-color); padding: 24px;">SPARQL 쿼리 수행 중...</td></tr>`;
+            tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-color); padding: 24px;">지식 데이터베이스 검색 중...</td></tr>`;
 
             try {
                 const results = await invoke('plugin:knowledge|query_knowledge', { query: queryStr });
@@ -7251,7 +7251,7 @@ function setupHistory() {
                     tbodyResult.insertAdjacentHTML('beforeend', trHtml);
                 });
             } catch (err) {
-                tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #f87171; padding: 24px;"><strong>SPARQL 에러:</strong><br>${err}</td></tr>`;
+                tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #f87171; padding: 24px;"><strong>검색 에러:</strong><br>${err}</td></tr>`;
             } finally {
                 btnRunSparql.disabled = false;
             }
@@ -7266,28 +7266,28 @@ function setupHistory() {
             `PREFIX wa: <http://workassist.local/ontology/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
-# 1. 지식베이스의 모든 트리플 조회
-SELECT ?s ?p ?o WHERE {
-  ?s ?p ?o .
+# 1. 지식 데이터베이스의 전체 데이터 조회
+SELECT ?대상 ?속성명 ?값 WHERE {
+  ?대상 ?속성명 ?값 .
 } LIMIT 30`,
             `PREFIX wa: <http://workassist.local/ontology/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
-# 2. 모든 프로젝트의 메타 정보 조회
-SELECT ?project ?code ?name ?manager WHERE {
-  ?project rdf:type wa:Project ;
-           wa:projectCode ?code ;
-           wa:projectName ?name ;
-           wa:manager ?manager .
+# 2. 모든 프로젝트의 메타 정보(코드, 명칭, 담당자) 조회
+SELECT ?프로젝트 ?프로젝트코드 ?프로젝트명 ?담당자 WHERE {
+  ?프로젝트 rdf:type wa:Project ;
+           wa:projectCode ?프로젝트코드 ;
+           wa:projectName ?프로젝트명 ;
+           wa:manager ?담당자 .
 }`,
             `PREFIX wa: <http://workassist.local/ontology/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
-# 3. 부품들과 연관된 BOM Item 및 프로젝트 관계 조회
-SELECT ?project ?partNumber ?quantity WHERE {
-  ?project wa:hasBOMItem ?bom .
-  ?bom wa:partNumber ?partNumber ;
-       wa:quantity ?quantity .
+# 3. 프로젝트별 등록된 부품 번호 및 수량 목록 조회
+SELECT ?프로젝트 ?부품번호 ?수량 WHERE {
+  ?프로젝트 wa:hasBOMItem ?bom .
+  ?bom wa:partNumber ?부품번호 ;
+       wa:quantity ?수량 .
 }`
         ];
 
