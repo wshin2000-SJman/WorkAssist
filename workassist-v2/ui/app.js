@@ -7399,10 +7399,10 @@ function renderD3Graph(graphData) {
     // Force simulation
     if (d3Simulation) d3Simulation.stop();
     d3Simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.id).distance(100))
-        .force("charge", d3.forceManyBody().strength(-150))
+        .force("link", d3.forceLink(links).id(d => d.id).distance(160))
+        .force("charge", d3.forceManyBody().strength(-350))
         .force("center", d3.forceCenter(width / 2, height / 2))
-        .force("collision", d3.forceCollide().radius(25));
+        .force("collision", d3.forceCollide().radius(38));
 
     // Render edges
     const link = g.append("g")
@@ -7437,7 +7437,7 @@ function renderD3Graph(graphData) {
         .selectAll("circle")
         .data(nodes)
         .join("circle")
-        .attr("r", 8)
+        .attr("r", 15)
         .attr("fill", d => colorMap[d.group] || "#bd93f9")
         .attr("stroke", "rgba(0,0,0,0.4)")
         .attr("stroke-width", 1.5)
@@ -7452,9 +7452,9 @@ function renderD3Graph(graphData) {
         .selectAll("text")
         .data(nodes)
         .join("text")
-        .attr("dy", -12)
+        .attr("dy", -22)
         .attr("text-anchor", "middle")
-        .style("font-size", "10px")
+        .style("font-size", "11px")
         .attr("fill", "var(--text-color)")
         .style("pointer-events", "none")
         .style("text-shadow", "0 2px 4px rgba(0,0,0,0.8)")
@@ -7465,7 +7465,7 @@ function renderD3Graph(graphData) {
         event.stopPropagation();
         
         // Visual micro-animation feedback
-        node.transition().duration(200).attr("r", n => n.id === d.id ? 12 : 8);
+        node.transition().duration(200).attr("r", n => n.id === d.id ? 22 : 15);
 
         const content = document.getElementById("history-inspector-content");
         if (!content) return;
