@@ -7198,22 +7198,41 @@ function setupHistory() {
         };
     }
 
-    // 7. SPARQL 쿼리 실행
+    // 7. 지식 데이터베이스(DB) 검색 실행
     const btnRunSparql = document.getElementById('btn-history-run-sparql');
-    const textareaQuery = document.getElementById('history-sparql-query');
+    const inputKeyword = document.getElementById('history-db-search-keyword');
     const tbodyResult = document.getElementById('history-sparql-tbody');
     const tableResult = document.getElementById('history-sparql-table');
 
-    if (btnRunSparql && textareaQuery && tbodyResult) {
+    if (btnRunSparql && inputKeyword && tbodyResult) {
         btnRunSparql.onclick = async () => {
-            const queryStr = textareaQuery.value.trim();
-            if (!queryStr) {
-                alert("검색 명령어를 입력해 주세요.");
-                return;
-            }
-
+            const keyword = inputKeyword.value.trim();
             btnRunSparql.disabled = true;
             tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-color); padding: 24px;">지식 데이터베이스 검색 중...</td></tr>`;
+
+            // 키워드가 있으면 대소문자 구분 없이 필터링 쿼리 생성, 없으면 전체 조회 쿼리 생성
+            let queryStr = "";
+            if (!keyword) {
+                queryStr = `PREFIX wa: <http://workassist.local/ontology/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?대상 ?속성명 ?값 WHERE {
+  ?대상 ?속성명 ?값 .
+} LIMIT 50`;
+            } else {
+                const safeKeyword = keyword.replace(/"/g, '\\"');
+                queryStr = `PREFIX wa: <http://workassist.local/ontology/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?대상 ?속성명 ?값 WHERE {
+  ?대상 ?속성명 ?값 .
+  FILTER (
+    CONTAINS(LCASE(STR(?대상)), LCASE("${safeKeyword}")) ||
+    CONTAINS(LCASE(STR(?속성명)), LCASE("${safeKeyword}")) ||
+    CONTAINS(LCASE(STR(?값)), LCASE("${safeKeyword}"))
+  )
+} LIMIT 100`;
+            }
 
             try {
                 const results = await invoke('plugin:knowledge|query_knowledge', { query: queryStr });
@@ -7256,44 +7275,34 @@ function setupHistory() {
                 btnRunSparql.disabled = false;
             }
         };
+
+        // 엔터키를 눌렀을 때도 바로 검색이 되도록 UX 개선
+        inputKeyword.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                btnRunSparql.click();
+            }
+        });
     }
 
-    // 8. SPARQL 예제 기능
+    // 8. 추천 검색어 입력 및 자동 검색 기능
     const btnSparqlExample = document.getElementById('btn-history-sparql-example');
     let exampleIdx = 0;
-    if (btnSparqlExample && textareaQuery) {
+    if (btnSparqlExample && inputKeyword && btnRunSparql) {
         const examples = [
-            `PREFIX wa: <http://workassist.local/ontology/>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-
-# 1. 지식 데이터베이스의 전체 데이터 조회
-SELECT ?대상 ?속성명 ?값 WHERE {
-  ?대상 ?속성명 ?값 .
-} LIMIT 30`,
-            `PREFIX wa: <http://workassist.local/ontology/>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-
-# 2. 모든 프로젝트의 메타 정보(코드, 명칭, 담당자) 조회
-SELECT ?프로젝트 ?프로젝트코드 ?프로젝트명 ?담당자 WHERE {
-  ?프로젝트 rdf:type wa:Project ;
-           wa:projectCode ?프로젝트코드 ;
-           wa:projectName ?프로젝트명 ;
-           wa:manager ?담당자 .
-}`,
-            `PREFIX wa: <http://workassist.local/ontology/>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-
-# 3. 프로젝트별 등록된 부품 번호 및 수량 목록 조회
-SELECT ?프로젝트 ?부품번호 ?수량 WHERE {
-  ?프로젝트 wa:hasBOMItem ?bom .
-  ?bom wa:partNumber ?부품번호 ;
-       wa:quantity ?수량 .
-}`
+            "Project",
+            "manager",
+            "BOM",
+            "partNumber",
+            "CIC",
+            "011070"
         ];
 
         btnSparqlExample.onclick = () => {
-            textareaQuery.value = examples[exampleIdx];
+            inputKeyword.value = examples[exampleIdx];
             exampleIdx = (exampleIdx + 1) % examples.length;
+            
+            // 검색어를 세팅하고 바로 검색 실행까지 매끄럽게 처리해 줍니다.
+            btnRunSparql.click();
         };
     }
 
