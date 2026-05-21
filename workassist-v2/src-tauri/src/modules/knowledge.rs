@@ -218,51 +218,103 @@ async fn ingest_bom(
     let range = workbook.worksheet_range(&sheet_name)
         .map_err(|e| format!("Failed to read sheet: {}. Error: {}", sheet_name, e))?;
 
+    let mut header_idx = None;
     let mut part_col_idx = None;
     let mut qty_col_idx = None;
     let mut desc_col_idx = None;
     let mut cat_col_idx = None;
+    let mut maker_col_idx = None;
+    let mut name_col_idx = None;
+    let mut spec_col_idx = None;
 
-    let mut rows_iter = range.rows();
-    if let Some(first_row) = rows_iter.next() {
-        for (i, cell) in first_row.iter().enumerate() {
-            let cell_str = cell.to_string().to_lowercase();
-            if cell_str.contains("품번") || cell_str.contains("part") || cell_str.contains("모델") || cell_str.contains("코드") {
-                part_col_idx = Some(i);
-            } else if cell_str.contains("수량") || cell_str.contains("qty") || cell_str.contains("quantity") || cell_str.contains("수") {
-                qty_col_idx = Some(i);
-            } else if cell_str.contains("설명") || cell_str.contains("desc") || cell_str.contains("사양") || cell_str.contains("spec") {
-                desc_col_idx = Some(i);
-            } else if cell_str.contains("구분") || cell_str.contains("분류") || cell_str.contains("카테고리") || cell_str.contains("type") || cell_str.contains("category") {
-                cat_col_idx = Some(i);
+    let rows: Vec<_> = range.rows().collect();
+
+    for (r_idx, row) in rows.iter().enumerate() {
+        let mut temp_part = None;
+        let mut temp_qty = None;
+        let mut temp_desc = None;
+        let mut temp_cat = None;
+        let mut temp_maker = None;
+        let mut temp_name = None;
+        let mut temp_spec = None;
+
+        for (c_idx, cell) in row.iter().enumerate() {
+            let cell_str = cell.to_string().trim().to_lowercase();
+            if cell_str.is_empty() {
+                continue;
             }
+            if cell_str.contains("품번") || cell_str.contains("part") || cell_str.contains("모델") || cell_str.contains("코드") || cell_str.contains("부품번호") || cell_str.contains("부품 번호") || cell_str.contains("도면번호") || cell_str.contains("도면 번호") {
+                temp_part = Some(c_idx);
+            } else if cell_str.contains("수량") || cell_str.contains("qty") || cell_str.contains("quantity") || cell_str == "수" || cell_str == "수 량" {
+                temp_qty = Some(c_idx);
+            } else if cell_str.contains("설명") || cell_str.contains("desc") || cell_str.contains("비고") {
+                temp_desc = Some(c_idx);
+            } else if cell_str.contains("규격") || cell_str.contains("spec") || cell_str.contains("사양") {
+                temp_spec = Some(c_idx);
+            } else if cell_str.contains("구분") || cell_str.contains("분류") || cell_str.contains("카테고리") || cell_str.contains("type") || cell_str.contains("category") || cell_str.contains("유형") {
+                temp_cat = Some(c_idx);
+            } else if cell_str.contains("메이커") || cell_str.contains("maker") || cell_str.contains("제조사") {
+                temp_maker = Some(c_idx);
+            } else if cell_str.contains("항목") || cell_str.contains("품명") || cell_str.contains("품목") || cell_str.contains("name") || cell_str.contains("item") {
+                temp_name = Some(c_idx);
+            }
+        }
+
+        // '부품번호'와 '수량'이 모두 존재하면 이 행을 헤더 행으로 설정
+        if temp_part.is_some() && temp_qty.is_some() {
+            header_idx = Some(r_idx);
+            part_col_idx = temp_part;
+            qty_col_idx = temp_qty;
+            desc_col_idx = temp_desc;
+            cat_col_idx = temp_cat;
+            maker_col_idx = temp_maker;
+            name_col_idx = temp_name;
+            spec_col_idx = temp_spec;
+            break;
         }
     }
 
-    let part_idx = part_col_idx.ok_or_else(|| "Could not locate 'Part Number' or '품번' column in BOM Excel.".to_string())?;
-    let qty_idx = qty_col_idx.unwrap_or(0); // fallback or default index
+    let header_idx = header_idx.ok_or_else(|| "Could not locate 'Part Number' or '품번' column in BOM Excel.".to_string())?;
+    let part_idx = part_col_idx.unwrap();
+    let qty_idx = qty_col_idx.unwrap();
 
     let sanitized_project = project_code.trim().replace(" ", "_");
     let mut triples_block = String::new();
     let mut row_count = 0;
 
-    for (row_idx, row) in rows_iter.enumerate() {
+    for (offset_idx, row) in rows.iter().skip(header_idx + 1).enumerate() {
         let part_number = row.get(part_idx).map(|c| c.to_string().trim().to_string()).unwrap_or_default();
         if part_number.is_empty() {
             continue;
         }
 
-        let quantity = if qty_col_idx.is_some() {
-            row.get(qty_idx).and_then(|c| c.as_f64()).map(|f| f as i64).unwrap_or(1)
-        } else {
-            1
-        };
+        // 스킵 조건: 파트 번호 컬럼 값이 실제 헤더 명칭과 같거나 임시 구분선인 경우
+        if part_number == "부품번호" || part_number == "품번" || part_number == "part number" || part_number.starts_with("---") {
+            continue;
+        }
 
-        let description = desc_col_idx.and_then(|idx| row.get(idx)).map(|c| c.to_string().replace("\"", "\\\"")).unwrap_or_default();
-        let category = cat_col_idx.and_then(|idx| row.get(idx)).map(|c| c.to_string().replace("\"", "\\\"")).unwrap_or_else(|| "GeneralComponent".to_string());
+        let quantity = row.get(qty_idx)
+            .and_then(|c| {
+                if let Some(i) = c.as_i64() {
+                    Some(i)
+                } else if let Some(f) = c.as_f64() {
+                    Some(f as i64)
+                } else if let Some(s) = c.as_string() {
+                    s.trim().parse::<i64>().ok()
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(1);
+
+        let category = cat_col_idx.and_then(|idx| row.get(idx)).map(|c| c.to_string().trim().replace("\"", "\\\"")).unwrap_or_else(|| "GeneralComponent".to_string());
+        let item_name = name_col_idx.and_then(|idx| row.get(idx)).map(|c| c.to_string().trim().replace("\"", "\\\"")).unwrap_or_default();
+        let maker = maker_col_idx.and_then(|idx| row.get(idx)).map(|c| c.to_string().trim().replace("\"", "\\\"")).unwrap_or_default();
+        let spec = spec_col_idx.and_then(|idx| row.get(idx)).map(|c| c.to_string().trim().replace("\"", "\\\"")).unwrap_or_default();
+        let description = desc_col_idx.and_then(|idx| row.get(idx)).map(|c| c.to_string().trim().replace("\"", "\\\"")).unwrap_or_default();
         
-        let sanitized_part = part_number.replace(" ", "_").replace("/", "-").replace("\\", "-");
-        let bom_item_uri = format!("BOM_{}_{}", sanitized_project, row_idx);
+        let sanitized_part = part_number.replace(" ", "_").replace("/", "-").replace("\\", "-").replace("\"", "");
+        let bom_item_uri = format!("BOM_{}_{}", sanitized_project, offset_idx);
 
         triples_block.push_str(&format!(
             r#"
@@ -273,6 +325,9 @@ async fn ingest_bom(
             wa:Component_{part_uri} rdf:type wa:Component ;
                                     wa:partNumber "{part}" ;
                                     wa:category "{cat}" ;
+                                    wa:itemName "{name}" ;
+                                    wa:maker "{maker}" ;
+                                    wa:spec "{spec}" ;
                                     wa:description "{desc}" .
             wa:{bom_item} wa:refersToComponent wa:Component_{part_uri} .
             "#,
@@ -281,7 +336,10 @@ async fn ingest_bom(
             part = part_number,
             qty = quantity,
             part_uri = sanitized_part,
-            cat = category,
+            cat = if category.is_empty() { "GeneralComponent".to_string() } else { category },
+            name = item_name,
+            maker = maker,
+            spec = spec,
             desc = description
         ));
         row_count += 1;
