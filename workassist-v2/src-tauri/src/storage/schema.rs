@@ -174,3 +174,17 @@ pub const CREATE_SHADOW_MEETING_CATEGORIES_TABLE: &str = "
         name TEXT NOT NULL
     );
 ";
+
+pub const CREATE_SPECS_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS specs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        part_number TEXT UNIQUE NOT NULL,
+        category TEXT NOT NULL,
+        manufacturer TEXT NOT NULL,
+        catalog_name TEXT,
+        description TEXT,
+        spec_data TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );
+";
+

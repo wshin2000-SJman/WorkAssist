@@ -234,6 +234,8 @@ const init = () => {
     setupKanbanTabs();
     setupMinutesTabs();
     initDragAndDrop();
+    setupRag();
+    setupHistory();
 
     // Global escape key listener
     window.addEventListener('keydown', (e) => {
@@ -251,7 +253,8 @@ async function initFeatureToggles() {
         const featureMap = {
             'kanban': { nav: 'nav-kanban', stat: 'stat-tasks' },
             'minutes': { nav: 'nav-minutes', stat: 'stat-meetings' },
-            'pm': { nav: 'nav-pm', stat: 'stat-projects' }
+            'pm': { nav: 'nav-pm', stat: 'stat-projects' },
+            'rag': { nav: 'nav-rag', stat: null }
         };
 
         Object.keys(featureMap).forEach(feature => {
@@ -1941,7 +1944,9 @@ async function loadView(viewId) {
         'nav-pm-trash': 'Trash Bin',
         'nav-pm-completed': 'Completed Projects',
         'nav-minutes': 'Minutes Manager',
-        'nav-pm': 'Project Manager'
+        'nav-pm': 'Project Manager',
+        'nav-rag': 'RAG & PDF Parser',
+        'nav-history': 'History Manager'
     };
 
     const pageTitle = document.getElementById('page-title');
@@ -1987,6 +1992,7 @@ async function loadView(viewId) {
     else if (viewId === 'nav-minutes') await refreshMinutes();
     else if (viewId === 'nav-pm') await refreshProjects();
     else if (viewId === 'nav-dashboard') await refreshStats();
+    else if (viewId === 'nav-history') await refreshHistory();
 }
 
 async function refreshStats() {
@@ -6434,5 +6440,1173 @@ async function addCategory() {
         await refreshMinutes();
     } catch (err) {
         alert(err.toString());
+    }
+}
+
+function setupRag() {
+    const btnSelectPdf = document.getElementById('btn-rag-select-pdf');
+    const inputPdfPath = document.getElementById('rag-pdf-path');
+    const btnSelectDir = document.getElementById('btn-rag-select-dir');
+    const inputOutputDir = document.getElementById('rag-output-dir');
+    const selectFormat = document.getElementById('rag-output-format');
+    const btnRunParse = document.getElementById('btn-rag-run-parse');
+    const btnCopyOutput = document.getElementById('btn-rag-copy-output');
+    const ragLoader = document.getElementById('rag-loader');
+    const ragOutputContainer = document.getElementById('rag-output-container');
+    const ragOutputPre = document.getElementById('rag-output-pre');
+
+    const btnIndexDb = document.getElementById('btn-rag-index-db');
+    const btnSearch = document.getElementById('btn-rag-search');
+    const inputSearchQuery = document.getElementById('rag-search-query');
+    const selectSearchLimit = document.getElementById('rag-search-limit');
+    const searchResultsContainer = document.getElementById('rag-search-results');
+
+    // Excel Extraction Elements
+    const ragExtractionTabs = document.getElementById('rag-extraction-tabs');
+    const ragPdfPanel = document.getElementById('rag-pdf-panel');
+    const ragExcelPanel = document.getElementById('rag-excel-panel');
+    const inputExcelPath = document.getElementById('rag-excel-path');
+    const btnSelectExcel = document.getElementById('btn-rag-select-excel');
+    const btnRunExcel = document.getElementById('btn-rag-run-excel');
+    const selectExcelSheet = document.getElementById('rag-excel-sheet-select');
+
+    if (!btnSelectPdf || !inputPdfPath || !btnSelectDir || !inputOutputDir || !selectFormat || 
+        !btnRunParse || !btnCopyOutput || !ragLoader || !ragOutputContainer || !ragOutputPre ||
+        !btnIndexDb || !btnSearch || !inputSearchQuery || !selectSearchLimit || !searchResultsContainer) {
+        console.warn("RAG & PDF Parser UI elements not fully found in DOM.");
+        return;
+    }
+
+    // ─── Tab Switching Logic ───
+    let cachedExcelSheets = null; // Cache parsed Excel worksheet data
+    let activeExcelSource = ''; // Track active Excel file name for catalog naming
+
+    if (ragExtractionTabs && ragPdfPanel && ragExcelPanel) {
+        const tabButtons = ragExtractionTabs.querySelectorAll('.view-tab[data-rag-tab]');
+        tabButtons.forEach(btn => {
+            btn.onclick = () => {
+                tabButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const target = btn.getAttribute('data-rag-tab');
+                if (target === 'pdf') {
+                    ragPdfPanel.style.display = '';
+                    ragExcelPanel.style.display = 'none';
+                } else {
+                    ragPdfPanel.style.display = 'none';
+                    ragExcelPanel.style.display = '';
+                }
+            };
+        });
+    }
+
+    // ─── Excel File Selection ───
+    if (btnSelectExcel && inputExcelPath) {
+        btnSelectExcel.onclick = async () => {
+            try {
+                if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+                    alert("Tauri dialog API is not supported in this environment.");
+                    return;
+                }
+                const file = await window.__TAURI__.dialog.open({
+                    directory: false,
+                    multiple: false,
+                    title: "Select Excel / Spreadsheet File",
+                    filters: [{ name: 'Spreadsheet Files', extensions: ['xlsx', 'xls', 'xlsb', 'ods'] }]
+                });
+                if (file) {
+                    inputExcelPath.value = file;
+                    // Reset sheet selector when a new file is chosen
+                    if (selectExcelSheet) {
+                        selectExcelSheet.innerHTML = '<option value="" disabled selected>— Parse a file first —</option>';
+                    }
+                    cachedExcelSheets = null;
+                }
+            } catch (err) {
+                console.error("Excel Selection Error:", err);
+                alert("Error selecting file: " + err);
+            }
+        };
+    }
+
+    // ─── Excel Parse Handler ───
+    if (btnRunExcel && inputExcelPath && selectExcelSheet) {
+        btnRunExcel.onclick = async () => {
+            const filePath = inputExcelPath.value.trim();
+            if (!filePath) {
+                alert("Please select an Excel file to parse.");
+                return;
+            }
+
+            // Ensure result card is expanded to show progress
+            expandResultCard();
+
+            // Throttling: Disable button and show spinner
+            btnRunExcel.disabled = true;
+            ragLoader.style.display = 'flex';
+            ragOutputContainer.style.display = 'none';
+            btnCopyOutput.style.display = 'none';
+            btnIndexDb.style.display = 'none';
+            ragOutputPre.textContent = '';
+
+            try {
+                console.log(`[RAG UI] Launching Excel parse for ${filePath}`);
+                const res = await invoke('plugin:rag|parse_excel', { filePath });
+
+                if (res && res.status === 'success') {
+                    cachedExcelSheets = res.sheets || {};
+                    const sheetNames = res.sheet_names || Object.keys(cachedExcelSheets);
+
+                    // Extract file name for catalog naming
+                    const sepIdx = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+                    activeExcelSource = sepIdx !== -1 ? filePath.substring(sepIdx + 1) : filePath;
+
+                    // Populate sheet dropdown
+                    selectExcelSheet.innerHTML = '';
+                    sheetNames.forEach((name, idx) => {
+                        const opt = document.createElement('option');
+                        opt.value = name;
+                        opt.textContent = name;
+                        if (idx === 0) opt.selected = true;
+                        selectExcelSheet.appendChild(opt);
+                    });
+
+                    // Display first sheet data
+                    const firstSheet = sheetNames[0];
+                    if (firstSheet && cachedExcelSheets[firstSheet]) {
+                        const prettyJson = JSON.stringify(cachedExcelSheets[firstSheet], null, 2);
+                        ragOutputPre.textContent = prettyJson;
+                    } else {
+                        ragOutputPre.textContent = '(No data found in workbook)';
+                    }
+
+                    btnCopyOutput.style.display = 'inline-block';
+                    btnIndexDb.style.display = 'inline-flex';
+                } else {
+                    throw new Error(res ? res.message || 'Unknown error' : 'Invalid result');
+                }
+            } catch (err) {
+                console.error("Excel parsing failed:", err);
+                ragOutputPre.textContent = `[Error] Failed to parse Excel file:\n\n${err}`;
+                btnCopyOutput.style.display = 'none';
+                btnIndexDb.style.display = 'none';
+            } finally {
+                btnRunExcel.disabled = false;
+                ragLoader.style.display = 'none';
+                ragOutputContainer.style.display = 'flex';
+            }
+        };
+    }
+
+    // ─── Sheet Dropdown Change → Update Preview ───
+    if (selectExcelSheet) {
+        selectExcelSheet.onchange = () => {
+            if (!cachedExcelSheets) return;
+            const selectedSheet = selectExcelSheet.value;
+            if (selectedSheet && cachedExcelSheets[selectedSheet]) {
+                ragOutputPre.textContent = JSON.stringify(cachedExcelSheets[selectedSheet], null, 2);
+                btnCopyOutput.style.display = 'inline-block';
+                btnIndexDb.style.display = 'inline-flex';
+            }
+        };
+    }
+
+    // Collapsible Result Section Elements
+    const resultCard = document.getElementById('rag-result-card');
+    const resultHeader = document.getElementById('rag-result-header');
+    const resultToggleIcon = document.getElementById('rag-result-toggle-icon');
+    const resultBody = document.getElementById('rag-result-body');
+    let isCollapsed = false;
+
+    const expandResultCard = () => {
+        if (resultCard && resultBody && resultToggleIcon && isCollapsed) {
+            isCollapsed = false;
+            resultBody.style.maxHeight = '2000px';
+            resultBody.style.opacity = '1';
+            resultBody.style.marginTop = '16px';
+            resultCard.style.minHeight = '400px';
+            resultToggleIcon.style.transform = 'rotate(0deg)';
+        }
+    };
+
+    if (resultCard && resultHeader && resultToggleIcon && resultBody) {
+        resultHeader.onclick = () => {
+            isCollapsed = !isCollapsed;
+            if (isCollapsed) {
+                // Collapse state
+                resultBody.style.maxHeight = '0px';
+                resultBody.style.opacity = '0';
+                resultBody.style.marginTop = '0px';
+                resultCard.style.minHeight = 'auto';
+                resultToggleIcon.style.transform = 'rotate(-90deg)';
+            } else {
+                // Expand state
+                resultBody.style.maxHeight = '2000px';
+                resultBody.style.opacity = '1';
+                resultBody.style.marginTop = '16px';
+                resultCard.style.minHeight = '400px';
+                resultToggleIcon.style.transform = 'rotate(0deg)';
+            }
+        };
+    }
+
+    // PDF selection - idempotent assignment (.onclick)
+    btnSelectPdf.onclick = async () => {
+        try {
+            if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+                console.error("Tauri dialog API not available.");
+                alert("Tauri dialog API is not supported in this environment.");
+                return;
+            }
+            
+            const file = await window.__TAURI__.dialog.open({
+                directory: false,
+                multiple: false,
+                title: "Select PDF File to Parse",
+                filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+            });
+            
+            if (file) {
+                inputPdfPath.value = file;
+            }
+        } catch (err) {
+            console.error("PDF Selection Error:", err);
+            alert("Error selecting file: " + err);
+        }
+    };
+
+    // Output Directory selection - idempotent assignment (.onclick)
+    btnSelectDir.onclick = async () => {
+        try {
+            if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+                console.error("Tauri dialog API not available.");
+                alert("Tauri dialog API is not supported in this environment.");
+                return;
+            }
+            
+            const dir = await window.__TAURI__.dialog.open({
+                directory: true,
+                multiple: false,
+                title: "Select Output Folder for Extracted Specs"
+            });
+            
+            if (dir) {
+                inputOutputDir.value = dir;
+            }
+        } catch (err) {
+            console.error("Output Directory Selection Error:", err);
+            alert("Error selecting output folder: " + err);
+        }
+    };
+
+    // Run PDF parser sidecar - idempotent assignment (.onclick) with Throttling & Try-Finally
+    btnRunParse.onclick = async () => {
+        const filePath = inputPdfPath.value.trim();
+        const outputDir = inputOutputDir.value.trim();
+        if (!filePath) {
+            alert("Please select a PDF file to parse.");
+            return;
+        }
+
+        // Ensure result card is expanded to show progress
+        expandResultCard();
+
+        // Throttling: Disable button and show spinner
+        btnRunParse.disabled = true;
+        ragLoader.style.display = 'flex';
+        ragOutputContainer.style.display = 'none';
+        btnCopyOutput.style.display = 'none';
+        btnIndexDb.style.display = 'none';
+        ragOutputPre.textContent = '';
+
+        try {
+            const format = selectFormat.value; // json, markdown, text, html
+            console.log(`[RAG UI] Launching sidecar parse for ${filePath} with format ${format}, outputDir: ${outputDir}`);
+            
+            const res = await invoke('plugin:rag|invoke_sidecar_test', {
+                filePath: filePath, // camelCase argument
+                format: format,
+                outputDir: outputDir ? outputDir : undefined // camelCase argument
+            });
+
+            if (res && res.status === 'success') {
+                let parsedOutput = res.stdout || '';
+                
+                // Pretty-print JSON if needed for elegant styling
+                if (format === 'json' && parsedOutput) {
+                    try {
+                        const parsedJson = JSON.parse(parsedOutput);
+                        parsedOutput = JSON.stringify(parsedJson, null, 2);
+                    } catch (e) {
+                        console.warn("[RAG UI] Output format is JSON but failed to parse JSON string. Showing raw stdout.", e);
+                    }
+                }
+                
+                ragOutputPre.textContent = parsedOutput;
+                btnCopyOutput.style.display = 'inline-block';
+                
+                // Show Index button if format is JSON and output is valid
+                if (format === 'json') {
+                    btnIndexDb.style.display = 'inline-flex';
+                }
+            } else {
+                throw new Error(res ? res.stderr || 'An unknown error occurred.' : 'Invalid output result.');
+            }
+        } catch (err) {
+            console.error("PDF parsing failed:", err);
+            ragOutputPre.textContent = `[Error] Failed to extract specifications:\n\n${err}`;
+            btnCopyOutput.style.display = 'none';
+            btnIndexDb.style.display = 'none';
+        } finally {
+            // Throttling Cleanup: Re-enable trigger button and hide loader
+            btnRunParse.disabled = false;
+            ragLoader.style.display = 'none';
+            ragOutputContainer.style.display = 'flex';
+        }
+    };
+
+    // Copy to clipboard - idempotent assignment (.onclick)
+    btnCopyOutput.onclick = async () => {
+        const text = ragOutputPre.textContent.trim();
+        if (!text || text.startsWith('(The extracted specifications')) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(text);
+            
+            // Rich Visual Feedback for Copying
+            const originalText = btnCopyOutput.innerHTML;
+            btnCopyOutput.innerHTML = '✅ Copied!';
+            btnCopyOutput.disabled = true;
+            
+            setTimeout(() => {
+                btnCopyOutput.innerHTML = originalText;
+                btnCopyOutput.disabled = false;
+            }, 1500);
+        } catch (err) {
+            console.error("Clipboard copy failed:", err);
+            alert("Error copying to clipboard: " + err);
+        }
+    };
+
+    // Index parsed JSON content to SQLite & LanceDB
+    btnIndexDb.onclick = async () => {
+        const textContent = ragOutputPre.textContent.trim();
+        if (!textContent || textContent.startsWith('(The extracted specifications')) {
+            alert("No parsed JSON specifications to index.");
+            return;
+        }
+
+        // Determine catalog name based on active source (PDF or Excel)
+        let fileName = "Unknown Catalog";
+        const pdfPath = inputPdfPath.value.trim();
+        const excelPath = inputExcelPath ? inputExcelPath.value.trim() : '';
+
+        if (activeExcelSource && cachedExcelSheets && selectExcelSheet && selectExcelSheet.value) {
+            // Excel tab was the source — include sheet name for traceability
+            fileName = `${activeExcelSource} (${selectExcelSheet.value})`;
+        } else if (pdfPath) {
+            const separatorIdx = Math.max(pdfPath.lastIndexOf('/'), pdfPath.lastIndexOf('\\'));
+            fileName = separatorIdx !== -1 ? pdfPath.substring(separatorIdx + 1) : pdfPath;
+        }
+
+        btnIndexDb.disabled = true;
+        const originalHtml = btnIndexDb.innerHTML;
+        btnIndexDb.innerHTML = "⚡ Indexing...";
+
+        try {
+            console.log(`[RAG UI] Indexing parsed specifications for catalog: ${fileName}`);
+            const res = await invoke('plugin:rag|index_parsed_specs', {
+                jsonContent: textContent,
+                catalogName: fileName
+            });
+
+            if (res && res.status === 'success') {
+                alert(`Successfully indexed specifications!\n\n${res.message || ''}`);
+                btnIndexDb.innerHTML = "✅ Indexed!";
+                setTimeout(() => {
+                    btnIndexDb.innerHTML = "⚡ Index to DB";
+                }, 2000);
+            } else {
+                throw new Error(res ? res.message || 'An unknown error occurred during indexing.' : 'Invalid response.');
+            }
+        } catch (err) {
+            console.error("Indexing failed:", err);
+            alert("Error indexing specifications to DB:\n\n" + err);
+            btnIndexDb.innerHTML = originalHtml;
+        } finally {
+            btnIndexDb.disabled = false;
+        }
+    };
+
+    // Beautiful Search Results Renderer
+    const renderSearchResults = (hits) => {
+        searchResultsContainer.innerHTML = '';
+        if (!hits || hits.length === 0) {
+            searchResultsContainer.innerHTML = `
+                <div style="color: var(--text-secondary); text-align: center; padding: 40px 0; border: 1px dashed var(--card-border); border-radius: 10px; background: rgba(0,0,0,0.1); font-size: 13px;">
+                    No results found for your query. Try a different query or make sure the specifications are indexed!
+                </div>
+            `;
+            return;
+        }
+
+        hits.forEach(hit => {
+            const card = document.createElement('div');
+            card.className = 'search-result-card';
+            card.style.cssText = `
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid var(--card-border);
+                border-radius: 14px;
+                padding: 18px;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                position: relative;
+                overflow: hidden;
+            `;
+
+            // Hover interactions
+            card.onmouseenter = () => {
+                card.style.borderColor = 'var(--accent-color)';
+                card.style.background = 'rgba(255, 255, 255, 0.04)';
+                card.style.boxShadow = '0 6px 20px rgba(249, 115, 22, 0.08)';
+                card.style.transform = 'translateY(-2px)';
+            };
+            card.onmouseleave = () => {
+                card.style.borderColor = 'var(--card-border)';
+                card.style.background = 'rgba(255, 255, 255, 0.02)';
+                card.style.boxShadow = 'none';
+                card.style.transform = 'translateY(0)';
+            };
+
+            const partNum = hit.part_number || "Unknown Part";
+            const category = hit.category || "General";
+            const manufacturer = hit.manufacturer || "Unknown";
+            const catalogName = hit.catalog_name || "Catalog";
+            const desc = hit.description || "";
+            const dist = hit.similarity_score !== undefined ? hit.similarity_score.toFixed(4) : "N/A";
+
+            // Spec metadata rendering
+            let specsHtml = '';
+            if (hit.spec_data && typeof hit.spec_data === 'object' && !Array.isArray(hit.spec_data)) {
+                specsHtml = `<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">`;
+                for (const [key, val] of Object.entries(hit.spec_data)) {
+                    if (val !== null && val !== undefined && val !== '') {
+                        const cleanKey = key.replace(/_/g, ' ');
+                        specsHtml += `
+                            <div style="
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 6px;
+                                background: rgba(0, 0, 0, 0.3);
+                                border: 1px solid rgba(255, 255, 255, 0.08);
+                                border-radius: 8px;
+                                padding: 4px 10px;
+                                font-size: 12px;
+                            ">
+                                <span style="color: var(--text-secondary); font-weight: 500;">${cleanKey}:</span>
+                                <span style="color: var(--accent-color); font-weight: 600;">${val}</span>
+                            </div>
+                        `;
+                    }
+                }
+                specsHtml += `</div>`;
+            }
+
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <div style="font-weight: 800; font-size: 16px; color: var(--text-primary); letter-spacing: 0.5px; font-family: 'Consolas', monospace;">${partNum}</div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                            <span class="badge" style="background: rgba(249, 115, 22, 0.15); color: var(--accent-color); border: 1px solid rgba(249, 115, 22, 0.3); font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: bold; text-transform: uppercase;">${category}</span>
+                            <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">🏭 ${manufacturer}</span>
+                            <span style="font-size: 12px; color: var(--text-secondary); opacity: 0.8;">📄 ${catalogName}</span>
+                        </div>
+                    </div>
+                    <div style="
+                        background: rgba(255, 255, 255, 0.05);
+                        border: 1px solid rgba(255, 255, 255, 0.08);
+                        border-radius: 8px;
+                        padding: 4px 10px;
+                        font-size: 11px;
+                        font-family: 'Consolas', monospace;
+                        color: var(--text-secondary);
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                    ">
+                        Distance: <span style="color: #10b981; font-weight: bold;">${dist}</span>
+                    </div>
+                </div>
+                
+                ${desc ? `<div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-top: 2px;">${desc}</div>` : ''}
+                
+                ${specsHtml}
+                
+                <div style="
+                    margin-top: 6px;
+                    font-size: 11px;
+                    color: var(--text-secondary);
+                    opacity: 0.6;
+                    background: rgba(0, 0, 0, 0.15);
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    border-left: 3px solid var(--accent-color);
+                    font-style: italic;
+                    line-height: 1.4;
+                ">
+                    Search Chunk: "${hit.chunk_text || ''}"
+                </div>
+            `;
+            searchResultsContainer.appendChild(card);
+        });
+    };
+
+    // Vector search call
+    const runSearch = async () => {
+        const query = inputSearchQuery.value.trim();
+        if (!query) {
+            alert("Please enter a search query.");
+            return;
+        }
+
+        btnSearch.disabled = true;
+        const originalHtml = btnSearch.innerHTML;
+        btnSearch.innerHTML = "🔍 Searching...";
+        searchResultsContainer.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; padding: 40px 0; gap: 12px; color: var(--text-secondary);">
+                <div class="spinner" style="border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--accent-color); width: 20px; height: 20px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <span>Retrieving local semantic matches (< 50ms)...</span>
+            </div>
+        `;
+
+        try {
+            const limit = parseInt(selectSearchLimit.value, 10) || 5;
+            console.log(`[RAG UI] Searching specs for: "${query}" (limit: ${limit})`);
+            const hits = await invoke('plugin:rag|search_specs', {
+                query: query,
+                limit: limit
+            });
+
+            renderSearchResults(hits);
+        } catch (err) {
+            console.error("Search failed:", err);
+            searchResultsContainer.innerHTML = `
+                <div style="color: #f87171; text-align: center; padding: 40px 0; border: 1px dashed rgba(248, 113, 113, 0.3); border-radius: 10px; background: rgba(248, 113, 113, 0.05); font-size: 13px;">
+                    <strong>Search Error:</strong><br>${err}
+                </div>
+            `;
+        } finally {
+            btnSearch.disabled = false;
+            btnSearch.innerHTML = originalHtml;
+        }
+    };
+
+    btnSearch.onclick = runSearch;
+
+    inputSearchQuery.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            runSearch();
+        }
+    };
+}
+
+// ===== HISTORY MANAGER (Oxigraph + D3.js Knowledge Graph) =====
+
+let d3Simulation = null;
+
+function setupHistory() {
+    const accordionHeader = document.getElementById('history-accordion-header');
+    const accordionBody = document.getElementById('history-accordion-body');
+    const accordionIcon = document.getElementById('history-accordion-icon');
+
+    // 1. Ingest document accordion toggle
+    if (accordionHeader && accordionBody && accordionIcon) {
+        accordionHeader.onclick = () => {
+            const isHidden = accordionBody.style.display === 'none';
+            accordionBody.style.display = isHidden ? 'flex' : 'none';
+            accordionIcon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+        };
+        // Initial state
+        accordionBody.style.display = 'none';
+    }
+
+    // 2. Select BOM Excel file
+    const btnSelectBomExcel = document.getElementById('btn-history-select-bom-excel');
+    const inputBomExcelPath = document.getElementById('history-bom-excel-path');
+    if (btnSelectBomExcel && inputBomExcelPath) {
+        btnSelectBomExcel.onclick = async () => {
+            if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+                alert("Tauri dialog API not available.");
+                return;
+            }
+            try {
+                const selected = await window.__TAURI__.dialog.open({
+                    multiple: false,
+                    directory: false,
+                    filters: [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }]
+                });
+                if (selected) {
+                    inputBomExcelPath.value = selected;
+                }
+            } catch (err) {
+                console.error("Failed to select Excel BOM file:", err);
+            }
+        };
+    }
+
+    // 3. Select Doc PDF file
+    const btnSelectDocPdf = document.getElementById('btn-history-select-doc-pdf');
+    const inputDocPdfPath = document.getElementById('history-doc-pdf-path');
+    if (btnSelectDocPdf && inputDocPdfPath) {
+        btnSelectDocPdf.onclick = async () => {
+            if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+                alert("Tauri dialog API not available.");
+                return;
+            }
+            try {
+                const selected = await window.__TAURI__.dialog.open({
+                    multiple: false,
+                    directory: false,
+                    filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+                });
+                if (selected) {
+                    inputDocPdfPath.value = selected;
+                }
+            } catch (err) {
+                console.error("Failed to select PDF document:", err);
+            }
+        };
+    }
+
+    // 4. Project registration submit
+    const btnRegisterProj = document.getElementById('btn-history-register-proj');
+    if (btnRegisterProj) {
+        btnRegisterProj.onclick = async () => {
+            const code = document.getElementById('history-proj-code').value.trim();
+            const name = document.getElementById('history-proj-name').value.trim();
+            const manager = document.getElementById('history-proj-manager').value.trim();
+            const customer = document.getElementById('history-proj-customer').value.trim();
+            const desc = document.getElementById('history-proj-desc').value.trim();
+
+            if (!code || !name || !manager || !customer) {
+                alert("필수 입력 항목(*)을 모두 입력해 주세요.");
+                return;
+            }
+
+            btnRegisterProj.disabled = true;
+            try {
+                const result = await invoke('plugin:knowledge|register_project', {
+                    projectCode: code,
+                    projectName: name,
+                    manager: manager,
+                    customer: customer,
+                    description: desc || null
+                });
+                alert("프로젝트가 성공적으로 등록되었습니다!");
+                
+                // Clear Form
+                document.getElementById('history-proj-code').value = "";
+                document.getElementById('history-proj-name').value = "";
+                document.getElementById('history-proj-manager').value = "";
+                document.getElementById('history-proj-customer').value = "";
+                document.getElementById('history-proj-desc').value = "";
+
+                await refreshHistory();
+            } catch (err) {
+                alert("프로젝트 등록 실패: " + err);
+            } finally {
+                btnRegisterProj.disabled = false;
+            }
+        };
+    }
+
+    // 5. Ingest BOM submit
+    const btnIngestBom = document.getElementById('btn-history-ingest-bom');
+    const bomProjSelect = document.getElementById('history-bom-proj-select');
+    if (btnIngestBom) {
+        btnIngestBom.onclick = async () => {
+            const projectCode = bomProjSelect.value;
+            const excelPath = inputBomExcelPath.value.trim();
+
+            if (!projectCode) {
+                alert("대상 프로젝트를 선택해 주세요.");
+                return;
+            }
+            if (!excelPath) {
+                alert("BOM 엑셀 파일을 선택해 주세요.");
+                return;
+            }
+
+            btnIngestBom.disabled = true;
+            btnIngestBom.innerHTML = "<span>⚡</span> BOM 지식 적재 중...";
+            try {
+                const result = await invoke('plugin:knowledge|ingest_bom', {
+                    projectCode: projectCode,
+                    excelPath: excelPath
+                });
+                alert(`BOM 지식 적재 성공! (총 ${result.processed_rows}개 항목)`);
+                inputBomExcelPath.value = "";
+                await refreshHistory();
+            } catch (err) {
+                alert("BOM 적재 실패: " + err);
+            } finally {
+                btnIngestBom.disabled = false;
+                btnIngestBom.innerHTML = "<span>⚡</span> BOM 데이터 지식 적재";
+            }
+        };
+    }
+
+    // 6. Ingest Document submit
+    const btnIngestDoc = document.getElementById('btn-history-ingest-doc');
+    const docProjSelect = document.getElementById('history-doc-proj-select');
+    const docTypeSelect = document.getElementById('history-doc-type');
+    if (btnIngestDoc) {
+        btnIngestDoc.onclick = async () => {
+            const projectCode = docProjSelect.value;
+            const docType = docTypeSelect.value;
+            const filePath = inputDocPdfPath.value.trim();
+
+            if (!projectCode) {
+                alert("대상 프로젝트를 선택해 주세요.");
+                return;
+            }
+            if (!filePath) {
+                alert("산출물 PDF 파일을 선택해 주세요.");
+                return;
+            }
+
+            btnIngestDoc.disabled = true;
+            btnIngestDoc.innerHTML = "<span>⚡</span> PDF 분석 및 벡터 인덱싱 중...";
+            try {
+                const result = await invoke('plugin:knowledge|ingest_project_document', {
+                    projectCode: projectCode,
+                    docType: docType,
+                    filePath: filePath
+                });
+                alert(`산출물 벡터 인덱싱 성공! (총 ${result.chunks_indexed}개 청크 적재)`);
+                inputDocPdfPath.value = "";
+                await refreshHistory();
+            } catch (err) {
+                alert("산출물 인덱싱 실패: " + err);
+            } finally {
+                btnIngestDoc.disabled = false;
+                btnIngestDoc.innerHTML = "<span>⚡</span> 산출물 텍스트 벡터 인덱싱";
+            }
+        };
+    }
+
+    // 7. SPARQL 쿼리 실행
+    const btnRunSparql = document.getElementById('btn-history-run-sparql');
+    const textareaQuery = document.getElementById('history-sparql-query');
+    const tbodyResult = document.getElementById('history-sparql-tbody');
+    const tableResult = document.getElementById('history-sparql-table');
+
+    if (btnRunSparql && textareaQuery && tbodyResult) {
+        btnRunSparql.onclick = async () => {
+            const queryStr = textareaQuery.value.trim();
+            if (!queryStr) {
+                alert("SPARQL 쿼리를 입력해 주세요.");
+                return;
+            }
+
+            btnRunSparql.disabled = true;
+            tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-color); padding: 24px;">SPARQL 쿼리 수행 중...</td></tr>`;
+
+            try {
+                const results = await invoke('plugin:knowledge|query_knowledge', { query: queryStr });
+                tbodyResult.innerHTML = "";
+
+                if (!results || results.length === 0) {
+                    tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 24px;">조회 결과가 존재하지 않습니다.</td></tr>`;
+                    return;
+                }
+
+                // Dynamically build headers based on returned keys
+                const sampleRow = results[0];
+                const keys = Object.keys(sampleRow);
+                
+                let theadHtml = `<tr style="border-bottom: 1px solid var(--card-border); color: var(--accent-color);">`;
+                keys.forEach(k => {
+                    theadHtml += `<th style="padding: 8px;">?${k}</th>`;
+                });
+                theadHtml += `</tr>`;
+                tableResult.querySelector('thead').innerHTML = theadHtml;
+
+                results.forEach(row => {
+                    let trHtml = `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">`;
+                    keys.forEach(k => {
+                        const cell = row[k];
+                        const val = cell ? cell.value : '';
+                        const type = cell ? cell.type : 'literal';
+                        const shortened = val.replace("http://workassist.local/ontology/", "wa:");
+                        trHtml += `<td style="padding: 8px; font-family: monospace; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${val}">
+                            <span style="opacity: 0.6; font-size: 10px; display: block; color: var(--text-secondary);">${type}</span>
+                            ${shortened}
+                        </td>`;
+                    });
+                    trHtml += `</tr>`;
+                    tbodyResult.insertAdjacentHTML('beforeend', trHtml);
+                });
+            } catch (err) {
+                tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #f87171; padding: 24px;"><strong>SPARQL 에러:</strong><br>${err}</td></tr>`;
+            } finally {
+                btnRunSparql.disabled = false;
+            }
+        };
+    }
+
+    // 8. SPARQL 예제 기능
+    const btnSparqlExample = document.getElementById('btn-history-sparql-example');
+    let exampleIdx = 0;
+    if (btnSparqlExample && textareaQuery) {
+        const examples = [
+            `PREFIX wa: <http://workassist.local/ontology/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+# 1. 지식베이스의 모든 트리플 조회
+SELECT ?s ?p ?o WHERE {
+  ?s ?p ?o .
+} LIMIT 30`,
+            `PREFIX wa: <http://workassist.local/ontology/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+# 2. 모든 프로젝트의 메타 정보 조회
+SELECT ?project ?code ?name ?manager WHERE {
+  ?project rdf:type wa:Project ;
+           wa:projectCode ?code ;
+           wa:projectName ?name ;
+           wa:manager ?manager .
+}`,
+            `PREFIX wa: <http://workassist.local/ontology/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+# 3. 부품들과 연관된 BOM Item 및 프로젝트 관계 조회
+SELECT ?project ?partNumber ?quantity WHERE {
+  ?project wa:hasBOMItem ?bom .
+  ?bom wa:partNumber ?partNumber ;
+       wa:quantity ?quantity .
+}`
+        ];
+
+        btnSparqlExample.onclick = () => {
+            textareaQuery.value = examples[exampleIdx];
+            exampleIdx = (exampleIdx + 1) % examples.length;
+        };
+    }
+
+    // 9. Refresh Graph button
+    const btnRefreshGraph = document.getElementById('btn-history-refresh-graph');
+    if (btnRefreshGraph) {
+        btnRefreshGraph.onclick = async () => {
+            btnRefreshGraph.disabled = true;
+            btnRefreshGraph.innerHTML = "<span>🔄</span> 로딩 중...";
+            try {
+                await refreshHistory();
+            } finally {
+                btnRefreshGraph.disabled = false;
+                btnRefreshGraph.innerHTML = "<span>🔄</span> 그래프 갱신";
+            }
+        };
+    }
+}
+
+async function refreshHistory() {
+    try {
+        const projects = await invoke('plugin:knowledge|get_all_projects');
+        const bomProjSelect = document.getElementById('history-bom-proj-select');
+        const docProjSelect = document.getElementById('history-doc-proj-select');
+
+        // Populate drop-downs
+        if (bomProjSelect && docProjSelect) {
+            const buildOptions = () => {
+                let html = `<option value="" disabled selected>— 등록된 프로젝트를 선택해 주세요 —</option>`;
+                projects.forEach(p => {
+                    html += `<option value="${p.project_code}">${p.project_name} [${p.project_code}]</option>`;
+                });
+                return html;
+            };
+            bomProjSelect.innerHTML = buildOptions();
+            docProjSelect.innerHTML = buildOptions();
+        }
+
+        // Fetch graph data for D3 and render it
+        const graphData = await invoke('plugin:knowledge|get_graph_data');
+        renderD3Graph(graphData);
+    } catch (err) {
+        console.error("Failed to refresh history views:", err);
+    }
+}
+
+function renderD3Graph(graphData) {
+    if (!window.d3) {
+        console.error("D3.js library is not loaded.");
+        const canvas = document.getElementById('history-graph-canvas');
+        if (canvas) {
+            canvas.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; height:100%; color: #f87171;">D3.js 라이브러리를 로드할 수 없습니다.</div>`;
+        }
+        return;
+    }
+
+    const svg = d3.select("#history-graph-svg");
+    svg.selectAll("*").remove(); // Clear previous drawing
+
+    const container = document.getElementById("history-graph-canvas");
+    const width = container.clientWidth || 500;
+    const height = container.clientHeight || 450;
+
+    // Define Arrow Marker
+    svg.append("defs").append("marker")
+        .attr("id", "arrowhead")
+        .attr("viewBox", "-0 -5 10 10")
+        .attr("refX", 22)
+        .attr("refY", 0)
+        .attr("orient", "auto")
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("xoverflow", "visible")
+        .append("svg:path")
+        .attr("d", "M 0,-5 L 10 ,0 L 0,5")
+        .attr("fill", "rgba(255,255,255,0.2)")
+        .style("stroke", "none");
+
+    const g = svg.append("g");
+
+    // Add Zoom behavior
+    const zoom = d3.zoom()
+        .scaleExtent([0.1, 4])
+        .on("zoom", (event) => {
+            g.attr("transform", event.transform);
+        });
+    svg.call(zoom);
+
+    const nodes = graphData.nodes || [];
+    const links = graphData.links || [];
+
+    if (nodes.length === 0) {
+        g.append("text")
+            .attr("x", width / 2)
+            .attr("y", height / 2)
+            .attr("text-anchor", "middle")
+            .attr("fill", "var(--text-secondary)")
+            .style("font-size", "14px")
+            .text("지식 그래프 데이터가 비어 있습니다. 프로젝트와 BOM을 등록해 보세요.");
+        return;
+    }
+
+    // Force simulation
+    if (d3Simulation) d3Simulation.stop();
+    d3Simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+        .force("charge", d3.forceManyBody().strength(-150))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collision", d3.forceCollide().radius(25));
+
+    // Render edges
+    const link = g.append("g")
+        .attr("stroke-opacity", 0.5)
+        .selectAll("line")
+        .data(links)
+        .join("line")
+        .attr("stroke", "rgba(255, 255, 255, 0.15)")
+        .attr("stroke-width", 1.5)
+        .attr("marker-end", "url(#arrowhead)");
+
+    // Render edge labels (Predicate)
+    const linkText = g.append("g")
+        .selectAll("text")
+        .data(links)
+        .join("text")
+        .style("font-size", "8px")
+        .attr("fill", "rgba(255,255,255,0.3)")
+        .attr("text-anchor", "middle")
+        .text(d => d.type);
+
+    // Node color strategy mapping
+    const colorMap = {
+        "Project": "#ff79c6",   // Pink
+        "BOM": "#8be9fd",       // Cyan
+        "Component": "#50fa7b", // Mint
+        "Literal": "#f1fa8c"    // Yellow
+    };
+
+    // Render nodes
+    const node = g.append("g")
+        .selectAll("circle")
+        .data(nodes)
+        .join("circle")
+        .attr("r", 8)
+        .attr("fill", d => colorMap[d.group] || "#bd93f9")
+        .attr("stroke", "rgba(0,0,0,0.4)")
+        .attr("stroke-width", 1.5)
+        .style("cursor", "pointer")
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+
+    // Node Labels
+    const label = g.append("g")
+        .selectAll("text")
+        .data(nodes)
+        .join("text")
+        .attr("dy", -12)
+        .attr("text-anchor", "middle")
+        .style("font-size", "10px")
+        .attr("fill", "var(--text-color)")
+        .style("pointer-events", "none")
+        .style("text-shadow", "0 2px 4px rgba(0,0,0,0.8)")
+        .text(d => d.label);
+
+    // Interactive event: Click Node to Inspect
+    node.on("click", async (event, d) => {
+        event.stopPropagation();
+        
+        // Visual micro-animation feedback
+        node.transition().duration(200).attr("r", n => n.id === d.id ? 12 : 8);
+
+        const content = document.getElementById("history-inspector-content");
+        if (!content) return;
+
+        content.innerHTML = `
+            <div style="display:flex; justify-content:center; align-items:center; padding: 12px; gap:8px;">
+                <div class="spinner" style="border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--accent-color); width: 14px; height: 14px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <span>관계 세부 정보 파싱 중...</span>
+            </div>
+        `;
+
+        try {
+            // Expand subject URI
+            const uri = d.id.replace("wa:", "http://workassist.local/ontology/");
+            
+            // SPARQL to query all properties of this subject
+            const sparql = `
+                SELECT ?p ?o WHERE {
+                    <${uri}> ?p ?o .
+                } LIMIT 15
+            `;
+            
+            const properties = await invoke("plugin:knowledge|query_knowledge", { query: sparql });
+            
+            let html = `
+                <div style="margin-bottom: 8px; word-break: break-all;">
+                    <strong>URI:</strong> <span style="font-family:monospace; color:var(--accent-color); font-size:11px;">${d.id}</span>
+                    <span style="margin-left: 6px;" class="tag-badge">${d.group}</span>
+                </div>
+            `;
+
+            if (d.group === "Project") {
+                html += `
+                    <button class="btn btn-secondary btn-sm" id="btn-inspector-delete-project" style="margin-bottom: 12px; padding: 4px 8px; font-size: 11px; height: 26px; border-color: #f87171; color: #f87171;">
+                        🗑️ 프로젝트 완전 삭제 (연쇄 삭제)
+                    </button>
+                `;
+            }
+
+            if (!properties || properties.length === 0) {
+                html += `<div style="color: var(--text-secondary); margin-top:8px;">연관된 트리플 속성이 존재하지 않습니다.</div>`;
+            } else {
+                html += `
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px; border: 1px solid var(--card-border);">
+                        <thead>
+                          <tr style="background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--card-border); text-align:left;">
+                            <th style="padding:6px;">Predicate</th>
+                            <th style="padding:6px;">Object Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                `;
+                properties.forEach(p => {
+                    const predShort = p.p.value.replace("http://workassist.local/ontology/", "wa:");
+                    const objShort = p.o.value.replace("http://workassist.local/ontology/", "wa:");
+                    html += `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                            <td style="padding:6px; font-family:monospace; color: var(--text-secondary);">${predShort}</td>
+                            <td style="padding:6px; word-break: break-all;" title="${p.o.value}">${objShort}</td>
+                        </tr>
+                    `;
+                });
+                html += `</tbody></table>`;
+            }
+
+            content.innerHTML = html;
+
+            // Bind inspector delete action
+            const btnDelProj = document.getElementById("btn-inspector-delete-project");
+            if (btnDelProj) {
+                btnDelProj.onclick = async () => {
+                    const confirmDel = confirm(`프로젝트 '${d.label}'와 관련된 지식 그래프 및 LanceDB 문서 벡터 데이터를 모두 완전히 영구 삭제하시겠습니까?`);
+                    if (confirmDel) {
+                        try {
+                            btnDelProj.disabled = true;
+                            btnDelProj.textContent = "삭제 진행 중...";
+                            await invoke("plugin:knowledge|delete_knowledge_entity", {
+                                entityUri: uri,
+                                projectCode: d.label
+                            });
+                            alert("성공적으로 프로젝트가 삭제되었습니다.");
+                            content.innerHTML = "노드를 클릭하면 해당 노드의 세부 정보 및 연관된 트리플 목록을 확인하실 수 있습니다.";
+                            await refreshHistory();
+                        } catch (err) {
+                            alert("삭제 실패: " + err);
+                            btnDelProj.disabled = false;
+                            btnDelProj.textContent = "🗑️ 프로젝트 완전 삭제 (연쇄 삭제)";
+                        }
+                    }
+                };
+            }
+
+        } catch (err) {
+            content.innerHTML = `<div style="color: #f87171;">데이터 로딩 오류: ${err}</div>`;
+        }
+    });
+
+    // Reset circle radius on canvas click
+    svg.on("click", () => {
+        node.transition().duration(200).attr("r", 8);
+        const content = document.getElementById("history-inspector-content");
+        if (content) {
+            content.innerHTML = "노드를 클릭하면 해당 노드의 세부 정보 및 연관된 트리플 목록을 확인하실 수 있습니다.";
+        }
+    });
+
+    // Physics ticks
+    d3Simulation.on("tick", () => {
+        link
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        linkText
+            .attr("x", d => (d.source.x + d.target.x) / 2)
+            .attr("y", d => (d.source.y + d.target.y) / 2);
+
+        node
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y);
+
+        label
+            .attr("x", d => d.x)
+            .attr("y", d => d.y);
+    });
+
+    function dragstarted(event, d) {
+        if (!event.active) d3Simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+    }
+
+    function dragended(event, d) {
+        if (!event.active) d3Simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
     }
 }

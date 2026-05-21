@@ -99,6 +99,12 @@
         <a href="#" class="nav-item" id="nav-pm">
           <span class="nav-icon">🏗️</span> Project Manager
         </a>
+        <a href="#" class="nav-item" id="nav-rag">
+          <span class="nav-icon">🤖</span> RAG & PDF Parser
+        </a>
+        <a href="#" class="nav-item" id="nav-history">
+          <span class="nav-icon">📜</span> History Manager
+        </a>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-actions">
@@ -594,6 +600,362 @@
                     </div>
                   </div>
 
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RAG View -->
+        <div class="view hidden" id="view-rag">
+          <div class="view-header" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; margin-bottom: 24px; text-align: left;">
+            <h2 style="margin: 0;">RAG & Spec Parser</h2>
+            <p class="view-desc" style="margin: 0; text-align: left; line-height: 1.6; white-space: normal; color: var(--text-secondary);">Offline PDF & Excel specification analysis and structured data extraction<br>(powered by opendataloader-pdf & calamine)</p>
+          </div>
+          
+          <div class="rag-container" style="display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1200px; margin-top: 20px;">
+            <!-- Extraction Sub-Tab Navigation -->
+            <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px;">
+              <!-- Tab Selector -->
+              <div class="view-tabs" id="rag-extraction-tabs" style="margin-bottom: 20px;">
+                <button class="view-tab active" data-rag-tab="pdf">📄 PDF Extraction</button>
+                <button class="view-tab" data-rag-tab="excel">📊 Excel Extraction</button>
+              </div>
+
+              <!-- ===== PDF Extraction Panel ===== -->
+              <div id="rag-pdf-panel" class="rag-tab-panel">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📂 PDF Specification Extraction (Ingestion)</h3>
+                <p class="settings-desc" style="margin-bottom: 20px;">Select a local component specification PDF catalog file to automatically extract structured spec data.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <!-- File Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="rag-pdf-path" placeholder="Selected PDF file path" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-rag-select-pdf" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📂</span> Select PDF File
+                    </button>
+                  </div>
+                  
+                  <!-- Output Folder Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="rag-output-dir" placeholder="Output Folder path (Optional - Defaults to PDF file directory)" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-rag-select-dir" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📁</span> Select Output Folder
+                    </button>
+                  </div>
+                  
+                  <!-- Options Row -->
+                  <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <label for="rag-output-format" style="font-size: 13px; color: var(--text-secondary);">Output Format:</label>
+                      <select id="rag-output-format" class="form-select" style="width: 120px; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="json" selected>JSON</option>
+                        <option value="markdown">Markdown</option>
+                        <option value="text">Plain Text</option>
+                        <option value="html">HTML</option>
+                      </select>
+                    </div>
+                    
+                    <button id="btn-rag-run-parse" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 20px;">
+                      <span>⚡</span> Parse PDF
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ===== Excel Extraction Panel ===== -->
+              <div id="rag-excel-panel" class="rag-tab-panel" style="display: none;">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📊 Excel Specification Extraction (Ingestion)</h3>
+                <p class="settings-desc" style="margin-bottom: 20px;">Select a local Excel or spreadsheet file (.xlsx, .xls, .xlsb, .ods) to extract structured specification data from worksheets.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <!-- Excel File Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="rag-excel-path" placeholder="Selected Excel file path" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-rag-select-excel" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📊</span> Select Excel File
+                    </button>
+                  </div>
+                  
+                  <!-- Sheet Selector & Parse Row -->
+                  <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <label for="rag-excel-sheet-select" style="font-size: 13px; color: var(--text-secondary);">Worksheet:</label>
+                      <select id="rag-excel-sheet-select" class="form-select" style="min-width: 180px; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="" disabled selected>— Parse a file first —</option>
+                      </select>
+                    </div>
+                    
+                    <button id="btn-rag-run-excel" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 20px;">
+                      <span>⚡</span> Parse Excel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Parsing Result Card -->
+            <div id="rag-result-card" class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; display: flex; flex-direction: column; min-height: 400px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+              <div id="rag-result-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span id="rag-result-toggle-icon" style="font-size: 12px; color: var(--accent-color); transition: transform 0.3s ease; display: inline-block;">▼</span>
+                  <h3 style="margin: 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">📊 Extraction & Analysis Result (Output)</h3>
+                </div>
+                <div style="display: flex; gap: 8px;" onclick="event.stopPropagation();">
+                  <button id="btn-rag-index-db" class="btn btn-primary btn-sm" style="display: none; padding: 6px 12px; font-size: 12px; height: 32px; gap: 4px; align-items: center;">⚡ Index to DB</button>
+                  <button id="btn-rag-copy-output" class="btn btn-secondary btn-sm" style="display: none; padding: 6px 12px; font-size: 12px; height: 32px;">📋 Copy Result</button>
+                </div>
+              </div>
+              
+              <!-- Collapsible Body Container -->
+              <div id="rag-result-body" style="display: flex; flex-direction: column; flex: 1; gap: 16px; margin-top: 16px; overflow: hidden; transition: opacity 0.3s ease, max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+                <!-- Loading State -->
+                <div id="rag-loader" style="display: none; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 40px 0; gap: 16px;">
+                  <img src="assets/typing_3.gif" style="width: 160px; height: auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); opacity: 0.95; margin-bottom: 8px;" alt="Loading">
+                  <div style="color: var(--accent-color); font-weight: 600; font-size: 14px;">Specification analysis engine is running. Please wait...</div>
+                  <div style="color: var(--text-secondary); font-size: 12px; max-width: 400px; text-align: center; line-height: 1.6;">(opendataloader-pdf-cli.jar is running as an asynchronous subprocess to fully analyze the local PDF text and table structures.)</div>
+                </div>
+                
+                <!-- Code Output -->
+                <div id="rag-output-container" style="flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; overflow: auto; display: flex; flex-direction: column; min-height: 300px;">
+                  <pre id="rag-output-pre" style="margin: 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; color: #a9b1d6; white-space: pre-wrap; word-break: break-all; flex: 1;">(The extracted specifications will be displayed here. Please select a PDF file and click 'Parse PDF'.)</pre>
+                </div>
+              </div>
+            </div>
+
+            <!-- Offline Semantic Search Card -->
+            <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; display: flex; flex-direction: column; gap: 20px;">
+              <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 4px;">🔍 Offline Dynamic Semantic Search (Hybrid Vector + Metadata)</h3>
+              <p class="settings-desc" style="margin-bottom: 10px; color: var(--text-secondary);">Execute real-time semantic query searches across your locally indexed specification database powered by LanceDB & SQLite specs.</p>
+              
+              <!-- Search Row -->
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <div style="flex: 1;">
+                  <input type="text" id="rag-search-query" placeholder="Type a keyword or ask a question (e.g., '48V framed servo motor' or 'rated torque 2.4 Nm')" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                  <label for="rag-search-limit" style="font-size: 13px; color: var(--text-secondary);">Limit:</label>
+                  <select id="rag-search-limit" style="width: 70px; height: 42px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                    <option value="3">3</option>
+                    <option value="5" selected>5</option>
+                    <option value="10">10</option>
+                  </select>
+                </div>
+                <button id="btn-rag-search" class="btn btn-primary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 20px;">
+                  <span>🔍</span> Vector Search
+                </button>
+              </div>
+
+              <!-- Search Results Display -->
+              <div id="rag-search-results" style="display: flex; flex-direction: column; gap: 16px; max-height: 500px; overflow-y: auto; padding-right: 4px;">
+                <div style="color: var(--text-secondary); text-align: center; padding: 40px 0; border: 1px dashed var(--card-border); border-radius: 10px; background: rgba(0,0,0,0.1); font-size: 13px;">
+                  No queries run yet. Enter a query above to see dynamic hybrid search in action!
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- History View -->
+        <div class="view hidden" id="view-history">
+          <div class="view-header" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; margin-bottom: 24px; text-align: left;">
+            <h2 style="margin: 0;">📜 History Manager</h2>
+            <p class="view-desc" style="margin: 0; text-align: left; line-height: 1.6; white-space: normal; color: var(--text-secondary);">
+              완료된 프로젝트의 BOM 및 핵심 기술 문서를 지식 그래프(RDF)로 오프라인 관리합니다.<br>
+              (powered by Oxigraph & LanceDB & D3.js)
+            </p>
+          </div>
+
+          <div class="history-container" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; max-width: 1300px; margin-top: 20px; align-items: start;">
+            <!-- Left Panel: Ingest & SPARQL -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              
+              <!-- 1. 프로젝트 등록 카드 -->
+              <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; text-align: left;">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">🏗️ 프로젝트 신규 등록</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                  <div>
+                    <label style="font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">프로젝트 코드 <span style="color:red;">*</span></label>
+                    <input type="text" id="history-proj-code" placeholder="예: PRJ-2026-DRONE" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px; font-size: 14px;">
+                  </div>
+                  <div>
+                    <label style="font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">프로젝트명 <span style="color:red;">*</span></label>
+                    <input type="text" id="history-proj-name" placeholder="예: 무인 자율 드론 개발" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px; font-size: 14px;">
+                  </div>
+                  <div>
+                    <label style="font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">담당자 <span style="color:red;">*</span></label>
+                    <input type="text" id="history-proj-manager" placeholder="예: 홍길동" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px; font-size: 14px;">
+                  </div>
+                  <div>
+                    <label style="font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">고객사 <span style="color:red;">*</span></label>
+                    <input type="text" id="history-proj-customer" placeholder="예: 삼성중공업" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px; font-size: 14px;">
+                  </div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                  <label style="font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">개요 및 설명</label>
+                  <textarea id="history-proj-desc" placeholder="프로젝트 핵심 개요를 설명해 주세요." style="width: 100%; height: 60px; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px; font-size: 14px; font-family: inherit; resize: none;"></textarea>
+                </div>
+                <button id="btn-history-register-proj" class="btn btn-primary" style="height: 40px; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;">
+                  <span>✔️</span> 프로젝트 등록
+                </button>
+              </div>
+
+              <!-- 2. BOM Import 카드 -->
+              <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; text-align: left;">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">📊 BOM 엑셀 Import</h3>
+                <p class="settings-desc" style="margin-bottom: 16px; font-size: 13px;">프로젝트와 엑셀 BOM 목록을 연동하여 부품 관계 트리플을 지식 그래프에 적재합니다.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <div>
+                    <label style="font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">대상 프로젝트 선택</label>
+                    <select id="history-bom-proj-select" class="form-select" style="width: 100%; height: 40px; background-color: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: var(--text-color); border-radius: 8px; padding: 6px 12px;">
+                      <option value="" disabled selected>— 등록된 프로젝트를 선택해 주세요 —</option>
+                    </select>
+                  </div>
+                  
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="history-bom-excel-path" placeholder="선택된 BOM 엑셀 파일 경로" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <button id="btn-history-select-bom-excel" class="btn btn-secondary" style="height: 40px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📂</span> 파일 선택
+                    </button>
+                  </div>
+                  
+                  <button id="btn-history-ingest-bom" class="btn btn-primary" style="height: 40px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <span>⚡</span> BOM 데이터 지식 적재
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3. 산출물 등록 아코디언 -->
+              <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; text-align: left;">
+                <div id="history-accordion-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                  <h3 style="margin:0; color: var(--accent-color); font-size: 16px; display: flex; align-items: center; gap: 6px;">📂 프로젝트 핵심 산출물 (PDF) 등록</h3>
+                  <span id="history-accordion-icon" style="font-size: 12px; color: var(--accent-color); transition: transform 0.3s ease;">▼</span>
+                </div>
+                
+                <div id="history-accordion-body" style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px; transition: all 0.3s ease;">
+                  <p class="settings-desc" style="margin-bottom: 8px; font-size: 13px;">프로젝트의 요구사양서, 설계명세서 등 PDF 문서를 파싱 및 임베딩하여 LanceDB 벡터 지식베이스에 적재합니다.</p>
+                  
+                  <div>
+                    <label style="font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">대상 프로젝트 선택</label>
+                    <select id="history-doc-proj-select" class="form-select" style="width: 100%; height: 40px; background-color: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: var(--text-color); border-radius: 8px; padding: 6px 12px;">
+                      <option value="" disabled selected>— 등록된 프로젝트를 선택해 주세요 —</option>
+                    </select>
+                  </div>
+                  
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div>
+                      <label style="font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">문서 종류</label>
+                      <select id="history-doc-type" class="form-select" style="width: 100%; height: 40px; background-color: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: var(--text-color); border-radius: 8px; padding: 6px 12px;">
+                        <option value="요구사양서" selected>요구사양서</option>
+                        <option value="설계명세서">설계명세서</option>
+                        <option value="DR회의자료">DR 회의자료</option>
+                        <option value="결과보고서">결과보고서</option>
+                      </select>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <div style="flex: 1;">
+                          <input type="text" id="history-doc-pdf-path" placeholder="선택된 산출물 PDF 경로" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px; font-size: 14px;">
+                        </div>
+                        <button id="btn-history-select-doc-pdf" class="btn btn-secondary" style="height: 40px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 12px;">
+                          <span>📂</span> 선택
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button id="btn-history-ingest-doc" class="btn btn-primary" style="height: 40px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <span>⚡</span> 산출물 텍스트 벡터 인덱싱
+                  </button>
+                </div>
+              </div>
+
+              <!-- 4. SPARQL 쿼리 및 결과 테이블 카드 -->
+              <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; text-align: left;">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">🔍 SPARQL 지식 질의 및 탐색</h3>
+                <p class="settings-desc" style="margin-bottom: 12px; font-size: 13px;">지식 그래프에 저장된 트리플 구조에 직접 SPARQL 쿼리를 입력해 복합 구조 정보를 조회합니다.</p>
+                
+                <div style="margin-bottom: 12px;">
+                  <textarea id="history-sparql-query" style="width: 100%; height: 120px; box-sizing: border-box; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--card-border); color: #a9b1d6; padding: 12px; border-radius: 8px; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; resize: vertical;">PREFIX wa: &lt;http://workassist.local/ontology/&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+
+SELECT ?s ?p ?o WHERE {
+  ?s ?p ?o .
+} LIMIT 20</textarea>
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                  <button id="btn-history-run-sparql" class="btn btn-primary" style="height: 38px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <span>⚡</span> 쿼리 실행
+                  </button>
+                  <button id="btn-history-sparql-example" class="btn btn-secondary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 14px;">
+                    <span>💡</span> 예제 불러오기
+                  </button>
+                </div>
+
+                <!-- SPARQL Query Result Table -->
+                <div id="history-sparql-result-container" style="max-height: 250px; overflow: auto; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px;">
+                  <table id="history-sparql-table" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; color: var(--text-color);">
+                    <thead>
+                      <tr style="border-bottom: 1px solid var(--card-border); color: var(--accent-color);">
+                        <th style="padding: 8px;">Subject</th>
+                        <th style="padding: 8px;">Predicate</th>
+                        <th style="padding: 8px;">Object</th>
+                      </tr>
+                    </thead>
+                    <tbody id="history-sparql-tbody">
+                      <tr>
+                        <td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 24px;">결과가 존재하지 않거나 쿼리를 실행해 주십시오.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Panel: D3.js Knowledge Graph Visualization -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; text-align: left; display: flex; flex-direction: column; min-height: 700px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                  <h3 style="margin:0; color: var(--accent-color); font-size: 16px; display: flex; align-items: center; gap: 6px;">🌐 D3.js 프로젝트 지식 그래프 시각화</h3>
+                  <button id="btn-history-refresh-graph" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; height: 32px; font-size: 12px;">
+                    <span>🔄</span> 그래프 갱신
+                  </button>
+                </div>
+                
+                <p class="settings-desc" style="margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
+                  노드를 드래그하거나 휠을 굴려 줌인/아웃이 가능합니다. 노드를 클릭하면 연관 트리플 세부 정보를 하단에 표출합니다.
+                </p>
+
+                <!-- SVG Canvas for D3.js -->
+                <div id="history-graph-canvas" style="flex: 1; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden; position: relative; min-height: 450px;">
+                  <svg id="history-graph-svg" style="width: 100%; height: 100%; display: block;"></svg>
+                  
+                  <!-- Legend Overlay -->
+                  <div style="position: absolute; bottom: 12px; left: 12px; background: rgba(0,0,0,0.8); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; font-size: 11px; display: flex; flex-direction: column; gap: 4px; z-index: 10;">
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width:8px; height:8px; border-radius:50%; background:#ff79c6; display:inline-block;"></span> Project</div>
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width:8px; height:8px; border-radius:50%; background:#8be9fd; display:inline-block;"></span> BOM Item</div>
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width:8px; height:8px; border-radius:50%; background:#50fa7b; display:inline-block;"></span> Component</div>
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width:8px; height:8px; border-radius:50%; background:#f1fa8c; display:inline-block;"></span> Literal</div>
+                  </div>
+                </div>
+
+                <!-- Selected Node Info Inspector -->
+                <div id="history-graph-inspector" style="margin-top: 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-height: 100px;">
+                  <h4 style="margin:0; font-size: 13px; color: var(--accent-color); display: flex; align-items: center; gap: 6px;">🔍 선택된 노드 상세 정보</h4>
+                  <div id="history-inspector-content" style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                    노드를 클릭하면 해당 노드의 세부 정보 및 연관된 트리플 목록을 확인하실 수 있습니다.
+                  </div>
                 </div>
               </div>
             </div>
@@ -1370,6 +1732,7 @@
 
   <div id="global-timetable-tooltip" class="timetable-tooltip"></div>
   <div id="chart-tooltip"></div>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

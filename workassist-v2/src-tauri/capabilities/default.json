@@ -62,6 +62,17 @@
     "engine:allow-get-enabled-features",
     "engine:allow-seed-demo-data-cmd",
     "engine:allow-clear-demo-data-cmd",
-    "rag:allow-invoke-sidecar-test"
+    "rag:allow-invoke-sidecar-test",
+    "rag:allow-index-parsed-specs",
+    "rag:allow-search-specs",
+    "rag:allow-generate-embeddings-test",
+    "rag:allow-parse-excel",
+    "knowledge:allow-register-project",
+    "knowledge:allow-ingest-bom",
+    "knowledge:allow-ingest-project-document",
+    "knowledge:allow-query-knowledge",
+    "knowledge:allow-get-graph-data",
+    "knowledge:allow-delete-knowledge-entity",
+    "knowledge:allow-get-all-projects"
   ]
 }

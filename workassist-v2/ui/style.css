@@ -4124,4 +4124,14 @@ tr:has(.status-review) {
   .dashboard-charts-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* RAG View Header override to stack title and description vertically, left-aligned */
+#view-rag .view-header {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  gap: 8px !important;
 }

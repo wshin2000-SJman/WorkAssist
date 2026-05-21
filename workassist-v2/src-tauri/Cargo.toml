@@ -16,6 +16,8 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 rand = "0.8"
 regex = "1.10"
+futures = "0.3"
+
 
 # Tauri v2 Core
 tauri = { version = "2.0.0", features = ["devtools"] }
@@ -27,8 +29,14 @@ open = "5.1"
 # RAG Engine & Sidecar
 tokio = { version = "1.37.0", features = ["full"] }
 lancedb = "0.29.0"
-petgraph = "0.6.5"
+arrow-array = "58.0"
+arrow-schema = "58.0"
+oxigraph = "0.5"
 ort = "2.0.0-rc.12"
+ndarray = "0.17"
+calamine = { version = "0.26", features = ["chrono"] }
+
+
 
 [build-dependencies]
 tauri-build = { version = "2.0.0", features = [] }

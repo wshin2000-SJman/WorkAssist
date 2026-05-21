@@ -189,6 +189,7 @@ impl Storage {
         conn.execute(schema::CREATE_SHADOW_STATUS_LOGS_TABLE, [])?;
         conn.execute(schema::CREATE_MEETING_CATEGORIES_TABLE, [])?;
         conn.execute(schema::CREATE_SHADOW_MEETING_CATEGORIES_TABLE, [])?;
+        conn.execute(schema::CREATE_SPECS_TABLE, [])?;
 
         // Column Migrations
         let tasks_info: Vec<String> = {

@@ -22,6 +22,8 @@ async fn get_enabled_features() -> Vec<String> {
     features.push("minutes".to_string());
     #[cfg(feature = "pm")]
     features.push("pm".to_string());
+    #[cfg(feature = "rag")]
+    features.push("rag".to_string());
     features
 }
 
@@ -103,6 +105,14 @@ fn main() {
             app.manage(storage);
             app.manage(api);
             
+            #[cfg(feature = "rag")]
+            {
+                let knowledge_store = Arc::new(std::sync::Mutex::new(
+                    crate::modules::knowledge::KnowledgeStore::new().expect("Failed to initialize Oxigraph Store")
+                ));
+                app.manage(knowledge_store);
+            }
+            
             Ok(())
         });
 
@@ -128,6 +138,7 @@ fn main() {
     #[cfg(feature = "rag")]
     {
         builder = builder.plugin(crate::modules::rag::init());
+        builder = builder.plugin(crate::modules::knowledge::init());
     }
 
     builder

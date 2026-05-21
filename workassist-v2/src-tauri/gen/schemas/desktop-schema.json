@@ -6309,6 +6309,90 @@
           "markdownDescription": "Denies the update_task_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the delete_knowledge_entity command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:allow-delete-knowledge-entity",
+          "markdownDescription": "Enables the delete_knowledge_entity command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_all_projects command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:allow-get-all-projects",
+          "markdownDescription": "Enables the get_all_projects command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_graph_data command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:allow-get-graph-data",
+          "markdownDescription": "Enables the get_graph_data command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the ingest_bom command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:allow-ingest-bom",
+          "markdownDescription": "Enables the ingest_bom command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the ingest_project_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:allow-ingest-project-document",
+          "markdownDescription": "Enables the ingest_project_document command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the query_knowledge command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:allow-query-knowledge",
+          "markdownDescription": "Enables the query_knowledge command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the register_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:allow-register-project",
+          "markdownDescription": "Enables the register_project command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the delete_knowledge_entity command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:deny-delete-knowledge-entity",
+          "markdownDescription": "Denies the delete_knowledge_entity command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_all_projects command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:deny-get-all-projects",
+          "markdownDescription": "Denies the get_all_projects command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_graph_data command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:deny-get-graph-data",
+          "markdownDescription": "Denies the get_graph_data command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the ingest_bom command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:deny-ingest-bom",
+          "markdownDescription": "Denies the ingest_bom command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the ingest_project_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:deny-ingest-project-document",
+          "markdownDescription": "Denies the ingest_project_document command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the query_knowledge command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:deny-query-knowledge",
+          "markdownDescription": "Denies the query_knowledge command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the register_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "knowledge:deny-register-project",
+          "markdownDescription": "Denies the register_project command without any pre-configured scope."
+        },
+        {
           "description": "Enables the delete_category command without any pre-configured scope.",
           "type": "string",
           "const": "minutes:allow-delete-category",
@@ -6729,16 +6813,64 @@
           "markdownDescription": "Denies the update_status_log_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the generate_embeddings_test command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:allow-generate-embeddings-test",
+          "markdownDescription": "Enables the generate_embeddings_test command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the index_parsed_specs command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:allow-index-parsed-specs",
+          "markdownDescription": "Enables the index_parsed_specs command without any pre-configured scope."
+        },
+        {
           "description": "Enables the invoke_sidecar_test command without any pre-configured scope.",
           "type": "string",
           "const": "rag:allow-invoke-sidecar-test",
           "markdownDescription": "Enables the invoke_sidecar_test command without any pre-configured scope."
         },
         {
+          "description": "Enables the parse_excel command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:allow-parse-excel",
+          "markdownDescription": "Enables the parse_excel command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the search_specs command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:allow-search-specs",
+          "markdownDescription": "Enables the search_specs command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the generate_embeddings_test command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:deny-generate-embeddings-test",
+          "markdownDescription": "Denies the generate_embeddings_test command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the index_parsed_specs command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:deny-index-parsed-specs",
+          "markdownDescription": "Denies the index_parsed_specs command without any pre-configured scope."
+        },
+        {
           "description": "Denies the invoke_sidecar_test command without any pre-configured scope.",
           "type": "string",
           "const": "rag:deny-invoke-sidecar-test",
           "markdownDescription": "Denies the invoke_sidecar_test command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the parse_excel command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:deny-parse-excel",
+          "markdownDescription": "Denies the parse_excel command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the search_specs command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:deny-search-specs",
+          "markdownDescription": "Denies the search_specs command without any pre-configured scope."
         },
         {
           "description": "This permission set configures which\nshell functionality is exposed by default.\n\n#### Granted Permissions\n\nIt allows to use the `open` functionality with a reasonable\nscope pre-configured. It will allow opening `http(s)://`,\n`tel:` and `mailto:` links.\n\n#### This default permission set includes:\n\n- `allow-open`",

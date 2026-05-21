@@ -10,3 +10,8 @@ pub mod minutes;
 pub mod pm;
 #[cfg(feature = "rag")]
 pub mod rag;
+#[cfg(feature = "rag")]
+pub mod embedding;
+#[cfg(feature = "rag")]
+pub mod knowledge;
+
