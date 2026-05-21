@@ -7405,39 +7405,60 @@ SELECT DISTINCT ?속성명 ?값 WHERE {
                 }
             });
 
-            // 카드 형식 디자인으로 출력
-            let html = `<div style="display: flex; flex-direction: column; gap: 12px;">`;
-            
-            const orderedProps = [
-                { uri: "http://workassist.local/ontology/partNumber", label: "부품번호", icon: "🆔" },
-                { uri: "http://workassist.local/ontology/category", label: "분류", icon: "📁" },
-                { uri: "http://workassist.local/ontology/itemName", label: "품명", icon: "🏷️" },
-                { uri: "http://workassist.local/ontology/maker", label: "제조사", icon: "🏭" },
-                { uri: "http://workassist.local/ontology/spec", label: "규격 및 상세 사양", icon: "📐" },
-                { uri: "http://workassist.local/ontology/description", label: "견적 비용 및 비고", icon: "💰" }
-            ];
+            // 가로형 표(Table) 형식 디자인으로 출력
+            const partNumber = properties["http://workassist.local/ontology/partNumber"] || "-";
+            const category = properties["http://workassist.local/ontology/category"] || "-";
+            const itemName = properties["http://workassist.local/ontology/itemName"] || "-";
+            const maker = properties["http://workassist.local/ontology/maker"] || "-";
+            const spec = properties["http://workassist.local/ontology/spec"] || "-";
+            const description = properties["http://workassist.local/ontology/description"] || "-";
 
-            orderedProps.forEach(item => {
-                const val = properties[item.uri] || "-";
-                html += `
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px;">
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); font-weight: 500;">
-                        <span>${item.icon}</span>
-                        <span>${item.label}</span>
-                    </div>
-                    <div style="font-size: 15px; color: var(--text-primary); font-weight: 500; word-break: break-all; white-space: pre-wrap;">
-                        ${val}
-                    </div>
-                </div>`;
-            });
+            let html = `
+            <div style="overflow-x: auto; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2); box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 800px;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--accent-color);">
+                            <th style="padding: 14px 16px; font-weight: 600;">부품 번호</th>
+                            <th style="padding: 14px 16px; font-weight: 600;">분류</th>
+                            <th style="padding: 14px 16px; font-weight: 600;">품명</th>
+                            <th style="padding: 14px 16px; font-weight: 600;">제조사<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Maker)</span></th>
+                            <th style="padding: 14px 16px; font-weight: 600;">규격 및 상세 사양<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Spec)</span></th>
+                            <th style="padding: 14px 16px; font-weight: 600;">견적 비용 및 비고<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Description)</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="color: var(--text-color); border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 16px; font-weight: 600; font-family: monospace; color: var(--text-primary); font-size: 14px;">${partNumber}</td>
+                            <td style="padding: 16px; color: var(--text-secondary);">${category}</td>
+                            <td style="padding: 16px; color: var(--text-secondary);">${itemName}</td>
+                            <td style="padding: 16px; color: var(--text-primary); font-weight: 500;">${maker}</td>
+                            <td style="padding: 16px; font-family: monospace;">
+                                <span style="background: rgba(255,255,255,0.06); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: var(--accent-color); font-weight: 500; display: inline-block;">${spec}</span>
+                            </td>
+                            <td style="padding: 16px; color: var(--text-secondary); white-space: pre-wrap; word-break: break-all; max-width: 250px;">${description}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>`;
 
             // 추가 정보가 있는 경우
             let hasExtra = false;
-            let extraHtml = `<div style="margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-                <div style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">추가 지식 정보</div>`;
+            let extraHtml = `
+            <div style="margin-top: 24px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 16px;">
+                <div style="font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-bottom: 10px;">📋 추가 지식 속성 정보</div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">`;
             
+            const standardUris = [
+                "http://workassist.local/ontology/partNumber",
+                "http://workassist.local/ontology/category",
+                "http://workassist.local/ontology/itemName",
+                "http://workassist.local/ontology/maker",
+                "http://workassist.local/ontology/spec",
+                "http://workassist.local/ontology/description"
+            ];
+
             Object.keys(properties).forEach(propUri => {
-                if (!orderedProps.some(item => item.uri === propUri)) {
+                if (!standardUris.includes(propUri)) {
                     hasExtra = true;
                     const label = propUri.replace("http://workassist.local/ontology/", "wa:").replace("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:");
                     const val = properties[propUri].replace("http://workassist.local/ontology/", "wa:");
@@ -7448,7 +7469,7 @@ SELECT DISTINCT ?속성명 ?값 WHERE {
                     </div>`;
                 }
             });
-            extraHtml += `</div>`;
+            extraHtml += `</div></div>`;
 
             if (hasExtra) {
                 html += extraHtml;
