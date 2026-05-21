@@ -7200,6 +7200,7 @@ function setupHistory() {
 
     // 7. 지식 데이터베이스(DB) 검색 실행
     const btnRunSparql = document.getElementById('btn-history-run-sparql');
+    const btnViewComponents = document.getElementById('btn-history-view-components');
     const inputKeyword = document.getElementById('history-db-search-keyword');
     const selectProject = document.getElementById('history-db-search-proj-select');
     const tbodyResult = document.getElementById('history-sparql-tbody');
@@ -7332,6 +7333,80 @@ SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
                 btnRunSparql.click();
             }
         });
+
+        // Component 보기 버튼 클릭 시 해당 프로젝트 하위의 모든 컴포넌트 목록 표시
+        if (btnViewComponents) {
+            btnViewComponents.onclick = async () => {
+                const projectCode = selectProject ? selectProject.value : "";
+                btnViewComponents.disabled = true;
+                tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-color); padding: 24px;">Component 목록을 조회하는 중...</td></tr>`;
+
+                let queryStr = "";
+                if (!projectCode) {
+                    // 전체 컴포넌트 조회
+                    queryStr = `PREFIX wa: <http://workassist.local/ontology/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
+  ?대상 rdf:type wa:Component .
+  ?대상 ?속성명 ?값 .
+} ORDER BY ?대상 ?속성명 LIMIT 250`;
+                } else {
+                    // 특정 프로젝트 하위 컴포넌트 조회
+                    const sanitizedCode = projectCode.trim().replace(/ /g, "_");
+                    queryStr = `PREFIX wa: <http://workassist.local/ontology/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
+  wa:Project_${sanitizedCode} wa:hasBOMItem ?bom .
+  ?bom wa:refersToComponent ?대상 .
+  ?대상 ?속성명 ?값 .
+} ORDER BY ?대상 ?속성명 LIMIT 250`;
+                }
+
+                try {
+                    const results = await invoke('plugin:knowledge|query_knowledge', { query: queryStr });
+                    tbodyResult.innerHTML = "";
+
+                    if (!results || results.length === 0) {
+                        tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 24px;">등록된 Component가 존재하지 않습니다.</td></tr>`;
+                        return;
+                    }
+
+                    // dynamically build headers
+                    const sampleRow = results[0];
+                    const keys = Object.keys(sampleRow);
+                    
+                    let theadHtml = `<tr style="border-bottom: 1px solid var(--card-border); color: var(--accent-color);">`;
+                    keys.forEach(k => {
+                        theadHtml += `<th style="padding: 8px;">?${k}</th>`;
+                    });
+                    theadHtml += `</tr>`;
+                    tableResult.querySelector('thead').innerHTML = theadHtml;
+
+                    results.forEach(row => {
+                        const targetUri = row.대상 ? row.대상.value : '';
+                        let trHtml = `<tr data-target="${targetUri}" style="border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.04)'" onmouseout="this.style.backgroundColor='transparent'">`;
+                        keys.forEach(k => {
+                            const cell = row[k];
+                            const val = cell ? cell.value : '';
+                            const type = cell ? cell.type : 'literal';
+                            const shortened = val.replace("http://workassist.local/ontology/", "wa:");
+                            trHtml += `<td style="padding: 8px; font-family: monospace; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${val}">
+                                <span style="opacity: 0.6; font-size: 10px; display: block; color: var(--text-secondary);">${type}</span>
+                                ${shortened}
+                            </td>`;
+                        });
+                        trHtml += `</tr>`;
+                        tbodyResult.insertAdjacentHTML('beforeend', trHtml);
+                    });
+                } catch (err) {
+                    tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #f87171; padding: 24px;"><strong>조회 에러:</strong><br>${err}</td></tr>`;
+                } finally {
+                    btnViewComponents.disabled = false;
+                }
+            };
+        }
 
         // 지식 DB 검색 결과 행 클릭 시 상세 팝업 바인딩
         tbodyResult.onclick = async (e) => {
