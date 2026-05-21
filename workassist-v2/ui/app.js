@@ -7334,74 +7334,113 @@ SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
             }
         });
 
-        // Component 보기 버튼 클릭 시 해당 프로젝트 하위의 모든 컴포넌트 목록 표시
+        // Component 보기 버튼 클릭 시 팝업창(모달)을 띄워 전체 부품 목록을 표 형태로 표시
         if (btnViewComponents) {
             btnViewComponents.onclick = async () => {
+                const modalDetail = document.getElementById('modal-knowledge-detail');
+                const detailContent = document.getElementById('knowledge-detail-content');
+                const titleElem = document.getElementById('knowledge-detail-title');
+                
+                if (!modalDetail || !detailContent) return;
+
                 const projectCode = selectProject ? selectProject.value : "";
                 btnViewComponents.disabled = true;
-                tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-color); padding: 24px;">Component 목록을 조회하는 중...</td></tr>`;
+
+                // 팝업창을 띄우고 로딩 메시지 표시
+                if (titleElem) {
+                    titleElem.innerText = projectCode ? `지식 DB 프로젝트 부품 목록 (wa:Project_${projectCode.trim().replace(/ /g, "_")})` : "지식 DB 부품 목록 (전체)";
+                }
+                detailContent.innerHTML = `<div style="text-align: center; color: var(--accent-color); padding: 24px;">Component 목록을 가져오는 중...</div>`;
+                modalDetail.classList.remove('hidden');
 
                 let queryStr = "";
                 if (!projectCode) {
-                    // 전체 컴포넌트 조회
+                    // 전체 컴포넌트 및 상세 속성 조회
                     queryStr = `PREFIX wa: <http://workassist.local/ontology/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
-SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
-  ?대상 rdf:type wa:Component .
-  ?대상 ?속성명 ?값 .
-} ORDER BY ?대상 ?속성명 LIMIT 250`;
+SELECT DISTINCT ?컴포넌트 ?partNumber ?category ?itemName ?maker ?spec ?description WHERE {
+  ?컴포넌트 rdf:type wa:Component .
+  OPTIONAL { ?컴포넌트 wa:partNumber ?partNumber . }
+  OPTIONAL { ?컴포넌트 wa:category ?category . }
+  OPTIONAL { ?컴포넌트 wa:itemName ?itemName . }
+  OPTIONAL { ?컴포넌트 wa:maker ?maker . }
+  OPTIONAL { ?컴포넌트 wa:spec ?spec . }
+  OPTIONAL { ?컴포넌트 wa:description ?description . }
+} ORDER BY ?partNumber LIMIT 300`;
                 } else {
-                    // 특정 프로젝트 하위 컴포넌트 조회
+                    // 특정 프로젝트 하위 컴포넌트 및 상세 속성 조회
                     const sanitizedCode = projectCode.trim().replace(/ /g, "_");
                     queryStr = `PREFIX wa: <http://workassist.local/ontology/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
-SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
+SELECT DISTINCT ?컴포넌트 ?partNumber ?category ?itemName ?maker ?spec ?description WHERE {
   wa:Project_${sanitizedCode} wa:hasBOMItem ?bom .
-  ?bom wa:refersToComponent ?대상 .
-  ?대상 ?속성명 ?값 .
-} ORDER BY ?대상 ?속성명 LIMIT 250`;
+  ?bom wa:refersToComponent ?컴포넌트 .
+  OPTIONAL { ?컴포넌트 wa:partNumber ?partNumber . }
+  OPTIONAL { ?컴포넌트 wa:category ?category . }
+  OPTIONAL { ?컴포넌트 wa:itemName ?itemName . }
+  OPTIONAL { ?컴포넌트 wa:maker ?maker . }
+  OPTIONAL { ?컴포넌트 wa:spec ?spec . }
+  OPTIONAL { ?컴포넌트 wa:description ?description . }
+} ORDER BY ?partNumber LIMIT 300`;
                 }
 
                 try {
                     const results = await invoke('plugin:knowledge|query_knowledge', { query: queryStr });
-                    tbodyResult.innerHTML = "";
+                    detailContent.innerHTML = "";
 
                     if (!results || results.length === 0) {
-                        tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 24px;">등록된 Component가 존재하지 않습니다.</td></tr>`;
+                        detailContent.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 24px;">등록된 Component가 존재하지 않습니다.</div>`;
                         return;
                     }
 
-                    // dynamically build headers
-                    const sampleRow = results[0];
-                    const keys = Object.keys(sampleRow);
-                    
-                    let theadHtml = `<tr style="border-bottom: 1px solid var(--card-border); color: var(--accent-color);">`;
-                    keys.forEach(k => {
-                        theadHtml += `<th style="padding: 8px;">?${k}</th>`;
-                    });
-                    theadHtml += `</tr>`;
-                    tableResult.querySelector('thead').innerHTML = theadHtml;
-
+                    // 가로형 표 형태로 모든 부품의 목록을 구성
+                    let tableRowsHtml = "";
                     results.forEach(row => {
-                        const targetUri = row.대상 ? row.대상.value : '';
-                        let trHtml = `<tr data-target="${targetUri}" style="border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.04)'" onmouseout="this.style.backgroundColor='transparent'">`;
-                        keys.forEach(k => {
-                            const cell = row[k];
-                            const val = cell ? cell.value : '';
-                            const type = cell ? cell.type : 'literal';
-                            const shortened = val.replace("http://workassist.local/ontology/", "wa:");
-                            trHtml += `<td style="padding: 8px; font-family: monospace; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${val}">
-                                <span style="opacity: 0.6; font-size: 10px; display: block; color: var(--text-secondary);">${type}</span>
-                                ${shortened}
-                            </td>`;
-                        });
-                        trHtml += `</tr>`;
-                        tbodyResult.insertAdjacentHTML('beforeend', trHtml);
+                        const partNumber = row.partNumber ? row.partNumber.value : "-";
+                        const category = row.category ? row.category.value : "-";
+                        const itemName = row.itemName ? row.itemName.value : "-";
+                        const maker = row.maker ? row.maker.value : "-";
+                        const spec = row.spec ? row.spec.value : "-";
+                        const description = row.description ? row.description.value : "-";
+
+                        tableRowsHtml += `
+                        <tr style="color: var(--text-color); border-bottom: 1px solid rgba(255,255,255,0.05); transition: background-color 0.15s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
+                            <td style="padding: 16px; font-weight: 600; font-family: monospace; color: var(--text-primary); font-size: 14px;">${partNumber}</td>
+                            <td style="padding: 16px; color: var(--text-secondary);">${category}</td>
+                            <td style="padding: 16px; color: var(--text-secondary);">${itemName}</td>
+                            <td style="padding: 16px; color: var(--text-primary); font-weight: 500;">${maker}</td>
+                            <td style="padding: 16px; font-family: monospace;">
+                                <span style="background: rgba(255,255,255,0.06); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: var(--accent-color); font-weight: 500; display: inline-block;">${spec}</span>
+                            </td>
+                            <td style="padding: 16px; color: var(--text-secondary); white-space: pre-wrap; word-break: break-all; max-width: 250px;">${description}</td>
+                        </tr>`;
                     });
+
+                    let tableHtml = `
+                    <div style="overflow-x: auto; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2); box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 100%;">
+                            <thead>
+                                <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--accent-color);">
+                                    <th style="padding: 14px 16px; font-weight: 600;">부품 번호</th>
+                                    <th style="padding: 14px 16px; font-weight: 600;">분류</th>
+                                    <th style="padding: 14px 16px; font-weight: 600;">품명</th>
+                                    <th style="padding: 14px 16px; font-weight: 600;">제조사<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Maker)</span></th>
+                                    <th style="padding: 14px 16px; font-weight: 600;">규격 및 상세 사양<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Spec)</span></th>
+                                    <th style="padding: 14px 16px; font-weight: 600;">견적 비용 및 비고<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Description)</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRowsHtml}
+                            </tbody>
+                        </table>
+                    </div>`;
+
+                    detailContent.innerHTML = tableHtml;
+
                 } catch (err) {
-                    tbodyResult.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #f87171; padding: 24px;"><strong>조회 에러:</strong><br>${err}</td></tr>`;
+                    detailContent.innerHTML = `<div style="text-align: center; color: #f87171; padding: 24px;">목록 조회 오류:<br>${err}</div>`;
                 } finally {
                     btnViewComponents.disabled = false;
                 }
@@ -7562,28 +7601,6 @@ SELECT DISTINCT ?속성명 ?값 WHERE {
         } catch (err) {
             detailContent.innerHTML = `<div style="text-align: center; color: #f87171; padding: 24px;">상세 정보 조회 오류:<br>${err}</div>`;
         }
-    }
-
-    // 8. 추천 검색어 입력 및 자동 검색 기능
-    const btnSparqlExample = document.getElementById('btn-history-sparql-example');
-    let exampleIdx = 0;
-    if (btnSparqlExample && inputKeyword && btnRunSparql) {
-        const examples = [
-            "Project",
-            "manager",
-            "BOM",
-            "partNumber",
-            "CIC",
-            "011070"
-        ];
-
-        btnSparqlExample.onclick = () => {
-            inputKeyword.value = examples[exampleIdx];
-            exampleIdx = (exampleIdx + 1) % examples.length;
-            
-            // 검색어를 세팅하고 바로 검색 실행까지 매끄럽게 처리해 줍니다.
-            btnRunSparql.click();
-        };
     }
 
     // 9. Refresh Graph button
