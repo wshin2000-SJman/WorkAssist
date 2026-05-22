@@ -255,6 +255,186 @@ async fn generate_embeddings_test<R: Runtime>(
     Ok(embedding)
 }
 
+#[derive(Clone)]
+struct ExtractedTextItem {
+    page_num: usize,
+    content: String,
+}
+
+fn is_pdf_parser_output(val: &serde_json::Value) -> bool {
+    val.is_object() && val.get("kids").is_some() && (val.get("file name").is_some() || val.get("number of pages").is_some())
+}
+
+fn extract_text_recursive(val: &serde_json::Value, current_page: usize, list: &mut Vec<ExtractedTextItem>) {
+    if let Some(obj) = val.as_object() {
+        let page = obj.get("page number")
+            .and_then(|v| v.as_u64())
+            .map(|v| v as usize)
+            .unwrap_or(current_page);
+
+        if let Some(content_val) = obj.get("content") {
+            if let Some(content_str) = content_val.as_str() {
+                if !content_str.trim().is_empty() {
+                    list.push(ExtractedTextItem {
+                        page_num: page,
+                        content: content_str.to_string(),
+                    });
+                }
+            }
+        }
+
+        // Recursively search in "kids", "list items"
+        if let Some(kids) = obj.get("kids").and_then(|v| v.as_array()) {
+            for kid in kids {
+                extract_text_recursive(kid, page, list);
+            }
+        }
+        if let Some(list_items) = obj.get("list items").and_then(|v| v.as_array()) {
+            for item in list_items {
+                extract_text_recursive(item, page, list);
+            }
+        }
+    } else if let Some(arr) = val.as_array() {
+        for v in arr {
+            extract_text_recursive(v, current_page, list);
+        }
+    }
+}
+
+fn merge_page_tokens(items: &[ExtractedTextItem]) -> Vec<String> {
+    let mut merged = Vec::new();
+    let mut current_seq = String::new();
+
+    for item in items {
+        let text = item.content.trim();
+        if text.is_empty() {
+            continue;
+        }
+
+        // Check if it's a single character
+        if text.chars().count() == 1 {
+            current_seq.push_str(text);
+        } else {
+            if !current_seq.is_empty() {
+                merged.push(current_seq.clone());
+                current_seq.clear();
+            }
+            merged.push(item.content.clone());
+        }
+    }
+
+    if !current_seq.is_empty() {
+        merged.push(current_seq);
+    }
+
+    merged
+}
+
+fn chunk_text(text: &str, max_chars: usize) -> Vec<String> {
+    let mut chunks = Vec::new();
+    let mut current_chunk = String::new();
+
+    // Split by sentences or newlines
+    let sentences: Vec<&str> = text.split(|c| c == '.' || c == '\n' || c == '?').collect();
+
+    for sentence in sentences {
+        let sentence_trimmed = sentence.trim();
+        if sentence_trimmed.is_empty() {
+            continue;
+        }
+
+        if current_chunk.len() + sentence_trimmed.len() > max_chars {
+            if !current_chunk.is_empty() {
+                chunks.push(current_chunk.trim().to_string());
+                current_chunk.clear();
+            }
+        }
+
+        current_chunk.push_str(sentence_trimmed);
+        current_chunk.push_str(". ");
+    }
+
+    if !current_chunk.trim().is_empty() {
+        chunks.push(current_chunk.trim().to_string());
+    }
+
+    if chunks.is_empty() && !text.trim().is_empty() {
+        chunks.push(text.trim().to_string());
+    }
+
+    chunks
+}
+
+fn preprocess_pdf_json(val: &serde_json::Value, file_name: &str) -> Vec<SpecPreviewItem> {
+    let mut extracted = Vec::new();
+    extract_text_recursive(val, 1, &mut extracted);
+
+    // Group items by page
+    let mut page_groups: std::collections::BTreeMap<usize, Vec<ExtractedTextItem>> = std::collections::BTreeMap::new();
+    for item in extracted {
+        page_groups.entry(item.page_num).or_default().push(item);
+    }
+
+    let mut preview_items = Vec::new();
+    let file_base = std::path::Path::new(file_name)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or(file_name);
+
+    for (page_num, page_items) in page_groups {
+        let merged_tokens = merge_page_tokens(&page_items);
+        let page_text = merged_tokens.join(" ");
+        let chunks = chunk_text(&page_text, 600);
+
+        for (chunk_idx, chunk) in chunks.iter().enumerate() {
+            let chunk_lower = chunk.to_lowercase();
+            let category = if chunk_lower.contains("드라이버") || chunk_lower.contains("driver") || chunk_lower.contains("servo") {
+                "Driver".to_string()
+            } else if chunk_lower.contains("모터") || chunk_lower.contains("motor") {
+                "Motor".to_string()
+            } else if chunk_lower.contains("컨트롤러") || chunk_lower.contains("controller") {
+                "Controller".to_string()
+            } else {
+                "General".to_string()
+            };
+
+            let manufacturer = if file_base.to_lowercase().contains("elmo") || chunk_lower.contains("elmo") {
+                "Elmo".to_string()
+            } else if file_base.to_lowercase().contains("maxon") || chunk_lower.contains("maxon") {
+                "Maxon".to_string()
+            } else {
+                "Unknown".to_string()
+            };
+
+            let part_number = format!("{}-P{}-C{}", file_base, page_num, chunk_idx + 1);
+            let description = if chunk.chars().count() > 150 {
+                format!("{}...", chunk.chars().take(150).collect::<String>().trim())
+            } else {
+                chunk.clone()
+            };
+
+            let spec_data = serde_json::json!({
+                "source_file": file_name,
+                "page": page_num,
+                "chunk_index": chunk_idx + 1,
+                "text_length": chunk.len()
+            });
+
+            preview_items.push(SpecPreviewItem {
+                file_name: file_name.to_string(),
+                part_number,
+                category,
+                manufacturer,
+                description,
+                spec_data,
+                chunk_text: chunk.clone(),
+            });
+        }
+    }
+
+    preview_items
+}
+
 fn map_json_item(item: &serde_json::Value) -> (String, String, String, String, String, serde_json::Value) {
     let obj = item.as_object();
     
@@ -350,7 +530,7 @@ async fn index_parsed_specs<R: Runtime>(
     let items = if let Some(arr) = parsed_val.as_array() {
         arr.clone()
     } else if parsed_val.is_object() {
-        vec![parsed_val]
+        vec![parsed_val.clone()]
     } else {
         return Err("Invalid JSON structure: expected a JSON array or object".into());
     };
@@ -416,63 +596,127 @@ async fn index_parsed_specs<R: Runtime>(
     
     let mut indexed_count = 0;
     
-    for item in items {
-        let (part_number, category, manufacturer, description, spec_data_str, spec_data) = map_json_item(&item);
+    if is_pdf_parser_output(&parsed_val) {
+        let pdf_items = preprocess_pdf_json(&parsed_val, &catalog);
+        for (idx, item) in pdf_items.into_iter().enumerate() {
+            let part_number = item.part_number;
+            let category = item.category;
+            let manufacturer = item.manufacturer;
+            let description = item.description;
+            let spec_data_str = item.spec_data.to_string();
+            let chunk_text = item.chunk_text;
 
-        // 1. Insert/Replace in SQLite (locked in local scope to avoid holding MutexGuard across await)
-        {
-            let sqlite_conn = storage.conn.lock().unwrap();
-            sqlite_conn.execute(
-                "INSERT OR REPLACE INTO specs (part_number, category, manufacturer, catalog_name, description, spec_data, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)",
-                rusqlite::params![part_number, category, manufacturer, &catalog, description, spec_data_str, &created_at],
-            ).map_err(|e| format!("Failed to save specification to SQLite: {}", e))?;
+            // 1. Insert/Replace in SQLite
+            {
+                let sqlite_conn = storage.conn.lock().unwrap();
+                sqlite_conn.execute(
+                    "INSERT OR REPLACE INTO specs (part_number, category, manufacturer, catalog_name, description, spec_data, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    rusqlite::params![part_number, category, manufacturer, &catalog, description, spec_data_str, &created_at],
+                ).map_err(|e| format!("Failed to save specification to SQLite: {}", e))?;
+            }
+
+            // 2. Compute Embeddings Vector (384 Dimensions)
+            let vector = engine.embed_sentence(&chunk_text)?;
+
+            // 3. Delete existing vector record in LanceDB
+            let escaped_part_number = part_number.replace("'", "''");
+            let delete_predicate = format!("part_number = '{}'", escaped_part_number);
+            let _ = table.delete(&delete_predicate).await;
+
+            // 4. Construct Arrow RecordBatch for inserting to LanceDB
+            let mut id_builder = StringBuilder::new();
+            let mut part_number_builder = StringBuilder::new();
+            let mut chunk_text_builder = StringBuilder::new();
+            let mut vector_builder = FixedSizeListBuilder::new(Float32Builder::new(), 384);
+
+            let chunk_id = format!("{}_{}", part_number, idx);
+            id_builder.append_value(&chunk_id);
+            part_number_builder.append_value(&part_number);
+            chunk_text_builder.append_value(&chunk_text);
+            
+            for &val in &vector {
+                vector_builder.values().append_value(val);
+            }
+            vector_builder.append(true);
+
+            let batch = RecordBatch::try_new(
+                schema.clone(),
+                vec![
+                    Arc::new(id_builder.finish()),
+                    Arc::new(part_number_builder.finish()),
+                    Arc::new(chunk_text_builder.finish()),
+                    Arc::new(vector_builder.finish()),
+                ]
+            ).map_err(|e| format!("Failed to build Arrow record batch for LanceDB: {}", e))?;
+
+            // 5. Append data using table.add
+            table.add(vec![batch])
+                .execute()
+                .await
+                .map_err(|e| format!("Failed to insert vector into LanceDB: {}", e))?;
+
+            indexed_count += 1;
         }
+    } else {
+        for item in items {
+            let (part_number, category, manufacturer, description, spec_data_str, spec_data) = map_json_item(&item);
 
-        // 2. Generate Search-Friendly Descriptive Text Chunk
-        let chunk_text = generate_spec_chunk_text(&part_number, &category, &manufacturer, &description, &spec_data);
+            // 1. Insert/Replace in SQLite (locked in local scope to avoid holding MutexGuard across await)
+            {
+                let sqlite_conn = storage.conn.lock().unwrap();
+                sqlite_conn.execute(
+                    "INSERT OR REPLACE INTO specs (part_number, category, manufacturer, catalog_name, description, spec_data, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    rusqlite::params![part_number, category, manufacturer, &catalog, description, spec_data_str, &created_at],
+                ).map_err(|e| format!("Failed to save specification to SQLite: {}", e))?;
+            }
 
-        // 3. Compute Embeddings Vector (384 Dimensions)
-        let vector = engine.embed_sentence(&chunk_text)?;
+            // 2. Generate Search-Friendly Descriptive Text Chunk
+            let chunk_text = generate_spec_chunk_text(&part_number, &category, &manufacturer, &description, &spec_data);
 
-        // 4. Delete existing vector record in LanceDB to avoid duplicate embeddings
-        let escaped_part_number = part_number.replace("'", "''");
-        let delete_predicate = format!("part_number = '{}'", escaped_part_number);
-        let _ = table.delete(&delete_predicate).await;
+            // 3. Compute Embeddings Vector (384 Dimensions)
+            let vector = engine.embed_sentence(&chunk_text)?;
 
-        // 5. Construct Arrow RecordBatch for inserting to LanceDB
-        let mut id_builder = StringBuilder::new();
-        let mut part_number_builder = StringBuilder::new();
-        let mut chunk_text_builder = StringBuilder::new();
-        let mut vector_builder = FixedSizeListBuilder::new(Float32Builder::new(), 384);
+            // 4. Delete existing vector record in LanceDB to avoid duplicate embeddings
+            let escaped_part_number = part_number.replace("'", "''");
+            let delete_predicate = format!("part_number = '{}'", escaped_part_number);
+            let _ = table.delete(&delete_predicate).await;
 
-        let chunk_id = format!("{}_{}", part_number, indexed_count);
-        id_builder.append_value(&chunk_id);
-        part_number_builder.append_value(&part_number);
-        chunk_text_builder.append_value(&chunk_text);
-        
-        for &val in &vector {
-            vector_builder.values().append_value(val);
+            // 5. Construct Arrow RecordBatch for inserting to LanceDB
+            let mut id_builder = StringBuilder::new();
+            let mut part_number_builder = StringBuilder::new();
+            let mut chunk_text_builder = StringBuilder::new();
+            let mut vector_builder = FixedSizeListBuilder::new(Float32Builder::new(), 384);
+
+            let chunk_id = format!("{}_{}", part_number, indexed_count);
+            id_builder.append_value(&chunk_id);
+            part_number_builder.append_value(&part_number);
+            chunk_text_builder.append_value(&chunk_text);
+            
+            for &val in &vector {
+                vector_builder.values().append_value(val);
+            }
+            vector_builder.append(true);
+
+            let batch = RecordBatch::try_new(
+                schema.clone(),
+                vec![
+                    Arc::new(id_builder.finish()),
+                    Arc::new(part_number_builder.finish()),
+                    Arc::new(chunk_text_builder.finish()),
+                    Arc::new(vector_builder.finish()),
+                ]
+            ).map_err(|e| format!("Failed to build Arrow record batch for LanceDB: {}", e))?;
+
+            // 6. Append data using table.add
+            table.add(vec![batch])
+                .execute()
+                .await
+                .map_err(|e| format!("Failed to insert vector into LanceDB: {}", e))?;
+
+            indexed_count += 1;
         }
-        vector_builder.append(true);
-
-        let batch = RecordBatch::try_new(
-            schema.clone(),
-            vec![
-                Arc::new(id_builder.finish()),
-                Arc::new(part_number_builder.finish()),
-                Arc::new(chunk_text_builder.finish()),
-                Arc::new(vector_builder.finish()),
-            ]
-        ).map_err(|e| format!("Failed to build Arrow record batch for LanceDB: {}", e))?;
-
-        // 6. Append data using table.add
-        table.add(vec![batch])
-            .execute()
-            .await
-            .map_err(|e| format!("Failed to insert vector into LanceDB: {}", e))?;
-
-        indexed_count += 1;
     }
 
     Ok(serde_json::json!({
@@ -798,26 +1042,31 @@ async fn preview_json_folder(
                             .map_err(|e| format!("파일 읽기 실패 ({}): {}", file_name, e))?;
                         
                         if let Ok(parsed_val) = serde_json::from_str::<Value>(&content) {
-                            let items = if let Some(arr) = parsed_val.as_array() {
-                                arr.clone()
-                            } else if parsed_val.is_object() {
-                                vec![parsed_val]
+                            if is_pdf_parser_output(&parsed_val) {
+                                let pdf_items = preprocess_pdf_json(&parsed_val, &file_name);
+                                preview_items.extend(pdf_items);
                             } else {
-                                continue;
-                            };
+                                let items = if let Some(arr) = parsed_val.as_array() {
+                                    arr.clone()
+                                } else if parsed_val.is_object() {
+                                    vec![parsed_val]
+                                } else {
+                                    continue;
+                                };
 
-                            for item in items {
-                                let (part_number, category, manufacturer, description, _spec_data_str, spec_data) = map_json_item(&item);
-                                let chunk_text = generate_spec_chunk_text(&part_number, &category, &manufacturer, &description, &spec_data);
-                                preview_items.push(SpecPreviewItem {
-                                    file_name: file_name.clone(),
-                                    part_number,
-                                    category,
-                                    manufacturer,
-                                    description,
-                                    spec_data,
-                                    chunk_text,
-                                });
+                                for item in items {
+                                    let (part_number, category, manufacturer, description, _spec_data_str, spec_data) = map_json_item(&item);
+                                    let chunk_text = generate_spec_chunk_text(&part_number, &category, &manufacturer, &description, &spec_data);
+                                    preview_items.push(SpecPreviewItem {
+                                        file_name: file_name.clone(),
+                                        part_number,
+                                        category,
+                                        manufacturer,
+                                        description,
+                                        spec_data,
+                                        chunk_text,
+                                    });
+                                }
                             }
                         }
                     }
