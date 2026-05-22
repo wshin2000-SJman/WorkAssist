@@ -756,6 +756,467 @@ async fn get_pdf_files_in_folder(folder_path: String) -> Result<Vec<String>, Str
     Ok(pdf_files)
 }
 
+#[derive(serde::Serialize)]
+struct SpecPreviewItem {
+    file_name: String,
+    part_number: String,
+    category: String,
+    manufacturer: String,
+    description: String,
+    spec_data: serde_json::Value,
+    chunk_text: String,
+}
+
+#[tauri::command]
+async fn preview_json_folder(
+    folder_path: String,
+) -> Result<Vec<SpecPreviewItem>, String> {
+    let path = std::path::PathBuf::from(&folder_path);
+    if !path.exists() {
+        return Err(format!("지정된 경로가 존재하지 않습니다: {}", folder_path));
+    }
+    if !path.is_dir() {
+        return Err(format!("지정된 경로가 폴더가 아닙니다: {}", folder_path));
+    }
+
+    let mut preview_items = Vec::new();
+    let entries = std::fs::read_dir(&path)
+        .map_err(|e| format!("폴더 읽기 실패: {}", e))?;
+
+    for entry in entries {
+        if let Ok(entry) = entry {
+            let file_path = entry.path();
+            if file_path.is_file() {
+                if let Some(ext) = file_path.extension() {
+                    let ext_str = ext.to_string_lossy().to_lowercase();
+                    if ext_str == "json" {
+                        let file_name = file_path.file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_else(|| "".to_string());
+                        
+                        let content = std::fs::read_to_string(&file_path)
+                            .map_err(|e| format!("파일 읽기 실패 ({}): {}", file_name, e))?;
+                        
+                        if let Ok(parsed_val) = serde_json::from_str::<Value>(&content) {
+                            let items = if let Some(arr) = parsed_val.as_array() {
+                                arr.clone()
+                            } else if parsed_val.is_object() {
+                                vec![parsed_val]
+                            } else {
+                                continue;
+                            };
+
+                            for item in items {
+                                let (part_number, category, manufacturer, description, _spec_data_str, spec_data) = map_json_item(&item);
+                                let chunk_text = generate_spec_chunk_text(&part_number, &category, &manufacturer, &description, &spec_data);
+                                preview_items.push(SpecPreviewItem {
+                                    file_name: file_name.clone(),
+                                    part_number,
+                                    category,
+                                    manufacturer,
+                                    description,
+                                    spec_data,
+                                    chunk_text,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Sort by part number for consistent ordering
+    preview_items.sort_by(|a, b| a.part_number.cmp(&b.part_number));
+
+    Ok(preview_items)
+}
+
+#[derive(serde::Deserialize)]
+struct ReviewedSpecItem {
+    part_number: String,
+    category: String,
+    manufacturer: String,
+    description: String,
+    spec_data: serde_json::Value,
+    chunk_text: String,
+}
+
+#[derive(serde::Serialize)]
+struct IngestResult {
+    indexed_count: usize,
+    errors: Vec<String>,
+}
+
+#[tauri::command]
+async fn ingest_reviewed_specs<R: Runtime>(
+    app: AppHandle<R>,
+    storage: tauri::State<'_, Arc<Storage>>,
+    items: Vec<ReviewedSpecItem>,
+    catalog_name: Option<String>,
+) -> Result<IngestResult, String> {
+    if items.is_empty() {
+        return Ok(IngestResult {
+            indexed_count: 0,
+            errors: vec![],
+        });
+    }
+
+    let model_path = resolve_model_path(&app)?;
+    let vocab_path = resolve_vocab_path(&app)?;
+    let engine = super::embedding::EmbeddingEngine::new(model_path, vocab_path)?;
+
+    // Initialize LanceDB connection
+    let mut db_path = if cfg!(windows) {
+        PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_else(|_| ".".into()))
+    } else {
+        PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
+    };
+    db_path.push("SJ_WorkAssist");
+    db_path.push("lancedb_data");
+    let db_dir = db_path.to_string_lossy().to_string();
+    std::fs::create_dir_all(&db_path).map_err(|e| format!("Failed to create LanceDB folder: {}", e))?;
+    
+    let lancedb_conn = connect(&db_dir)
+        .execute()
+        .await
+        .map_err(|e| format!("Failed to connect to LanceDB: {}", e))?;
+
+    let table_name = "specs_vectors";
+    let schema = Arc::new(arrow_schema::Schema::new(vec![
+        arrow_schema::Field::new("id", arrow_schema::DataType::Utf8, false),
+        arrow_schema::Field::new("part_number", arrow_schema::DataType::Utf8, false),
+        arrow_schema::Field::new("chunk_text", arrow_schema::DataType::Utf8, false),
+        arrow_schema::Field::new(
+            "vector",
+            arrow_schema::DataType::FixedSizeList(
+                Arc::new(arrow_schema::Field::new("item", arrow_schema::DataType::Float32, true)),
+                384
+            ),
+            false
+        ),
+    ]));
+
+    let table = match lancedb_conn.open_table(table_name).execute().await {
+        Ok(t) => t,
+        Err(_) => {
+            let batch = arrow_array::RecordBatch::new_empty(schema.clone());
+            lancedb_conn
+                .create_table(table_name, vec![batch])
+                .execute()
+                .await
+                .map_err(|e| format!("Failed to create LanceDB table: {}", e))?
+        }
+    };
+
+    let created_at = chrono::Local::now().to_rfc3339();
+    let catalog = catalog_name.unwrap_or_else(|| "Unknown Catalog".to_string());
+    
+    let mut indexed_count = 0;
+    let mut errors = Vec::new();
+    
+    for (idx, item) in items.into_iter().enumerate() {
+        let part_number = item.part_number.trim().to_string();
+        if part_number.is_empty() {
+            errors.push(format!("항목 #{}: 품번이 비어 있어 건너뜁니다.", idx + 1));
+            continue;
+        }
+
+        let category = if item.category.trim().is_empty() { "General".to_string() } else { item.category.trim().to_string() };
+        let manufacturer = if item.manufacturer.trim().is_empty() { "Unknown".to_string() } else { item.manufacturer.trim().to_string() };
+        let description = item.description.trim().to_string();
+        let spec_data_str = item.spec_data.to_string();
+
+        // 1. Insert/Replace in SQLite
+        let sqlite_save_res = {
+            let sqlite_conn = storage.conn.lock().unwrap();
+            sqlite_conn.execute(
+                "INSERT OR REPLACE INTO specs (part_number, category, manufacturer, catalog_name, description, spec_data, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)",
+                rusqlite::params![part_number, category, manufacturer, &catalog, description, spec_data_str, &created_at],
+            )
+        };
+
+        if let Err(e) = sqlite_save_res {
+            errors.push(format!("품번 {}: SQLite 저장 실패 - {}", part_number, e));
+            continue;
+        }
+
+        // 2. Generate vector embedding
+        let vector_res = engine.embed_sentence(&item.chunk_text);
+        let vector = match vector_res {
+            Ok(v) => v,
+            Err(e) => {
+                errors.push(format!("품번 {}: 임베딩 생성 실패 - {}", part_number, e));
+                continue;
+            }
+        };
+
+        // 3. Delete existing in LanceDB
+        let escaped_part_number = part_number.replace("'", "''");
+        let delete_predicate = format!("part_number = '{}'", escaped_part_number);
+        let _ = table.delete(&delete_predicate).await;
+
+        // 4. Construct Arrow RecordBatch
+        let mut id_builder = StringBuilder::new();
+        let mut part_number_builder = StringBuilder::new();
+        let mut chunk_text_builder = StringBuilder::new();
+        let mut vector_builder = FixedSizeListBuilder::new(Float32Builder::new(), 384);
+
+        let chunk_id = format!("{}_{}", part_number, idx);
+        id_builder.append_value(&chunk_id);
+        part_number_builder.append_value(&part_number);
+        chunk_text_builder.append_value(&item.chunk_text);
+        
+        for &val in &vector {
+            vector_builder.values().append_value(val);
+        }
+        vector_builder.append(true);
+
+        let batch_res = RecordBatch::try_new(
+            schema.clone(),
+            vec![
+                Arc::new(id_builder.finish()),
+                Arc::new(part_number_builder.finish()),
+                Arc::new(chunk_text_builder.finish()),
+                Arc::new(vector_builder.finish()),
+            ]
+        );
+
+        let batch = match batch_res {
+            Ok(b) => b,
+            Err(e) => {
+                errors.push(format!("품번 {}: Arrow RecordBatch 생성 실패 - {}", part_number, e));
+                continue;
+            }
+        };
+
+        // 5. Append to LanceDB table
+        if let Err(e) = table.add(vec![batch]).execute().await {
+            errors.push(format!("품번 {}: LanceDB 추가 실패 - {}", part_number, e));
+            continue;
+        }
+
+        indexed_count += 1;
+    }
+
+    Ok(IngestResult {
+        indexed_count,
+        errors,
+    })
+}
+
+#[tauri::command]
+async fn search_hybrid_specs<R: Runtime>(
+    app: AppHandle<R>,
+    storage: tauri::State<'_, Arc<Storage>>,
+    query: String,
+    category: Option<String>,
+    manufacturer: Option<String>,
+    catalog_name: Option<String>,
+    limit: Option<usize>,
+) -> Result<Value, String> {
+    let limit = limit.unwrap_or(5);
+    let is_semantic = !query.trim().is_empty();
+
+    let category_filter = category.filter(|s| !s.trim().is_empty());
+    let manufacturer_filter = manufacturer.filter(|s| !s.trim().is_empty());
+    let catalog_filter = catalog_name.filter(|s| !s.trim().is_empty());
+
+    let mut search_hits = Vec::new();
+
+    if is_semantic {
+        // 1. Generate Query Vector Embedding
+        let model_path = resolve_model_path(&app)?;
+        let vocab_path = resolve_vocab_path(&app)?;
+        let engine = super::embedding::EmbeddingEngine::new(model_path, vocab_path)?;
+        let query_vector = engine.embed_sentence(&query)?;
+
+        // 2. Query LanceDB (with a larger limit buffer to allow downstream metadata filtering)
+        let mut db_path = if cfg!(windows) {
+            PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_else(|_| ".".into()))
+        } else {
+            PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
+        };
+        db_path.push("SJ_WorkAssist");
+        db_path.push("lancedb_data");
+        let db_dir = db_path.to_string_lossy().to_string();
+
+        if db_path.exists() {
+            if let Ok(lancedb_conn) = connect(&db_dir).execute().await {
+                let table_name = "specs_vectors";
+                if let Ok(table) = lancedb_conn.open_table(table_name).execute().await {
+                    // Fetch up to 200 items to filter in memory/SQLite
+                    let buffer_limit = 200;
+                    if let Ok(query_result) = table.query().nearest_to(query_vector).map_err(|e| e.to_string())?.limit(buffer_limit).execute().await {
+                        use futures::stream::StreamExt;
+                        let mut stream = query_result;
+                        while let Some(Ok(batch)) = stream.next().await {
+                            if let (Some(part_numbers), Some(chunk_texts), Some(distances)) = (
+                                batch.column_by_name("part_number").and_then(|c| c.as_any().downcast_ref::<arrow_array::StringArray>()),
+                                batch.column_by_name("chunk_text").and_then(|c| c.as_any().downcast_ref::<arrow_array::StringArray>()),
+                                batch.column_by_name("_distance").and_then(|c| c.as_any().downcast_ref::<arrow_array::Float32Array>())
+                            ) {
+                                for i in 0..batch.num_rows() {
+                                    let part_number = part_numbers.value(i).to_string();
+                                    let chunk_text = chunk_texts.value(i).to_string();
+                                    let score = distances.value(i);
+                                    search_hits.push((part_number, chunk_text, score));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Query SQLite with metadata constraints and merge/filter results
+    let sqlite_conn = storage.conn.lock().unwrap();
+
+    let mut query_builder = "SELECT part_number, category, manufacturer, catalog_name, description, spec_data FROM specs WHERE 1=1".to_string();
+    let mut params: Vec<String> = Vec::new();
+
+    if let Some(ref cat) = category_filter {
+        query_builder.push_str(" AND category = ?");
+        params.push(cat.clone());
+    }
+    if let Some(ref mfr) = manufacturer_filter {
+        query_builder.push_str(" AND manufacturer = ?");
+        params.push(mfr.clone());
+    }
+    if let Some(ref cat_name) = catalog_filter {
+        query_builder.push_str(" AND catalog_name = ?");
+        params.push(cat_name.clone());
+    }
+
+    // Prepare SQLite statement
+    let mut stmt = sqlite_conn
+        .prepare(&query_builder)
+        .map_err(|e| format!("SQLite statement preparation error: {}", e))?;
+
+    let rows_res = stmt.query_map(rusqlite::params_from_iter(params.iter()), |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, String>(2)?,
+            row.get::<_, Option<String>>(3)?,
+            row.get::<_, Option<String>>(4)?,
+            row.get::<_, String>(5)?
+        ))
+    });
+
+    let rows = rows_res
+        .map_err(|e| format!("SQLite query error: {}", e))?;
+
+    // Collect metadata from SQLite into a HashMap
+    use std::collections::HashMap;
+    let mut metadata_map = HashMap::new();
+    for row in rows.flatten() {
+        metadata_map.insert(row.0.clone(), row); // Key is part_number
+    }
+
+    let mut results = Vec::new();
+
+    if is_semantic {
+        // Semantic search path: filter search hits by SQLite conditions
+        for (part_number, chunk_text, score) in search_hits {
+            if let Some(row) = metadata_map.get(&part_number) {
+                let (_, category, manufacturer, catalog_name, description, spec_data_str) = row;
+                let spec_data_val: Value = serde_json::from_str(spec_data_str).unwrap_or(serde_json::Value::Null);
+                
+                // MiniLM L2 distance ranges from 0.0 (identical) to 2.0 (opposite).
+                // Similarity = 1.0 - (score / 2.0)
+                let similarity = (1.0 - (score / 2.0)).clamp(0.0, 1.0);
+
+                results.push(serde_json::json!({
+                    "part_number": part_number,
+                    "category": category,
+                    "manufacturer": manufacturer,
+                    "catalog_name": catalog_name,
+                    "description": description.clone().unwrap_or_default(),
+                    "spec_data": spec_data_val,
+                    "chunk_text": chunk_text,
+                    "similarity_score": similarity
+                }));
+                
+                if results.len() >= limit {
+                    break;
+                }
+            }
+        }
+    } else {
+        // Pure metadata search path: return items matching SQLite conditions
+        let mut count = 0;
+        for (part_number, (_, category, manufacturer, catalog_name, description, spec_data_str)) in metadata_map {
+            let spec_data_val: Value = serde_json::from_str(&spec_data_str).unwrap_or(serde_json::Value::Null);
+            results.push(serde_json::json!({
+                "part_number": part_number,
+                "category": category,
+                "manufacturer": manufacturer,
+                "catalog_name": catalog_name,
+                "description": description.unwrap_or_default(),
+                "spec_data": spec_data_val,
+                "chunk_text": "",
+                "similarity_score": 0.0
+            }));
+            count += 1;
+            if count >= limit {
+                break;
+            }
+        }
+    }
+
+    Ok(serde_json::json!(results))
+}
+
+#[derive(serde::Serialize)]
+struct UniqueMetadata {
+    categories: Vec<String>,
+    manufacturers: Vec<String>,
+    catalog_names: Vec<String>,
+}
+
+#[tauri::command]
+async fn get_unique_metadata(
+    storage: tauri::State<'_, Arc<Storage>>,
+) -> Result<UniqueMetadata, String> {
+    let sqlite_conn = storage.conn.lock().unwrap();
+
+    let mut categories = Vec::new();
+    let mut stmt = sqlite_conn
+        .prepare("SELECT DISTINCT category FROM specs ORDER BY category ASC")
+        .map_err(|e| format!("Failed to prepare categories query: {}", e))?;
+    let mut rows = stmt.query([]).map_err(|e| format!("Failed to run categories query: {}", e))?;
+    while let Some(row) = rows.next().map_err(|e| e.to_string())? {
+        categories.push(row.get::<_, String>(0).map_err(|e| e.to_string())?);
+    }
+
+    let mut manufacturers = Vec::new();
+    let mut stmt = sqlite_conn
+        .prepare("SELECT DISTINCT manufacturer FROM specs ORDER BY manufacturer ASC")
+        .map_err(|e| format!("Failed to prepare manufacturers query: {}", e))?;
+    let mut rows = stmt.query([]).map_err(|e| format!("Failed to run manufacturers query: {}", e))?;
+    while let Some(row) = rows.next().map_err(|e| e.to_string())? {
+        manufacturers.push(row.get::<_, String>(0).map_err(|e| e.to_string())?);
+    }
+
+    let mut catalogs = Vec::new();
+    let mut stmt = sqlite_conn
+        .prepare("SELECT DISTINCT catalog_name FROM specs WHERE catalog_name IS NOT NULL ORDER BY catalog_name ASC")
+        .map_err(|e| format!("Failed to prepare catalogs query: {}", e))?;
+    let mut rows = stmt.query([]).map_err(|e| format!("Failed to run catalogs query: {}", e))?;
+    while let Some(row) = rows.next().map_err(|e| e.to_string())? {
+        catalogs.push(row.get::<_, String>(0).map_err(|e| e.to_string())?);
+    }
+
+    Ok(UniqueMetadata {
+        categories,
+        manufacturers,
+        catalog_names: catalogs,
+    })
+}
+
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("rag")
         .invoke_handler(tauri::generate_handler![
@@ -764,7 +1225,11 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             index_parsed_specs,
             search_specs,
             parse_excel,
-            get_pdf_files_in_folder
+            get_pdf_files_in_folder,
+            preview_json_folder,
+            ingest_reviewed_specs,
+            search_hybrid_specs,
+            get_unique_metadata
         ])
         .build()
 }

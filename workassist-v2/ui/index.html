@@ -102,6 +102,9 @@
         <a href="#" class="nav-item" id="nav-rag">
           <span class="nav-icon">🤖</span> PDF & Excel 파싱
         </a>
+        <a href="#" class="nav-item" id="nav-db-manager">
+          <span class="nav-icon">🗄️</span> DB관리자
+        </a>
         <a href="#" class="nav-item" id="nav-history">
           <span class="nav-icon">📜</span> 히스토리 관리자
         </a>
@@ -679,7 +682,7 @@
                     <div style="flex: 1;">
                       <input type="text" id="rag-pdf-folder-src-path" placeholder="파싱할 입력 폴더 경로" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
                     </div>
-                    <button id="btn-rag-select-pdf-folder" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                    <button id="btn-rag-select-pdf-folder" class="btn btn-secondary" style="height: 42px; width: 140px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
                       <span>📂</span> 폴더 선택
                     </button>
                   </div>
@@ -689,7 +692,7 @@
                     <div style="flex: 1;">
                       <input type="text" id="rag-pdf-folder-out-path" placeholder="출력 폴더 경로 (기본값은 입력 폴더와 동일)" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
                     </div>
-                    <button id="btn-rag-select-pdf-folder-out" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                    <button id="btn-rag-select-pdf-folder-out" class="btn btn-secondary" style="height: 42px; width: 140px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
                       <span>📁</span> 출력 폴더 선택
                     </button>
                   </div>
@@ -823,6 +826,195 @@
               <div id="rag-search-results" style="display: flex; flex-direction: column; gap: 16px; max-height: 500px; overflow-y: auto; padding-right: 4px;">
                 <div style="color: var(--text-secondary); text-align: center; padding: 40px 0; border: 1px dashed var(--card-border); border-radius: 10px; background: rgba(0,0,0,0.1); font-size: 13px;">
                   아직 검색이 실행되지 않았습니다. 상단에 검색어를 입력하여 동적 하이브리드 검색을 실행해 보세요!
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DB Manager View -->
+        <div class="view hidden" id="view-db-manager">
+          <div class="view-header" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; margin-bottom: 24px; text-align: left;">
+            <h2 style="margin: 0;">🗄️ DB관리자</h2>
+            <p class="view-desc" style="margin: 0; text-align: left; line-height: 1.6; white-space: normal; color: var(--text-secondary);">
+              로컬 사양 데이터베이스(SQLite 및 LanceDB)에 파싱된 제품 사양 데이터를 인입하고,<br>
+              실시간 오프라인 시맨틱 하이브리드(유사도 + 다차원 필터링) 검색을 통해 최적의 스펙을 찾습니다.
+            </p>
+          </div>
+
+          <div class="rag-container" style="display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1200px; margin-top: 20px;">
+            <!-- DB Manager Tabs -->
+            <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px;">
+              <div class="view-tabs" id="db-manager-tabs" style="margin-bottom: 20px;">
+                <button class="view-tab active" data-db-tab="ingest">📥 DB 입력 (사양 데이터 인입)</button>
+                <button class="view-tab" data-db-tab="search">🔍 DB 검색 (하이브리드 시맨틱 검색)</button>
+              </div>
+
+              <!-- ===== DB Ingestion Tab ===== -->
+              <div id="db-ingest-panel" class="db-tab-panel">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📥 제품 사양 데이터 일괄 인입 및 검토</h3>
+                <p class="settings-desc" style="margin-bottom: 20px;">파싱된 JSON 사양 파일들이 저장된 폴더를 지정하여, 데이터를 검토 및 수정한 뒤 로컬 DB에 인입합니다.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <!-- Folder Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="db-ingest-folder-path" placeholder="JSON 사양 파일들이 위치한 폴더 경로" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-db-select-folder" class="btn btn-secondary" style="height: 42px; width: 140px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📂</span> 폴더선택
+                    </button>
+                  </div>
+
+                  <!-- Catalog name Selector Row -->
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label for="db-ingest-catalog-name" style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">카탈로그/문서 식별 명칭 <span style="color: var(--accent-color);">*</span></label>
+                    <input type="text" id="db-ingest-catalog-name" placeholder="예: 2026_servo_motor_catalog" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                  </div>
+                  
+                  <!-- Analyze and Action Row -->
+                  <div style="display: flex; gap: 16px; align-items: center;">
+                    <button id="btn-db-preview-ingest" class="btn btn-outline-accent" style="height: 42px; display: flex; align-items: center; gap: 6px; padding: 0 20px;">
+                      <span>⚡</span> 1단계: JSON 파일 분석 및 프리뷰
+                    </button>
+                  </div>
+
+                  <!-- HITL Preview Section (Initially hidden) -->
+                  <div id="db-preview-section" style="display: none; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; margin-top: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                      <h4 style="margin: 0; color: var(--text-primary); font-size: 15px; font-weight: 600;">📋 인입 대상 사양 데이터 검토 (더블클릭하여 실시간 편집 가능)</h4>
+                      <span id="db-preview-count" style="font-size: 13px; color: var(--accent-color); font-weight: 600;">검색된 항목: 0개</span>
+                    </div>
+
+                    <!-- Preview Table wrapper -->
+                    <div style="overflow-x: auto; max-height: 400px; border: 1px solid var(--card-border); border-radius: 8px; background: rgba(0, 0, 0, 0.25);">
+                      <table id="db-preview-table" class="data-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                          <tr style="border-bottom: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.03);">
+                            <th style="padding: 10px; width: 40px; text-align: center;"><input type="checkbox" id="db-preview-select-all" checked style="cursor: pointer;"></th>
+                            <th style="padding: 10px; text-align: left; width: 180px;">파트 넘버</th>
+                            <th style="padding: 10px; text-align: left; width: 120px;">제조사</th>
+                            <th style="padding: 10px; text-align: left; width: 120px;">분류</th>
+                            <th style="padding: 10px; text-align: left;">세부 스펙 (JSON 포맷)</th>
+                            <th style="padding: 10px; text-align: left; width: 150px;">원본 파일</th>
+                          </tr>
+                        </thead>
+                        <tbody id="db-preview-tbody">
+                          <!-- Loaded via JS -->
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <!-- Confirm Button Row -->
+                    <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                      <button id="btn-db-confirm-ingest" class="btn btn-primary" style="height: 42px; display: flex; align-items: center; gap: 6px; padding: 0 24px;">
+                        <span>🚀</span> 2단계: DB 인입 최종 확정 및 벡터화 실행
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Console Output & Stats Grid -->
+                  <div id="db-ingest-result-section" style="display: none; flex-direction: column; gap: 16px; margin-top: 10px;">
+                    <!-- Loading Bar -->
+                    <div id="db-ingest-loading" style="display: none; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px;">
+                      <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+                        <img src="assets/typing_3.gif" alt="인입 중..." style="height: 90px; border-radius: 6px; opacity: 0.85; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));">
+                      </div>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span id="db-ingest-progress-status" style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">임베딩 벡터를 추출하고 있습니다...</span>
+                        <span id="db-ingest-progress-percent" style="font-size: 14px; color: var(--accent-color); font-weight: 700; font-family: 'Consolas', monospace;">0%</span>
+                      </div>
+                      <div style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div id="db-ingest-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-color), #ff8c00); border-radius: 4px; transition: width 0.2s ease;"></div>
+                      </div>
+                    </div>
+
+                    <!-- Log console -->
+                    <h4 style="margin: 0; color: var(--text-primary); font-size: 14px; font-weight: 600;">실시간 실행 터미널 콘솔 로그</h4>
+                    <div id="db-ingest-console-container" style="background: rgba(0, 0, 0, 0.35); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; overflow: auto; display: flex; flex-direction: column; min-height: 180px; max-height: 250px;">
+                      <pre id="db-ingest-console-pre" style="margin: 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; color: #a9b1d6; white-space: pre-wrap; word-break: break-all; line-height: 1.5;">준비 완료.</pre>
+                    </div>
+
+                    <!-- Ingestion Stats -->
+                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                      <div class="stat-card" style="padding: 16px; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 12px; text-align: center;">
+                        <span class="stat-label" style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">총 검토 대상</span>
+                        <span class="stat-value" id="db-stat-total" style="font-size: 20px; font-weight: 700; color: var(--text-primary);">0</span>
+                      </div>
+                      <div class="stat-card" style="padding: 16px; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 12px; text-align: center;">
+                        <span class="stat-label" style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">인입 완료 (성공)</span>
+                        <span class="stat-value" id="db-stat-success" style="font-size: 20px; font-weight: 700; color: #10b981;">0</span>
+                      </div>
+                      <div class="stat-card" style="padding: 16px; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 12px; text-align: center;">
+                        <span class="stat-label" style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">제외/실패</span>
+                        <span class="stat-value" id="db-stat-failed" style="font-size: 20px; font-weight: 700; color: #ef4444;">0</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ===== DB Search Tab ===== -->
+              <div id="db-search-panel" class="db-tab-panel" style="display: none;">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 4px;">🔍 오프라인 동적 시맨틱 하이브리드 검색</h3>
+                <p class="settings-desc" style="margin-bottom: 16px; color: var(--text-secondary);">벡터 검색을 통해 맥락적 유사도가 높은 제품군을 찾고, SQLite 메타데이터 조건을 융합 필터링합니다.</p>
+                
+                <!-- Search bar and settings -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <!-- Search Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="db-search-query" placeholder="질문이나 시맨틱 검색 키워드를 입력해 주세요 (예: '정격 토크 2.4 Nm' 또는 '48V 고성능 모터')" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-db-search" class="btn btn-primary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 20px;">
+                      <span>🔍</span> 하이브리드 검색
+                    </button>
+                  </div>
+
+                  <!-- Hybrid Metadata Filters Grid -->
+                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; background: rgba(0, 0, 0, 0.1); border: 1px solid var(--card-border); padding: 16px; border-radius: 12px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <label for="db-search-category" style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">제품 분류</label>
+                      <select id="db-search-category" class="form-select" style="width: 100%; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="">전체 분류</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <label for="db-search-manufacturer" style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">제조사</label>
+                      <select id="db-search-manufacturer" class="form-select" style="width: 100%; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="">전체 제조사</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <label for="db-search-catalog" style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">원본 카탈로그</label>
+                      <select id="db-search-catalog" class="form-select" style="width: 100%; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="">전체 카탈로그</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <label for="db-search-limit" style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">검색 제한 개수</label>
+                      <select id="db-search-limit" class="form-select" style="width: 100%; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="5">5개 보기</option>
+                        <option value="10" selected>10개 보기</option>
+                        <option value="20">20개 보기</option>
+                        <option value="50">50개 보기</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Search Results Grid -->
+                <div style="margin-top: 24px;">
+                  <h4 style="margin: 0 0 16px 0; color: var(--text-primary); font-size: 15px; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+                    <span>📋 하이브리드 검색 결과</span>
+                    <span id="db-search-results-count" style="font-size: 13px; color: var(--accent-color); font-weight: 600;">조회된 항목: 0개</span>
+                  </h4>
+                  
+                  <div id="db-search-results" style="display: flex; flex-direction: column; gap: 16px; min-height: 200px; max-height: 600px; overflow-y: auto; padding-right: 4px;">
+                    <div style="color: var(--text-secondary); text-align: center; padding: 60px 0; border: 1px dashed var(--card-border); border-radius: 12px; background: rgba(0,0,0,0.1); font-size: 13px;">
+                      검색어 입력 후 '하이브리드 검색' 버튼을 클릭하거나, 필터 옵션을 선택해 주십시오.
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1140,7 +1332,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <div class="header-with-tag">
-          <h2 id="task-modal-title">Create New Task</h2>
+          <h2 id="task-modal-title">새 업무 등록</h2>
           <span id="task-tag-display" class="task-tag-badge"></span>
         </div>
         <button class="btn-close" id="btn-close-modal">&times;</button>
@@ -1149,33 +1341,33 @@
         <input type="hidden" id="task-id">
         <div class="form-row">
           <div class="form-group" id="task-status-group" style="flex: 0 0 150px;">
-            <label>Current Status</label>
+            <label>현재 상태</label>
             <div id="task-status-info" class="status-badge-inline">Note</div>
           </div>
           <div class="form-group">
-            <label for="task-title">Title <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 50 chars)</span></label>
-            <input type="text" id="task-title" placeholder="What needs to be done?" maxlength="50" required>
+            <label for="task-title">제목 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 50자)</span></label>
+            <input type="text" id="task-title" placeholder="수행할 업무를 입력하세요." maxlength="50" required>
           </div>
         </div>
         <div class="form-group">
-          <label for="task-content">Content <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 500 chars)</span></label>
-          <textarea id="task-content" rows="4" placeholder="Describe the task details..." maxlength="500"></textarea>
+          <label for="task-content">내용 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 500자)</span></label>
+          <textarea id="task-content" rows="4" placeholder="상세 업무 내용을 설명해 주세요..." maxlength="500"></textarea>
         </div>
         <div class="form-group hidden" id="task-review-group">
-          <label>Review Feedback</label>
+          <label>검토 피드백</label>
           <div id="task-review-display" class="review-display-box"></div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="task-manager">Manager <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 50 chars)</span></label>
-            <input type="text" id="task-manager" placeholder="Assignee" maxlength="50">
+            <label for="task-manager">담당자 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 50자)</span></label>
+            <input type="text" id="task-manager" placeholder="배정된 담당자" maxlength="50">
           </div>
           <div class="form-group">
-            <label>Priority</label>
+            <label>우선순위</label>
             <div class="checkbox-wrapper">
               <label for="task-urgent" class="checkbox-label">
                 <input type="checkbox" id="task-urgent">
-                Urgent Task
+                긴급 업무
                 <span class="custom-checkbox"></span>
               </label>
             </div>
@@ -1183,19 +1375,19 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="task-start">Start Date</label>
+            <label for="task-start">시작일</label>
             <input type="date" id="task-start">
           </div>
           <div class="form-group">
-            <label for="task-due">Due Date</label>
+            <label for="task-due">마감일</label>
             <input type="date" id="task-due">
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-task-modal">Delete Task</button>
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-task-modal">업무 삭제</button>
           <div class="footer-right">
-            <button type="button" class="btn btn-ghost" id="btn-cancel-task">Cancel</button>
-            <button type="submit" class="btn btn-primary">Create Task</button>
+            <button type="button" class="btn btn-ghost" id="btn-cancel-task">취소</button>
+            <button type="submit" class="btn btn-primary">업무 등록</button>
           </div>
         </div>
       </form>
@@ -1206,25 +1398,16 @@
   <div id="modal-settings" class="modal hidden">
     <div class="modal-content large">
       <div class="modal-header">
-        <h2>Settings</h2>
+        <h2>설정</h2>
         <button class="btn-close" id="btn-close-settings">&times;</button>
       </div>
       
       <div class="modal-body-scroll">
-        <!-- General Section -->
-        <div class="settings-section">
-          <h3>General</h3>
-          <p class="settings-desc">Select your preferred language for the application interface.</p>
-          <div class="settings-actions">
-            <button class="btn btn-secondary btn-lang active">한국어</button>
-            <button class="btn btn-secondary btn-lang">English</button>
-          </div>
-        </div>
 
         <!-- Database Management Section -->
         <div class="settings-section">
-          <h3>Database Management</h3>
-          <p class="settings-desc">Manage your data with manual backups, imports, or full initialization.</p>
+          <h3>데이터베이스 관리</h3>
+          <p class="settings-desc">수동 백업, 가져오기 또는 전체 초기화를 통해 데이터를 관리합니다.</p>
           
           <!-- SQLite RDBMS Group -->
           <div style="margin-bottom: 24px;">
@@ -1251,16 +1434,16 @@
             
             <div class="settings-actions-grid" style="margin-top: 10px;">
               <button id="btn-manual-backup" class="btn btn-secondary">
-                <span>💾</span> Manual Backup
+                <span>💾</span> 수동 백업
               </button>
               <button id="btn-import-db" class="btn btn-secondary">
-                <span>📥</span> Import Backup
+                <span>📥</span> 백업 가져오기
               </button>
               <button id="btn-open-backup-dir" class="btn btn-secondary">
-                <span>📂</span> Open Backup Folder
+                <span>📂</span> 백업 폴더 열기
               </button>
               <button id="btn-initialize-db" class="btn btn-danger-outline">
-                <span>⚠️</span> Initialize Data
+                <span>⚠️</span> 데이터 초기화
               </button>
             </div>
           </div>
@@ -1290,16 +1473,16 @@
             
             <div class="settings-actions-grid" style="margin-top: 10px;">
               <button id="btn-manual-backup-oxigraph" class="btn btn-secondary">
-                <span>💾</span> Manual Backup
+                <span>💾</span> 수동 백업
               </button>
               <button id="btn-import-db-oxigraph" class="btn btn-secondary">
-                <span>📥</span> Import Backup
+                <span>📥</span> 백업 가져오기
               </button>
               <button id="btn-open-backup-dir-oxigraph" class="btn btn-secondary">
-                <span>📂</span> Open Backup Folder
+                <span>📂</span> 백업 폴더 열기
               </button>
               <button id="btn-initialize-db-oxigraph" class="btn btn-danger-outline">
-                <span>⚠️</span> Initialize Data
+                <span>⚠️</span> 데이터 초기화
               </button>
             </div>
           </div>
@@ -1307,14 +1490,14 @@
 
         <!-- Tutorial Section -->
         <div class="settings-section">
-          <h3>Tutorial & Demo</h3>
-          <p class="settings-desc">Populate the app with rich demo data to explore security gateway features or clear it to start fresh.</p>
+          <h3>튜토리얼 및 데모</h3>
+          <p class="settings-desc">보안 게이트웨이 기능을 테스트하기 위해 데모 데이터를 로드하거나, 새로 시작하기 위해 데이터를 초기화합니다.</p>
           <div class="settings-actions-grid">
             <button id="btn-seed-demo" class="btn btn-primary">
-              <span>🚀</span> Load Demo Data
+              <span>🚀</span> 데모 데이터 로드
             </button>
             <button id="btn-clear-demo" class="btn btn-secondary">
-              <span>🧹</span> Reset Demo Data
+              <span>🧹</span> 데모 데이터 초기화
             </button>
           </div>
         </div>
@@ -1323,7 +1506,7 @@
       </div>
 
       <div class="modal-actions">
-        <button type="button" class="btn btn-primary" id="btn-close-settings-ok">Close</button>
+        <button type="button" class="btn btn-primary" id="btn-close-settings-ok">닫기</button>
       </div>
     </div>
   </div>
@@ -1331,7 +1514,7 @@
     <div class="modal-content large">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <h2 id="meeting-modal-title">Minutes Manager</h2>
+          <h2 id="meeting-modal-title">회의록 관리</h2>
           <span id="meeting-tag-display" class="tag-badge hidden"></span>
         </div>
         <button class="btn-close" id="btn-close-meeting">&times;</button>
@@ -1340,52 +1523,52 @@
         <input type="hidden" id="meeting-id">
         <input type="hidden" id="meeting-tag">
         <div class="form-group">
-          <label for="meeting-title">Meeting Title <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 40 chars)</span></label>
-          <input type="text" id="meeting-title" placeholder="What was the meeting about?" maxlength="40" required>
+          <label for="meeting-title">회의 제목 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 40자)</span></label>
+          <input type="text" id="meeting-title" placeholder="회의 주제는 무엇이었나요?" maxlength="40" required>
         </div>
         <div class="form-row meeting-meta">
           <div class="form-group" style="flex: 2">
-            <label for="meeting-category">Category</label>
+            <label for="meeting-category">카테고리</label>
             <select id="meeting-category">
-              <option value="">Uncategorized</option>
+              <option value="">미분류</option>
               <!-- Dynamically populated -->
             </select>
           </div>
           <div class="form-group" style="flex: 2">
-            <label for="meeting-date">Date</label>
+            <label for="meeting-date">일자</label>
             <input type="date" id="meeting-date">
           </div>
           <div class="form-group" style="flex: 1">
-            <label for="meeting-time">Time</label>
+            <label for="meeting-time">시간</label>
             <input type="time" id="meeting-time">
           </div>
           <div class="form-group" style="flex: 2">
-            <label for="meeting-location">Location <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 30 chars)</span></label>
-            <input type="text" id="meeting-location" placeholder="Conference Room A" maxlength="30">
+            <label for="meeting-location">장소 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 30자)</span></label>
+            <input type="text" id="meeting-location" placeholder="대회의실 A" maxlength="30">
           </div>
         </div>
         <div class="form-group">
-          <label for="meeting-participants">Participants <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 50 chars)</span></label>
-          <input type="text" id="meeting-participants" placeholder="Name 1, Name 2, ..." maxlength="50">
+          <label for="meeting-participants">참석자 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 50자)</span></label>
+          <input type="text" id="meeting-participants" placeholder="홍길동, 이순신, ..." maxlength="50">
         </div>
         <div class="form-group">
-          <label for="meeting-memo">Agenda <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 3000 chars)</span></label>
-          <textarea id="meeting-memo" rows="4" placeholder="Meeting goals and topics..." maxlength="3000"></textarea>
+          <label for="meeting-memo">의제 / 안건 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 3000자)</span></label>
+          <textarea id="meeting-memo" rows="4" placeholder="회의 목표와 핵심 주제..." maxlength="3000"></textarea>
         </div>
         <div class="form-group">
-          <label for="meeting-decisions">Decisions <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 3000 chars)</span></label>
-          <textarea id="meeting-decisions" rows="3" placeholder="Key decisions made during the meeting..." maxlength="3000"></textarea>
+          <label for="meeting-decisions">결정 사항 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 3000자)</span></label>
+          <textarea id="meeting-decisions" rows="3" placeholder="회의 중 내린 주요 결정 사항..." maxlength="3000"></textarea>
         </div>
         <div class="form-group">
-          <label for="meeting-actions">Action Items <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 3000 chars)</span></label>
-          <textarea id="meeting-actions" rows="3" placeholder="Who will do what by when?" maxlength="3000"></textarea>
+          <label for="meeting-actions">수행 과제 (Action Items) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 3000자)</span></label>
+          <textarea id="meeting-actions" rows="3" placeholder="누가 언제까지 무엇을 수행할 것인가요?" maxlength="3000"></textarea>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" id="btn-export-md">Export to MD</button>
-          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-meeting-modal" style="margin-left: 8px;">Delete Minutes</button>
+          <button type="button" class="btn btn-secondary" id="btn-export-md">MD로 내보내기</button>
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-meeting-modal" style="margin-left: 8px;">회의록 삭제</button>
           <div style="flex: 1"></div>
-          <button type="button" class="btn btn-ghost" id="btn-cancel-meeting">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Minutes</button>
+          <button type="button" class="btn btn-ghost" id="btn-cancel-meeting">취소</button>
+          <button type="submit" class="btn btn-primary">회의록 저장</button>
         </div>
       </form>
     </div>
@@ -1394,21 +1577,21 @@
   <!-- Review Modal -->
   <div id="modal-review" class="modal hidden">
     <div class="modal-content">
-      <h2>Review & Complete</h2>
+      <h2>검토 및 완료</h2>
       <form id="form-review">
         <input type="hidden" id="review-task-id">
         <div class="form-group">
-          <label>Reviewer Name</label>
-          <input type="text" id="reviewer-name" required placeholder="Enter your name">
+          <label>검토자 이름</label>
+          <input type="text" id="reviewer-name" required placeholder="이름을 입력하세요">
         </div>
         <div class="form-group">
-          <label>Review Comment</label>
-          <textarea id="review-comment" required placeholder="Enter review feedback"></textarea>
+          <label>검토 의견</label>
+          <textarea id="review-comment" required placeholder="검토 의견을 입력하세요"></textarea>
         </div>
         <div class="modal-footer">
           <div class="footer-right">
-            <button type="button" class="btn btn-secondary" id="btn-cancel-review">Cancel</button>
-            <button type="submit" class="btn btn-primary">Approve & Delete</button>
+            <button type="button" class="btn btn-secondary" id="btn-cancel-review">취소</button>
+            <button type="submit" class="btn btn-primary">승인 및 보관</button>
           </div>
         </div>
       </form>
@@ -1419,25 +1602,25 @@
   <div id="modal-signup" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Create New Account</h2>
+        <h2>새 계정 생성</h2>
         <button class="btn-close" id="btn-close-signup">&times;</button>
       </div>
       <form id="form-signup">
         <div class="form-group">
-          <label>Desired Username</label>
-          <input type="text" id="signup-id" placeholder="Enter new ID" required>
+          <label>사용자 ID</label>
+          <input type="text" id="signup-id" placeholder="새 ID 입력" required>
         </div>
         <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="signup-pw" placeholder="Create a strong password" required>
+          <label>비밀번호</label>
+          <input type="password" id="signup-pw" placeholder="안전한 비밀번호 입력" required>
         </div>
         <div class="form-group">
-          <label>Password Hint</label>
-          <input type="text" id="signup-hint" placeholder="Enter a reminder for your password" required>
+          <label>비밀번호 힌트</label>
+          <input type="text" id="signup-hint" placeholder="비밀번호 기억용 힌트 입력" required>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" id="btn-cancel-signup">Cancel</button>
-          <button type="submit" class="btn btn-primary">Create Account</button>
+          <button type="button" class="btn btn-secondary" id="btn-cancel-signup">취소</button>
+          <button type="submit" class="btn btn-primary">계정 생성</button>
         </div>
       </form>
     </div>
@@ -1447,20 +1630,20 @@
   <div id="modal-hint" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Find Password Hint</h2>
+        <h2>비밀번호 힌트 찾기</h2>
         <button class="btn-close" id="btn-close-hint-modal">&times;</button>
       </div>
       <div class="form-group">
-        <label>Enter your ID</label>
-        <input type="text" id="hint-query-id" placeholder="Username" required>
+        <label>아이디 입력</label>
+        <input type="text" id="hint-query-id" placeholder="사용자 ID" required>
       </div>
       <div id="hint-display" class="hint-result hidden">
-        <p class="hint-label">Your Password Hint:</p>
+        <p class="hint-label">비밀번호 힌트:</p>
         <p id="hint-text" class="hint-content"></p>
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn btn-secondary" id="btn-close-hint-ok">Close</button>
-        <button type="button" class="btn btn-primary" id="btn-get-hint-submit">Show Hint</button>
+        <button type="button" class="btn btn-secondary" id="btn-close-hint-ok">닫기</button>
+        <button type="button" class="btn btn-primary" id="btn-get-hint-submit">힌트 확인</button>
       </div>
     </div>
   </div>
@@ -1468,27 +1651,27 @@
   <!-- Change PW Modal -->
   <div id="modal-change-pw" class="modal hidden">
     <div class="modal-content">
-      <h2>Change Password</h2>
+      <h2>비밀번호 변경</h2>
       <form id="form-change-pw">
         <div class="form-group">
-          <label>Username</label>
+          <label>사용자 ID</label>
           <input type="text" id="change-pw-id" required>
         </div>
         <div class="form-group">
-          <label>Current Password</label>
+          <label>현재 비밀번호</label>
           <input type="password" id="change-pw-old" required>
         </div>
         <div class="form-group">
-          <label>New Password</label>
-          <input type="password" id="change-new-pw" placeholder="Enter new password" required>
+          <label>새 비밀번호</label>
+          <input type="password" id="change-new-pw" placeholder="새 비밀번호 입력" required>
         </div>
         <div class="form-group">
-          <label>New Password Hint</label>
-          <input type="text" id="change-pw-hint" placeholder="Enter new password hint" required>
+          <label>새 비밀번호 힌트</label>
+          <input type="text" id="change-pw-hint" placeholder="새 비밀번호 힌트 입력" required>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" id="btn-cancel-change-pw">Cancel</button>
-          <button type="submit" class="btn btn-primary">Update Password</button>
+          <button type="button" class="btn btn-secondary" id="btn-cancel-change-pw">취소</button>
+          <button type="submit" class="btn btn-primary">비밀번호 변경</button>
         </div>
       </form>
     </div>
@@ -1498,53 +1681,53 @@
   <div id="modal-project" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 id="project-modal-title">Register New Project</h2>
+        <h2 id="project-modal-title">프로젝트 등록 및 수정</h2>
         <button class="btn-close" id="btn-close-project">&times;</button>
       </div>
       <form id="form-project">
         <input type="hidden" id="project-id">
         <div class="form-group">
-          <label for="project-name">Project Name <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 40 chars)</span></label>
-          <input type="text" id="project-name" placeholder="Project Name (e.g., SJ-Gimbal-01)" maxlength="40" required>
+          <label for="project-name">프로젝트명 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 40자)</span></label>
+          <input type="text" id="project-name" placeholder="프로젝트명을 입력하세요 (예: SJ-Gimbal-01)" maxlength="40" required>
         </div>
         <div class="form-group">
-          <label for="project-client">Client <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 50 chars)</span></label>
-          <input type="text" id="project-client" placeholder="Customer Name" maxlength="50">
+          <label for="project-client">고객사 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 50자)</span></label>
+          <input type="text" id="project-client" placeholder="고객사명을 입력하세요" maxlength="50">
         </div>
         <div class="form-group">
-          <label for="project-manager">Project Manager <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 50 chars)</span></label>
-          <input type="text" id="project-manager" placeholder="PM Name" maxlength="50">
+          <label for="project-manager">프로젝트 매니저(PM) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 50자)</span></label>
+          <input type="text" id="project-manager" placeholder="PM 이름을 입력하세요" maxlength="50">
         </div>
         <div class="form-group">
-          <label for="project-start-date">Project Start Date</label>
+          <label for="project-start-date">프로젝트 시작일</label>
           <input type="date" id="project-start-date">
         </div>
         <div class="form-group">
-          <label for="project-desc">Description <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 1000 chars)</span></label>
-          <textarea id="project-desc" rows="3" placeholder="Project overview..." maxlength="1000"></textarea>
+          <label for="project-desc">상세 설명 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 1000자)</span></label>
+          <textarea id="project-desc" rows="3" placeholder="프로젝트 개요 및 상세 설명..." maxlength="1000"></textarea>
         </div>
         <div class="settings-section">
-          <h3>Department / Slot Names <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 30 chars each)</span></h3>
+          <h3>부서 / 슬롯명 설정 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(각 최대 30자)</span></h3>
           <div class="settings-actions-grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept1" placeholder="Slot 1 (e.g. SALES)" value="SALES" maxlength="30">
+              <input type="text" id="project-dept1" placeholder="슬롯 1 (예: 기계)" value="SALES" maxlength="30">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept2" placeholder="Slot 2 (e.g. DESIGN)" value="DESIGN" maxlength="30">
+              <input type="text" id="project-dept2" placeholder="슬롯 2 (예: 제어)" value="DESIGN" maxlength="30">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept3" placeholder="Slot 3 (e.g. PROCUR)" value="PROCUREMENT" maxlength="30">
+              <input type="text" id="project-dept3" placeholder="슬롯 3 (예: 전장)" value="PROCUREMENT" maxlength="30">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <input type="text" id="project-dept4" placeholder="Slot 4 (e.g. ASSEMB)" value="ASSEMBLY" maxlength="30">
+              <input type="text" id="project-dept4" placeholder="슬롯 4 (예: 영업)" value="ASSEMBLY" maxlength="30">
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-project-modal">Delete Project</button>
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-project-modal">프로젝트 삭제</button>
           <div class="footer-right">
-            <button type="button" class="btn btn-ghost" id="btn-cancel-project">Cancel</button>
-            <button type="submit" class="btn btn-primary">Create Project</button>
+            <button type="button" class="btn btn-ghost" id="btn-cancel-project">취소</button>
+            <button type="submit" class="btn btn-primary">프로젝트 생성</button>
           </div>
         </div>
       </form>
@@ -1555,23 +1738,23 @@
   <div id="modal-complete-project" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Complete Project</h2>
+        <h2>프로젝트 완료 처리</h2>
         <button class="btn-close" id="btn-close-complete-project">&times;</button>
       </div>
       <form id="form-complete-project">
         <input type="hidden" id="complete-project-id">
         <div class="form-group">
-          <label for="complete-project-date">Completion Date <span style="color: var(--text-secondary); font-weight: normal;">*</span></label>
+          <label for="complete-project-date">완료 처리일 <span style="color: var(--text-secondary); font-weight: normal;">*</span></label>
           <input type="date" id="complete-project-date" required>
         </div>
         <div class="form-group">
-          <label for="complete-project-memo">Completion Memo / Feedback (Description) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 200 chars)</span></label>
-          <textarea id="complete-project-memo" rows="4" placeholder="Please enter feedback or completion details for the project." maxlength="200"></textarea>
+          <label for="complete-project-memo">완료 피드백 및 상세 설명 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 200자)</span></label>
+          <textarea id="complete-project-memo" rows="4" placeholder="프로젝트 완료 피드백 또는 상세 내용을 입력해 주세요." maxlength="200"></textarea>
         </div>
         <div class="modal-footer">
           <div class="footer-right">
-            <button type="button" class="btn btn-ghost" id="btn-cancel-complete-project">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-ghost" id="btn-cancel-complete-project">취소</button>
+            <button type="submit" class="btn btn-primary">저장</button>
           </div>
         </div>
       </form>
@@ -1582,7 +1765,7 @@
   <div id="modal-milestone" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Edit Milestone <span id="ms-slot-num"></span></h2>
+        <h2>이정표(Milestone) 수정 <span id="ms-slot-num"></span></h2>
         <button class="btn-close" id="btn-close-ms-modal">&times;</button>
       </div>
       <form id="form-milestone">
@@ -1590,24 +1773,24 @@
         <input type="hidden" id="ms-project-id">
         <input type="hidden" id="ms-slot-number">
         <div class="form-group">
-          <label>Milestone Name <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 15 chars)</span></label>
-          <input type="text" id="ms-name" placeholder="e.g., Design Complete" maxlength="15" required>
+          <label>이정표 이름 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 15자)</span></label>
+          <input type="text" id="ms-name" placeholder="예: 설계 완료" maxlength="15" required>
         </div>
         <div class="form-group">
-          <label>Deadline</label>
+          <label>마감일</label>
           <input type="date" id="ms-deadline" required>
         </div>
         <div class="form-group">
-          <label>Details / Content <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 100 chars)</span></label>
-          <textarea id="ms-content" rows="3" placeholder="Additional notes..." maxlength="100"></textarea>
+          <label>상세 내용 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 100자)</span></label>
+          <textarea id="ms-content" rows="3" placeholder="추가 설명 및 메모..." maxlength="100"></textarea>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Status</label>
+            <label>상태</label>
             <div class="checkbox-wrapper">
               <label class="checkbox-label">
                 <input type="checkbox" id="ms-is-done">
-                Mark as Done
+                완료 처리
                 <span class="custom-checkbox"></span>
               </label>
             </div>
@@ -1615,8 +1798,8 @@
         </div>
         <div class="modal-footer">
           <div class="footer-right">
-            <button type="button" class="btn btn-ghost" id="btn-cancel-ms">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Milestone</button>
+            <button type="button" class="btn btn-ghost" id="btn-cancel-ms">취소</button>
+            <button type="submit" class="btn btn-primary">이정표 저장</button>
           </div>
         </div>
       </form>
@@ -1627,48 +1810,48 @@
   <div id="modal-log" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 id="log-modal-title">Add Status Log</h2>
+        <h2 id="log-modal-title">상태 로그 등록</h2>
         <button class="btn-close" id="btn-close-log-modal">&times;</button>
       </div>
       <form id="form-log">
         <input type="hidden" id="log-project-id">
         <input type="hidden" id="log-id">
         <div class="form-group">
-          <label>Select Department / Slot</label>
+          <label>부서 / 슬롯 선택</label>
           <select id="log-department" class="form-select">
             <!-- Dynamic slots -->
           </select>
         </div>
         <div class="form-group">
-          <label>Update Status (Title) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 20 chars)</span></label>
-          <input type="text" id="log-title" placeholder="Brief status update (e.g., Material ordered)" maxlength="20" required>
+          <label>상태 업데이트 (제목) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 20자)</span></label>
+          <input type="text" id="log-title" placeholder="간단한 상태 업데이트 (예: 원자재 발주 완료)" maxlength="20" required>
         </div>
         <div class="form-group">
-          <label>Content / Details <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 500 chars)</span></label>
-          <textarea id="log-content" rows="4" placeholder="Detailed update..." maxlength="500"></textarea>
+          <label>상세 내용 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 500자)</span></label>
+          <textarea id="log-content" rows="4" placeholder="상세 업데이트 내용..." maxlength="500"></textarea>
         </div>
         <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
           <div class="form-group" style="margin-bottom: 0;">
-            <label>Start Date (Optional)</label>
+            <label>시작일 (선택)</label>
             <input type="date" id="log-start-date" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit;">
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label>Due Date (Optional)</label>
+            <label>마감일 (선택)</label>
             <input type="date" id="log-due-date" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit;">
           </div>
         </div>
         <div class="form-group">
-          <label>Manager (Optional) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(Max 15 chars)</span></label>
-          <input type="text" id="log-manager" placeholder="Person in charge" maxlength="15">
+          <label>담당자 (선택) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 15자)</span></label>
+          <input type="text" id="log-manager" placeholder="담당자 이름" maxlength="15">
         </div>
         <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
           <div class="footer-left" style="display: flex; gap: 8px;">
-            <button type="button" class="btn btn-success-outline hidden" id="btn-done-log-modal">Done</button>
-            <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-log-modal">Delete Log</button>
+            <button type="button" class="btn btn-success-outline hidden" id="btn-done-log-modal">완료</button>
+            <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-log-modal">로그 삭제</button>
           </div>
           <div class="footer-right">
-            <button type="button" class="btn btn-ghost" id="btn-cancel-log">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="btn-submit-log">Add Log</button>
+            <button type="button" class="btn btn-ghost" id="btn-cancel-log">취소</button>
+            <button type="submit" class="btn btn-primary" id="btn-submit-log">로그 등록</button>
           </div>
         </div>
       </form>

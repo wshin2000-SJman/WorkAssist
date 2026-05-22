@@ -13,12 +13,3 @@ target/
 node_modules/
 .DS_Store
 *.exe
-
-# Sidecar & JDK build artifacts (large binary files)
-workassist-v2/src-tauri/temurin-jdk17.zip
-workassist-v2/src-tauri/temurin-jdk17-extracted/
-workassist-v2/src-tauri/protoc.zip
-workassist-v2/src-tauri/protoc/
-workassist-v2/src-tauri/bin/
-workassist-v2/scripts/opendataloader-test/
-workassist-v2/scripts/opendataloader-pdf.zip

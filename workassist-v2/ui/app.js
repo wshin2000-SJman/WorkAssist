@@ -236,6 +236,7 @@ const init = () => {
     initDragAndDrop();
     setupRag();
     setupHistory();
+    setupDbManager();
 
     // Global escape key listener
     window.addEventListener('keydown', (e) => {
@@ -293,7 +294,7 @@ function setupAuth() {
             const password = loginPwInput.value;
 
             if (!username || !password) {
-                alert('Please enter both ID and Password');
+                alert('아이디와 비밀번호를 모두 입력해 주세요.');
                 return;
             }
 
@@ -316,11 +317,11 @@ function setupAuth() {
                         refreshStats();
                     }, 500);
                 } else {
-                    alert('Invalid ID or Password');
+                    alert('잘못된 아이디 또는 비밀번호입니다.');
                 }
             } catch (err) {
                 console.error("Login Error:", err);
-                alert('Login failed: ' + err);
+                alert('로그인에 실패했습니다: ' + err);
             }
         };
     }
@@ -363,7 +364,7 @@ function setupAuth() {
     if (btnGetHintSubmit) {
         btnGetHintSubmit.onclick = async () => {
             const id = document.getElementById('hint-query-id').value;
-            if (!id) return alert('Please enter ID.');
+            if (!id) return alert('아이디를 입력해 주세요.');
             try {
                 const hint = await invoke('plugin:auth|get_password_hint', { username: id });
                 const display = document.getElementById('hint-display');
@@ -372,9 +373,9 @@ function setupAuth() {
                     text.textContent = hint;
                     display.classList.remove('hidden');
                 } else {
-                    alert('No hint found for this user.');
+                    alert('해당 사용자의 힌트를 찾을 수 없습니다.');
                 }
-            } catch (err) { alert('Error fetching hint.'); }
+            } catch (err) { alert('힌트를 가져오는 중 오류가 발생했습니다.'); }
         };
     }
 
@@ -389,11 +390,11 @@ function setupAuth() {
             console.log("Attempting signup for:", id);
             try {
                 await invoke('plugin:auth|create_user', { username: id, passwordHash: pw, hint });
-                alert('Account created successfully!');
+                alert('계정이 성공적으로 생성되었습니다!');
                 modalSignup.classList.add('hidden');
             } catch (err) { 
                 console.error("Signup Error:", err);
-                alert('Failed to create account: ' + err); 
+                alert('계정 생성에 실패했습니다: ' + err); 
             }
         };
     }
@@ -415,14 +416,14 @@ function setupAuth() {
                     newHint: newHint 
                 });
                 if (success) {
-                    alert('Password updated!');
+                    alert('비밀번호가 변경되었습니다!');
                     modalChangePw.classList.add('hidden');
                 } else {
-                    alert('Incorrect ID or current password.');
+                    alert('잘못된 아이디 또는 현재 비밀번호입니다.');
                 }
             } catch (err) { 
                 console.error("Change PW Error:", err);
-                alert('Failed to update password: ' + err); 
+                alert('비밀번호 변경에 실패했습니다: ' + err); 
             }
         };
     }
@@ -431,7 +432,7 @@ function setupAuth() {
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) {
         btnLogout.onclick = async () => {
-            if (await askConfirm('Are you sure you want to logout?')) {
+            if (await askConfirm('로그아웃 하시겠습니까?')) {
                 currentUser = null;
                 appContainer.classList.add('hidden');
                 viewLogin.classList.remove('hidden');
@@ -520,7 +521,7 @@ function closeTask() {
     if (submitBtn) submitBtn.style.display = 'block';
 
     const cancelBtn = document.getElementById('btn-cancel-task');
-    if (cancelBtn) cancelBtn.textContent = 'Cancel';
+    if (cancelBtn) cancelBtn.textContent = '취소';
 
     document.getElementById('task-id').value = '';
     const tagDisplay = document.getElementById('task-tag-display');
@@ -529,7 +530,7 @@ function closeTask() {
         tagDisplay.classList.add('hidden');
     }
     const modalTitle = document.getElementById('task-modal-title');
-    if (modalTitle) modalTitle.textContent = 'Create New Task';
+    if (modalTitle) modalTitle.textContent = '새 업무 등록';
     
     const btnDelModal = document.getElementById('btn-delete-task-modal');
     if (btnDelModal) {
@@ -560,7 +561,7 @@ function closeMeeting() {
     if (submitBtn) submitBtn.style.display = 'block';
 
     const cancelBtn = document.getElementById('btn-cancel-meeting');
-    if (cancelBtn) cancelBtn.textContent = 'Cancel';
+    if (cancelBtn) cancelBtn.textContent = '취소';
 
     document.getElementById('meeting-id').value = '';
     document.getElementById('meeting-tag').value = '';
@@ -570,7 +571,7 @@ function closeMeeting() {
         tagDisplay.classList.add('hidden');
     }
     const modalTitle = document.getElementById('meeting-modal-title');
-    if (modalTitle) modalTitle.textContent = 'Create New Minutes';
+    if (modalTitle) modalTitle.textContent = '회의록 등록';
 
     const btnDelMeetingModal = document.getElementById('btn-delete-meeting-modal');
     if (btnDelMeetingModal) {
@@ -605,7 +606,7 @@ function openMeetingModal(m, readOnly = false) {
         }
     }
 
-    document.getElementById('meeting-modal-title').textContent = readOnly ? 'Minutes Details (Read Only)' : 'Edit Minutes';
+    document.getElementById('meeting-modal-title').textContent = readOnly ? '회의록 상세 정보 (읽기 전용)' : '회의록 수정';
     
     const submitBtn = document.querySelector('#modal-meeting button[type="submit"]');
     if (submitBtn) {
@@ -614,7 +615,7 @@ function openMeetingModal(m, readOnly = false) {
 
     const cancelBtn = document.getElementById('btn-cancel-meeting');
     if (cancelBtn) {
-        cancelBtn.textContent = readOnly ? 'Close' : 'Cancel';
+        cancelBtn.textContent = readOnly ? '닫기' : '취소';
     }
 
     // Handle read-only state for inputs
@@ -631,7 +632,7 @@ function openMeetingModal(m, readOnly = false) {
         } else if (m.id) {
             btnDelMeetingModal.classList.remove('hidden');
             btnDelMeetingModal.onclick = async () => {
-                if (await askConfirm('Move these minutes to Trash?')) {
+                if (await askConfirm('이 회의록을 휴지통으로 이동하시겠습니까?')) {
                     await deleteMeeting(m.id);
                     closeMeeting();
                 }
@@ -673,7 +674,7 @@ function closeProject() {
         btnDelProjectModal.onclick = null;
     }
     const titleEl = document.getElementById('project-modal-title');
-    if (titleEl) titleEl.textContent = 'Register New Project';
+    if (titleEl) titleEl.textContent = '새 프로젝트 등록';
 
     const submitBtn = document.querySelector('#modal-project button[type="submit"]');
     if (submitBtn) {
@@ -682,7 +683,7 @@ function closeProject() {
 
     const cancelBtn = document.getElementById('btn-cancel-project');
     if (cancelBtn) {
-        cancelBtn.textContent = 'Cancel';
+        cancelBtn.textContent = '취소';
     }
 }
 
@@ -753,9 +754,9 @@ function setupModals() {
                 await refreshProjects();
                 
                 // Clear the project details view since it is no longer active
-                document.getElementById('detail-project-name').textContent = 'Select a Project';
-                document.getElementById('detail-project-meta').textContent = 'Client: - | Manager: - | Start Date: -';
-                document.getElementById('detail-project-desc').textContent = 'No description available.';
+                document.getElementById('detail-project-name').textContent = '프로젝트를 선택하세요';
+                document.getElementById('detail-project-meta').textContent = '고객사: - | 담당자: - | 시작일: -';
+                document.getElementById('detail-project-desc').textContent = '설명이 없습니다.';
                 document.getElementById('detail-project-tag').classList.add('hidden');
                 const btnEditProject = document.getElementById('btn-edit-project');
                 if (btnEditProject) btnEditProject.classList.add('hidden');
@@ -771,7 +772,7 @@ function setupModals() {
                 if (pmTimetableContainer) pmTimetableContainer.innerHTML = '';
             } catch (err) {
                 console.error("Complete Project Submit Error:", err);
-                alert(err);
+                alert('프로젝트 완료 처리 실패: ' + err);
             }
         };
     }
@@ -962,7 +963,7 @@ function setupModals() {
             const startVal = taskStart.value;
             const dueVal = taskDue.value;
             if (startVal && dueVal && dueVal < startVal) {
-                alert("Due date must be set after start date.");
+                alert("마감일은 시작일 이후로 설정해야 합니다.");
                 taskDue.value = startVal;
             }
         };
@@ -981,7 +982,7 @@ function setupModals() {
             const originalText = submitBtn ? submitBtn.innerHTML : '';
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = 'Saving...';
+                submitBtn.innerHTML = '저장 중...';
             }
 
             try {
@@ -1005,27 +1006,27 @@ function setupModals() {
 
                 // Mandatory fields validation
                 if (!newTask.title || !newTask.content || !newTask.manager || !newTask.start_date || !newTask.due_date) {
-                    alert("Please fill in all fields (Title, Content, Manager, Start Date, and Due Date).");
+                    alert("모든 필드(제목, 내용, 담당자, 시작일, 마감일)를 작성해 주세요.");
                     return;
                 }
 
                 // Date validation
                 if (newTask.due_date && newTask.start_date && newTask.due_date < newTask.start_date) {
-                    alert("Due date cannot be earlier than start date.");
+                    alert("마감일은 시작일보다 빠를 수 없습니다.");
                     return;
                 }
 
                 // Character length validation
                 if (newTask.title.length > 50) {
-                    alert("Task title cannot exceed 50 characters.");
+                    alert("업무 제목은 50자 이하여야 합니다.");
                     return;
                 }
                 if (newTask.content.length > 500) {
-                    alert("Task content cannot exceed 500 characters.");
+                    alert("업무 내용은 500자 이하여야 합니다.");
                     return;
                 }
                 if (newTask.manager.length > 50) {
-                    alert("Task manager cannot exceed 50 characters.");
+                    alert("업무 담당자는 50자 이하여야 합니다.");
                     return;
                 }
 
@@ -1079,7 +1080,7 @@ function setupModals() {
             document.getElementById('meeting-tag-display').textContent = '';
             document.getElementById('meeting-tag-display').classList.add('hidden');
             formMeeting.reset();
-            document.getElementById('meeting-modal-title').textContent = 'Create New Minutes';
+            document.getElementById('meeting-modal-title').textContent = '회의록 등록';
             modalMeeting.classList.remove('hidden');
         };
     }
@@ -1092,7 +1093,7 @@ function setupModals() {
             const originalText = submitBtn ? submitBtn.innerHTML : '';
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = 'Saving...';
+                submitBtn.innerHTML = '저장 중...';
             }
 
             try {
@@ -1114,27 +1115,27 @@ function setupModals() {
 
                 // Character length validation
                 if (meetingData.title && meetingData.title.length > 40) {
-                    alert("Meeting title cannot exceed 40 characters.");
+                    alert("회의 제목은 40자 이하여야 합니다.");
                     return;
                 }
                 if (meetingData.location && meetingData.location.length > 30) {
-                    alert("Meeting location cannot exceed 30 characters.");
+                    alert("회의 장소는 30자 이하여야 합니다.");
                     return;
                 }
                 if (meetingData.participants && meetingData.participants.length > 50) {
-                    alert("Meeting participants cannot exceed 50 characters.");
+                    alert("참석자는 50자 이하여야 합니다.");
                     return;
                 }
                 if (meetingData.memo && meetingData.memo.length > 3000) {
-                    alert("Meeting agenda cannot exceed 3000 characters.");
+                    alert("안건은 3000자 이하여야 합니다.");
                     return;
                 }
                 if (meetingData.decisions && meetingData.decisions.length > 3000) {
-                    alert("Meeting decisions cannot exceed 3000 characters.");
+                    alert("결정 사항은 3000자 이하여야 합니다.");
                     return;
                 }
                 if (meetingData.action_items && meetingData.action_items.length > 3000) {
-                    alert("Meeting action items cannot exceed 3000 characters.");
+                    alert("향후 계획은 3000자 이하여야 합니다.");
                     return;
                 }
 
@@ -1257,18 +1258,18 @@ function setupModals() {
 
         const titleEl = document.getElementById('project-modal-title');
         if (titleEl) {
-            titleEl.textContent = readOnly ? 'Project Details (Read Only)' : (p.id ? 'Edit Project' : 'Register New Project');
+            titleEl.textContent = readOnly ? '프로젝트 상세 정보 (조회 전용)' : (p.id ? '프로젝트 수정' : '새 프로젝트 등록');
         }
 
         const submitBtn = formProject.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.style.display = readOnly ? 'none' : 'block';
-            submitBtn.textContent = p.id ? 'Save Project' : 'Create Project';
+            submitBtn.textContent = p.id ? '프로젝트 저장' : '프로젝트 생성';
         }
 
         const cancelBtn = document.getElementById('btn-cancel-project');
         if (cancelBtn) {
-            cancelBtn.textContent = readOnly ? 'Close' : 'Cancel';
+            cancelBtn.textContent = readOnly ? '닫기' : '취소';
         }
 
         const inputs = formProject.querySelectorAll('input, textarea');
@@ -1281,15 +1282,15 @@ function setupModals() {
             if (p.id && !readOnly) {
                 btnDelProjectModal.classList.remove('hidden');
                 btnDelProjectModal.onclick = async () => {
-                    if (await askConfirm('Move this project and all its milestones/logs to Trash?')) {
+                    if (await askConfirm('이 프로젝트와 모든 관련 이정표(Milestones) 및 로그들을 휴지통으로 이동하시겠습니까?')) {
                         try {
                             await invoke('plugin:pm|delete_project', { projectId: p.id });
                             closeProject();
                             
                             // Clear current selected project display
-                            document.getElementById('detail-project-name').textContent = 'Select a Project';
-                            document.getElementById('detail-project-meta').textContent = 'Client: - | Manager: - | Start Date: -';
-                            document.getElementById('detail-project-desc').textContent = 'No description available.';
+                            document.getElementById('detail-project-name').textContent = '프로젝트를 선택하세요';
+                            document.getElementById('detail-project-meta').textContent = '고객사: - | 담당자: - | 시작일: -';
+                            document.getElementById('detail-project-desc').textContent = '설명이 없습니다.';
                             document.getElementById('detail-project-tag').classList.add('hidden');
                             const btnEditProject = document.getElementById('btn-edit-project');
                             if (btnEditProject) btnEditProject.classList.add('hidden');
@@ -1329,7 +1330,7 @@ function setupModals() {
             const originalText = submitBtn ? submitBtn.innerHTML : '';
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = 'Saving...';
+                submitBtn.innerHTML = '저장 중...';
             }
 
             try {
@@ -1418,7 +1419,7 @@ function setupModals() {
             const startVal = logStartDate.value;
             const dueVal = logDueDate.value;
             if (startVal && dueVal && dueVal < startVal) {
-                alert("Due date must be set after start date.");
+                alert("마감일은 시작일 이후로 설정해야 합니다.");
                 logDueDate.value = startVal;
             }
         };
@@ -1447,15 +1448,15 @@ function setupModals() {
 
             // Character length validation
             if (log.title && log.title.length > 20) {
-                alert("Log title cannot exceed 20 characters.");
+                alert("로그 제목은 20자 이하여야 합니다.");
                 return;
             }
             if (log.text_content && log.text_content.length > 500) {
-                alert("Log content cannot exceed 500 characters.");
+                alert("로그 내용은 500자 이하여야 합니다.");
                 return;
             }
             if (log.manager && log.manager.length > 15) {
-                alert("Log manager cannot exceed 15 characters.");
+                alert("로그 담당자는 15자 이하여야 합니다.");
                 return;
             }
 
@@ -2037,7 +2038,8 @@ async function loadView(viewId) {
         'nav-minutes': '회의록 관리자',
         'nav-pm': '프로젝트 관리자',
         'nav-rag': 'PDF & Excel 파싱',
-        'nav-history': '히스토리 관리자'
+        'nav-history': '히스토리 관리자',
+        'nav-db-manager': 'DB관리자'
     };
 
     const pageTitle = document.getElementById('page-title');
@@ -2084,6 +2086,7 @@ async function loadView(viewId) {
     else if (viewId === 'nav-pm') await refreshProjects();
     else if (viewId === 'nav-dashboard') await refreshStats();
     else if (viewId === 'nav-history') await refreshHistory();
+    else if (viewId === 'nav-db-manager') await refreshDbSearchFilters();
 }
 
 async function refreshStats() {
@@ -2902,17 +2905,17 @@ function openTaskModal(t, readOnly = false) {
         }
     }
     
-    document.getElementById('task-modal-title').textContent = readOnly ? 'Task Details (Read Only)' : (taskId ? 'Edit Task' : 'Create New Task');
+    document.getElementById('task-modal-title').textContent = readOnly ? '업무 상세 정보 (읽기 전용)' : (taskId ? '업무 수정' : '새 업무 등록');
     
     const submitBtn = document.querySelector('#modal-task button[type="submit"]');
     if (submitBtn) {
-        submitBtn.textContent = taskId ? 'Update Task' : 'Create Task';
+        submitBtn.textContent = taskId ? '업무 수정' : '업무 등록';
         submitBtn.style.display = readOnly ? 'none' : 'block';
     }
 
     const cancelBtn = document.getElementById('btn-cancel-task');
     if (cancelBtn) {
-        cancelBtn.textContent = readOnly ? 'Close' : 'Cancel';
+        cancelBtn.textContent = readOnly ? '닫기' : '취소';
     }
     
     const btnDelModal = document.getElementById('btn-delete-task-modal');
@@ -2922,17 +2925,17 @@ function openTaskModal(t, readOnly = false) {
         } else if (taskId) {
             btnDelModal.classList.remove('hidden');
             if (t.status === 'Done') {
-                btnDelModal.textContent = 'Approve & Delete';
+                btnDelModal.textContent = '승인 및 보관';
                 btnDelModal.className = 'btn btn-success'; // Green style
                 btnDelModal.onclick = async () => {
                     openReviewModal(taskId);
                     closeTask();
                 };
             } else {
-                btnDelModal.textContent = 'Delete Task';
+                btnDelModal.textContent = '업무 삭제';
                 btnDelModal.className = 'btn btn-danger-outline'; // Red style
                 btnDelModal.onclick = async () => {
-                    if (await askConfirm('Are you sure you want to delete this task?')) {
+                    if (await askConfirm('이 업무를 삭제하시겠습니까?')) {
                         deleteTask(taskId);
                         closeTask();
                     }
@@ -3018,7 +3021,7 @@ function createTaskCard(t) {
             e.stopPropagation();
             const id = Number(btn.dataset.id);
             if (btn.classList.contains('btn-task-del')) {
-                if (await askConfirm('Are you sure you want to delete this task?')) {
+                if (await askConfirm('이 업무를 삭제하시겠습니까?')) {
                     deleteTask(id);
                 }
             } else if (btn.classList.contains('btn-task-review')) {
@@ -3363,12 +3366,12 @@ async function hardDeleteMeeting(meetingId) {
 async function loadDeletedProjects() {
     const body = document.getElementById('project-trash-list-body');
     if (!body) return;
-    body.innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
+    body.innerHTML = '<tr><td colspan="6">로딩 중...</td></tr>';
     try {
         const deletedProjects = await invoke('plugin:pm|get_deleted_projects', { ownerId: currentUser.id });
         body.innerHTML = '';
         if (deletedProjects.length === 0) {
-            body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted)">No deleted projects found.</td></tr>';
+            body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted)">삭제된 프로젝트가 없습니다.</td></tr>';
             return;
         }
         deletedProjects.forEach(p => {
@@ -3389,8 +3392,8 @@ async function loadDeletedProjects() {
                 <td>${p.client || '-'}</td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn-restore" data-id="${p.id}">🔄 Restore</button>
-                        <button class="btn-hard-del" data-id="${p.id}">🔥 Permanent</button>
+                        <button class="btn-restore" data-id="${p.id}">🔄 복구</button>
+                        <button class="btn-hard-del" data-id="${p.id}">🔥 영구삭제</button>
                     </div>
                 </td>
             `;
@@ -3407,7 +3410,7 @@ async function loadDeletedProjects() {
         body.querySelectorAll('.btn-hard-del').forEach(btn => {
             btn.onclick = async (e) => {
                 e.stopPropagation();
-                if (await askConfirm('Permanently delete this project? This cannot be undone.')) {
+                if (await askConfirm('이 프로젝트를 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
                     hardDeleteProject(Number(btn.dataset.id));
                 }
             };
@@ -3420,12 +3423,12 @@ async function loadDeletedProjects() {
 async function loadCompletedProjects() {
     const body = document.getElementById('project-completed-list-body');
     if (!body) return;
-    body.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
+    body.innerHTML = '<tr><td colspan="7">로딩 중...</td></tr>';
     try {
         const completedProjects = await invoke('plugin:pm|get_completed_projects', { ownerId: currentUser.id });
         body.innerHTML = '';
         if (completedProjects.length === 0) {
-            body.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--text-muted)">No completed projects found.</td></tr>';
+            body.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--text-muted)">완료된 프로젝트가 없습니다.</td></tr>';
             return;
         }
         completedProjects.forEach(p => {
@@ -3446,8 +3449,8 @@ async function loadCompletedProjects() {
                 <td>${p.client || '-'}</td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn-restore" data-id="${p.id}" title="Reactivate Project">🔄 Reactivate</button>
-                        <button class="btn-hard-del btn-delete-log-permanent" data-id="${p.id}" title="Move to Trash">🗑️ Trash</button>
+                        <button class="btn-restore" data-id="${p.id}" title="프로젝트 다시 활성화">🔄 활성화</button>
+                        <button class="btn-hard-del btn-delete-log-permanent" data-id="${p.id}" title="휴지통으로 이동">🗑️ 삭제</button>
                     </div>
                 </td>
             `;
@@ -3458,7 +3461,7 @@ async function loadCompletedProjects() {
         body.querySelectorAll('.btn-restore').forEach(btn => {
             btn.onclick = async (e) => {
                 e.stopPropagation();
-                if (await askConfirm('Are you sure you want to reactivate this completed project back to active?')) {
+                if (await askConfirm('이 완료된 프로젝트를 다시 활성 상태로 전환하시겠습니까?')) {
                     try {
                         await invoke('plugin:pm|reactivate_project', { projectId: Number(btn.dataset.id) });
                         await loadCompletedProjects();
@@ -3473,7 +3476,7 @@ async function loadCompletedProjects() {
         body.querySelectorAll('.btn-delete-log-permanent').forEach(btn => {
             btn.onclick = async (e) => {
                 e.stopPropagation();
-                if (await askConfirm('Are you sure you want to move this project to the Trash Bin?')) {
+                if (await askConfirm('이 프로젝트를 휴지통으로 이동하시겠습니까?')) {
                     try {
                         await invoke('plugin:pm|delete_project', { projectId: Number(btn.dataset.id) });
                         await loadCompletedProjects();
@@ -3822,7 +3825,7 @@ async function loadProjectDetails(projectId) {
                 document.getElementById('form-log').reset();
                 document.getElementById('log-project-id').value = project.id;
                 document.getElementById('log-id').value = '';
-                document.getElementById('log-modal-title').textContent = 'Add Status Log';
+                document.getElementById('log-modal-title').textContent = '상태 로그 등록';
                 prepareStatusLogModalButtons('', 'active');
                 document.getElementById('modal-log').classList.remove('hidden');
             };
@@ -3834,7 +3837,7 @@ async function loadProjectDetails(projectId) {
                 document.getElementById('form-log').reset();
                 document.getElementById('log-project-id').value = project.id;
                 document.getElementById('log-id').value = '';
-                document.getElementById('log-modal-title').textContent = 'Add Status Log';
+                document.getElementById('log-modal-title').textContent = '상태 로그 등록';
                 
                 const rawDept = btn.getAttribute('data-dept');
                 let customDeptName = '';
@@ -3880,17 +3883,17 @@ function renderMilestones(projectId, milestones) {
         const hasData = ms && ms.is_saved && (ms.name || ms.deadline);
         const name = hasData ? ms.name : '---';
         const deadline = hasData ? ms.deadline : 'YYYY-MM-DD';
-        const status = (ms && ms.is_saved && ms.is_done) ? 'Done' : 'Pending';
+        const status = (ms && ms.is_saved && ms.is_done) ? '완료' : '대기';
 
         let actionHtml = '';
         if (hasData) {
             actionHtml = `
                 <div class="milestone-actions">
                     ${ms.is_done 
-                        ? `<button class="btn-milestone-active compact" title="Re-active Milestone">↩</button>` 
-                        : `<button class="btn-milestone-done compact" title="Complete Milestone">✓</button>`
+                        ? `<button class="btn-milestone-active compact" title="이정표 활성화">↩</button>` 
+                        : `<button class="btn-milestone-done compact" title="이정표 완료">✓</button>`
                     }
-                    <button class="btn-milestone-del compact" title="Reset Milestone">🗑️</button>
+                    <button class="btn-milestone-del compact" title="이정표 초기화">🗑️</button>
                 </div>
             `;
         }
@@ -3979,7 +3982,7 @@ function renderMilestones(projectId, milestones) {
             if (btnDel) {
                 btnDel.onclick = async (e) => {
                     e.stopPropagation();
-                    if (await askConfirm('Are you sure you want to reset this milestone slot?')) {
+                    if (await askConfirm('이 이정표 슬롯을 초기화하시겠습니까?')) {
                         const milestone = {
                             id: ms.id || null,
                             project_id: projectId,
@@ -4456,7 +4459,7 @@ async function refreshPMTimetableLogDetail(logId, preloadedLogs) {
             document.getElementById('log-manager').value = log.manager || '';
 
             // Update modal title
-            document.getElementById('log-modal-title').textContent = 'Edit Status Log';
+            document.getElementById('log-modal-title').textContent = '상태 로그 수정';
             prepareStatusLogModalButtons(log.id, log.status);
             document.getElementById('modal-log').classList.remove('hidden');
         };
@@ -4713,19 +4716,19 @@ function prepareStatusLogModalButtons(logId, logStatus) {
         // New log
         btnDone.classList.add('hidden');
         btnDel.classList.add('hidden');
-        if (btnSubmit) btnSubmit.textContent = 'Add Log';
+        if (btnSubmit) btnSubmit.textContent = '로그 등록';
     } else {
         // Existing log
         btnDone.classList.remove('hidden');
         btnDel.classList.remove('hidden');
-        if (btnSubmit) btnSubmit.textContent = 'Update Log';
+        if (btnSubmit) btnSubmit.textContent = '로그 수정';
 
         // Configure Done button
         if (logStatus === 'done') {
-            btnDone.textContent = 'Reopen';
+            btnDone.textContent = '재오픈';
             btnDone.className = 'btn btn-secondary-outline';
         } else {
-            btnDone.textContent = 'Done';
+            btnDone.textContent = '완료';
             btnDone.className = 'btn btn-success-outline';
         }
 
@@ -4751,7 +4754,7 @@ function prepareStatusLogModalButtons(logId, logStatus) {
 
         // Action when clicking Delete button in modal
         btnDel.onclick = async () => {
-            const confirmDel = await askConfirm("Are you sure you want to move this status log to Deleted Logs?", "Delete Status Log");
+            const confirmDel = await askConfirm("이 상태 로그를 삭제된 로그 목록으로 이동하시겠습니까?", "상태 로그 삭제");
             if (!confirmDel) return;
             try {
                 await invoke('plugin:pm|update_status_log_deleted', { logId, isDeleted: true });
@@ -4870,7 +4873,7 @@ function renderStatusGrid(project) {
         if (btnDel) {
             btnDel.onclick = async (e) => {
                 e.stopPropagation(); // Prevent card detailed popup click
-                const confirmDel = await askConfirm("Are you sure you want to move this status log to Deleted Logs?", "Delete Status Log");
+                const confirmDel = await askConfirm("이 상태 로그를 삭제된 로그 목록으로 이동하시겠습니까?", "상태 로그 삭제");
                 if (!confirmDel) return;
                 try {
                     await invoke('plugin:pm|update_status_log_deleted', { logId: log.id, isDeleted: true });
@@ -4902,7 +4905,7 @@ function renderStatusGrid(project) {
             document.getElementById('log-manager').value = log.manager || '';
 
             // Update modal title to show detailed status log
-            document.getElementById('log-modal-title').textContent = 'Edit Status Log';
+            document.getElementById('log-modal-title').textContent = '상태 로그 수정';
             prepareStatusLogModalButtons(log.id, log.status);
             document.getElementById('modal-log').classList.remove('hidden');
         };
@@ -8375,4 +8378,526 @@ function renderD3Graph(graphData) {
         d.fx = null;
         d.fy = null;
     }
+}
+
+// ==========================================
+// DB 관리자 (DB Manager) 모듈 로직
+// ==========================================
+
+let dbPreviewItems = []; // HITL 검토 대상 임시 전역 상태
+
+// 100% 한글 콘솔 출력 헬퍼
+function writeDbLog(message, isError = false) {
+    const consolePre = document.getElementById('db-ingest-console-pre');
+    if (!consolePre) return;
+    const timeStr = new Date().toLocaleTimeString();
+    const formatted = `[${timeStr}] ${isError ? '❌ [에러] ' : '✨ [정보] '}${message}\n`;
+    if (consolePre.textContent === '준비 완료.') {
+        consolePre.textContent = formatted;
+    } else {
+        consolePre.textContent += formatted;
+    }
+    // 스크롤 최하단 이동
+    const container = document.getElementById('db-ingest-console-container');
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+async function setupDbManager() {
+    console.log("DB Manager Module Initialized");
+
+    // 1. 탭 네비게이션 처리
+    const dbTabs = document.querySelectorAll('#db-manager-tabs .view-tab');
+    dbTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            dbTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            const targetTab = tab.getAttribute('data-db-tab');
+            document.querySelectorAll('.db-tab-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+            if (targetTab === 'ingest') {
+                document.getElementById('db-ingest-panel').style.display = 'block';
+            } else if (targetTab === 'search') {
+                document.getElementById('db-search-panel').style.display = 'block';
+                refreshDbSearchFilters(); // 탭 이동시 필터 동적 갱신
+            }
+        });
+    });
+
+    // 2. [DB 입력] 폴더 선택 이벤트
+    const btnSelectFolder = document.getElementById('btn-db-select-folder');
+    if (btnSelectFolder) {
+        btnSelectFolder.addEventListener('click', async () => {
+            try {
+                const dir = await window.__TAURI__.dialog.open({
+                    directory: true,
+                    multiple: false,
+                    title: "제품 사양 JSON 파일들이 위치한 폴더 선택"
+                });
+                if (dir) {
+                    document.getElementById('db-ingest-folder-path').value = dir;
+                    writeDbLog(`폴더 선택 완료: ${dir}`);
+                }
+            } catch (err) {
+                writeDbLog(`폴더 선택 에러: ${err}`, true);
+            }
+        });
+    }
+
+    // 3. [DB 입력] 1단계 프리뷰 버튼 이벤트
+    const btnPreviewIngest = document.getElementById('btn-db-preview-ingest');
+    if (btnPreviewIngest) {
+        btnPreviewIngest.addEventListener('click', async () => {
+            const folderPath = document.getElementById('db-ingest-folder-path').value.trim();
+            const catalogName = document.getElementById('db-ingest-catalog-name').value.trim();
+
+            if (!folderPath) {
+                alert("먼저 사양 JSON 파일이 있는 폴더를 선택해 주세요.");
+                return;
+            }
+            if (!catalogName) {
+                alert("카탈로그/문서 식별 명칭을 입력해 주세요. (예: 2026_servo_motor)");
+                return;
+            }
+
+            try {
+                writeDbLog("JSON 파일 분석 및 프리뷰 조회를 시작합니다...");
+                
+                // 프리뷰 표시 영역 숨김 초기화
+                document.getElementById('db-preview-section').style.display = 'none';
+                document.getElementById('db-ingest-result-section').style.display = 'none';
+
+                // Tauri 커맨드 호출
+                const items = await invoke('plugin:rag|preview_json_folder', {
+                    folderPath: folderPath,
+                    catalogName: catalogName
+                });
+
+                dbPreviewItems = items || [];
+                renderDbPreviewTable();
+                
+                writeDbLog(`분석 완료! 총 ${dbPreviewItems.length}개의 부품 사양이 감지되었습니다.`);
+            } catch (err) {
+                writeDbLog(`1단계 분석 실패: ${err}`, true);
+                alert("JSON 폴더 분석 중 오류가 발생했습니다: " + err);
+            }
+        });
+    }
+
+    // 4. [DB 입력] 전체 선택 체크박스 바인딩
+    const selectAllCheckbox = document.getElementById('db-preview-select-all');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            document.querySelectorAll('.db-preview-item-checkbox').forEach(cb => {
+                cb.checked = checked;
+            });
+            writeDbLog(checked ? "전체 선택되었습니다." : "전체 선택 해제되었습니다.");
+        });
+    }
+
+    // 5. [DB 입력] 2단계 최종 확정 인입 실행 버튼
+    const btnConfirmIngest = document.getElementById('btn-db-confirm-ingest');
+    if (btnConfirmIngest) {
+        btnConfirmIngest.addEventListener('click', async () => {
+            // 체크된 항목들만 추출
+            const checkedRows = document.querySelectorAll('.db-preview-item-row');
+            const itemsToIngest = [];
+
+            checkedRows.forEach(row => {
+                const checkbox = row.querySelector('.db-preview-item-checkbox');
+                if (checkbox && checkbox.checked) {
+                    const index = parseInt(row.getAttribute('data-index'));
+                    
+                    // 테이블 셀로부터 편집된 값 가져오기
+                    const partNumber = row.querySelector('.cell-part-number').textContent.trim();
+                    const manufacturer = row.querySelector('.cell-manufacturer').textContent.trim();
+                    const category = row.querySelector('.cell-category').textContent.trim();
+                    const specJsonStr = row.querySelector('.cell-spec-json').textContent.trim();
+                    
+                    let specData = {};
+                    try {
+                        specData = JSON.parse(specJsonStr);
+                    } catch (e) {
+                        writeDbLog(`[경고] 파트 넘버 '${partNumber}'의 스펙 JSON 파싱 실패. 원본 값을 유지합니다.`, true);
+                        specData = dbPreviewItems[index].spec_data;
+                    }
+
+                    itemsToIngest.push({
+                        part_number: partNumber,
+                        manufacturer: manufacturer,
+                        category: category,
+                        description: dbPreviewItems[index].description || "",
+                        spec_data: specData,
+                        chunk_text: dbPreviewItems[index].chunk_text || ""
+                    });
+                }
+            });
+
+            if (itemsToIngest.length === 0) {
+                alert("인입할 항목을 1개 이상 선택해 주세요.");
+                return;
+            }
+
+            try {
+                // UI 로딩 표시
+                document.getElementById('db-ingest-result-section').style.display = 'flex';
+                document.getElementById('db-ingest-loading').style.display = 'block';
+                const progressBar = document.getElementById('db-ingest-progress-bar');
+                const progressPercent = document.getElementById('db-ingest-progress-percent');
+                const progressStatus = document.getElementById('db-ingest-progress-status');
+                
+                progressBar.style.width = '0%';
+                progressPercent.textContent = '0%';
+                progressStatus.textContent = '임베딩 추출 및 DB 저장을 시작합니다...';
+
+                writeDbLog(`선택된 ${itemsToIngest.length}개 사양에 대한 DB 인입을 시작합니다...`);
+
+                // 통계 초기화
+                document.getElementById('db-stat-total').textContent = itemsToIngest.length;
+                document.getElementById('db-stat-success').textContent = '0';
+                document.getElementById('db-stat-failed').textContent = '0';
+
+                let successCount = 0;
+                let failCount = 0;
+                
+                progressBar.style.width = '30%';
+                progressPercent.textContent = '30%';
+                progressStatus.textContent = 'ONNX MiniLM 모델을 로딩 중입니다...';
+                writeDbLog("ONNX 384차원 임베딩 모델 로드 중...");
+
+                const catalogName = dbPreviewItems[0]?.catalog_name || null;
+                const result = await invoke('plugin:rag|ingest_reviewed_specs', {
+                    items: itemsToIngest,
+                    catalogName: catalogName
+                });
+
+                progressBar.style.width = '100%';
+                progressPercent.textContent = '100%';
+                progressStatus.textContent = '인입이 완료되었습니다!';
+                document.getElementById('db-ingest-loading').style.display = 'none';
+
+                if (result.success) {
+                    successCount = result.ingested_count;
+                    failCount = itemsToIngest.length - successCount;
+                    
+                    document.getElementById('db-stat-success').textContent = successCount;
+                    document.getElementById('db-stat-failed').textContent = failCount;
+                    
+                    writeDbLog(`인입 완료! SQLite 및 LanceDB(벡터 인덱스) 적재 성공: ${successCount}건, 실패: ${failCount}건.`);
+                    alert(`사양 데이터 인입 성공! (${successCount}개 항목 적재 완료)`);
+                } else {
+                    writeDbLog(`인입 실패: ${result.error_message || '알 수 없는 오류'}`, true);
+                    alert("인입 실행 중 에러 발생: " + result.error_message);
+                }
+
+                // 검색 필터 dynamic 갱신
+                await refreshDbSearchFilters();
+
+            } catch (err) {
+                document.getElementById('db-ingest-loading').style.display = 'none';
+                writeDbLog(`2단계 인입 처리 에러: ${err}`, true);
+                alert("인입 실행 중 오류가 발생했습니다: " + err);
+            }
+        });
+    }
+
+    // 6. [DB 검색] 하이브리드 검색 실행 버튼 이벤트
+    const btnSearch = document.getElementById('btn-db-search');
+    if (btnSearch) {
+        btnSearch.addEventListener('click', async () => {
+            await runDbHybridSearch();
+        });
+    }
+
+    // 엔터키 입력 시 검색 실행 추가
+    const dbSearchQueryInput = document.getElementById('db-search-query');
+    if (dbSearchQueryInput) {
+        dbSearchQueryInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                await runDbHybridSearch();
+            }
+        });
+    }
+}
+
+// 프리뷰 테이블을 화면에 그리는 함수
+function renderDbPreviewTable() {
+    const tbody = document.getElementById('db-preview-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    
+    if (dbPreviewItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-secondary);">해당 폴더에 파싱 가능한 JSON 파일이 존재하지 않습니다.</td></tr>`;
+        document.getElementById('db-preview-section').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('db-preview-count').textContent = `분석 대상: ${dbPreviewItems.length}개 항목`;
+    document.getElementById('db-preview-section').style.display = 'block';
+
+    dbPreviewItems.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.className = 'db-preview-item-row';
+        row.setAttribute('data-index', index);
+        row.style.borderBottom = '1px solid rgba(255, 255, 255, 0.05)';
+
+        // JSON 포맷 예쁘게 문자열로 전환
+        const specJsonStr = JSON.stringify(item.spec_data || {}, null, 2);
+
+        row.innerHTML = `
+            <td style="padding: 10px; text-align: center;">
+                <input type="checkbox" class="db-preview-item-checkbox" checked style="cursor: pointer;">
+            </td>
+            <td class="cell-part-number" contenteditable="true" style="padding: 10px; font-weight: 600; color: var(--accent-color); outline: none;">${escapeHtml(item.part_number || '')}</td>
+            <td class="cell-manufacturer" contenteditable="true" style="padding: 10px; color: var(--text-color); outline: none;">${escapeHtml(item.manufacturer || '')}</td>
+            <td class="cell-category" contenteditable="true" style="padding: 10px; color: var(--text-color); outline: none;">${escapeHtml(item.category || '')}</td>
+            <td class="cell-spec-json" contenteditable="true" style="padding: 10px; font-family: 'Consolas', monospace; color: #a9b1d6; white-space: pre-wrap; outline: none; font-size: 11px;">${escapeHtml(specJsonStr)}</td>
+            <td style="padding: 10px; color: var(--text-muted); font-size: 11px;">${escapeHtml(item.source_file || '')}</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+// 하이브리드 검색 실행 핵심 로직
+async function runDbHybridSearch() {
+    const query = document.getElementById('db-search-query').value.trim();
+    const category = document.getElementById('db-search-category').value;
+    const manufacturer = document.getElementById('db-search-manufacturer').value;
+    const catalogName = document.getElementById('db-search-catalog').value;
+    const limit = parseInt(document.getElementById('db-search-limit').value) || 10;
+
+    const resultsContainer = document.getElementById('db-search-results');
+    if (!resultsContainer) return;
+
+    try {
+        resultsContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 0; gap: 12px;">
+                <img src="assets/typing_3.gif" style="height: 60px; opacity:0.8;" alt="검색중">
+                <div style="color: var(--accent-color); font-weight:600; font-size:13px;">실시간 하이브리드 시맨틱 쿼리를 처리하는 중입니다...</div>
+            </div>
+        `;
+
+        // Rust Tauri 커맨드 호출
+        const results = await invoke('plugin:rag|search_hybrid_specs', {
+            queryText: query,
+            category: category || null,
+            manufacturer: manufacturer || null,
+            catalogName: catalogName || null,
+            limit: limit
+        });
+
+        resultsContainer.innerHTML = '';
+        document.getElementById('db-search-results-count').textContent = `조회된 항목: ${results.length}개`;
+
+        if (results.length === 0) {
+            resultsContainer.innerHTML = `
+                <div style="color: var(--text-secondary); text-align: center; padding: 40px 0; border: 1px dashed var(--card-border); border-radius: 12px; background: rgba(0,0,0,0.1); font-size: 13px;">
+                    검색 결과가 존재하지 않습니다. 검색어나 필터 설정을 변경해 보세요.
+                </div>
+            `;
+            return;
+        }
+
+        results.forEach(res => {
+            const card = document.createElement('div');
+            card.className = 'search-result-card';
+            card.style.background = 'rgba(255, 255, 255, 0.02)';
+            card.style.border = '1px solid var(--card-border)';
+            card.style.borderRadius = '16px';
+            card.style.padding = '20px';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.gap = '14px';
+            card.style.transition = 'all 0.3s ease';
+            card.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
+
+            // 마우스 호버 효과
+            card.onmouseover = () => {
+                card.style.transform = 'translateY(-2px)';
+                card.style.borderColor = 'rgba(255, 140, 0, 0.4)';
+                card.style.boxShadow = '0 6px 24px rgba(255, 140, 0, 0.1)';
+            };
+            card.onmouseout = () => {
+                card.style.transform = 'none';
+                card.style.borderColor = 'var(--card-border)';
+                card.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
+            };
+
+            // 유사도 스코어 바 렌더링
+            let similarityHtml = '';
+            if (res.similarity_score !== undefined && query.length > 0) {
+                const scorePercent = Math.round(res.similarity_score * 100);
+                similarityHtml = `
+                    <div style="display: flex; flex-direction: column; gap: 4px; width: 100%; max-width: 250px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+                            <span style="color: var(--text-secondary); font-weight: 500;">시맨틱 유사도</span>
+                            <span style="color: var(--accent-color); font-weight: 700;">${scorePercent}%</span>
+                        </div>
+                        <div style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05);">
+                            <div style="width: ${scorePercent}%; height: 100%; background: linear-gradient(90deg, var(--accent-color), #ff8c00); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                similarityHtml = `
+                    <span style="font-size: 11px; color: var(--text-muted); background: rgba(255, 255, 255, 0.04); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.03);">
+                        ⚡ 메타데이터 매칭 (SQL 필터)
+                    </span>
+                `;
+            }
+
+            // 스펙 데이터를 키-값 테이블 형식으로 이쁘게 그리기
+            let specTableRows = '';
+            let specObj = {};
+            if (typeof res.spec_data === 'string') {
+                try {
+                    specObj = JSON.parse(res.spec_data);
+                } catch(e) {
+                    specObj = {};
+                }
+            } else {
+                specObj = res.spec_data || {};
+            }
+
+            Object.entries(specObj).forEach(([key, val]) => {
+                let displayVal = val;
+                if (typeof val === 'object') {
+                    displayVal = JSON.stringify(val);
+                }
+                specTableRows += `
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
+                        <td style="padding: 6px 12px; font-weight: 600; color: var(--text-secondary); width: 35%; background: rgba(255, 255, 255, 0.01); border-right: 1px solid rgba(255, 255, 255, 0.03);">${escapeHtml(key)}</td>
+                        <td style="padding: 6px 12px; color: var(--text-primary); font-family: 'Consolas', monospace; font-size: 12px;">${escapeHtml(String(displayVal))}</td>
+                    </tr>
+                `;
+            });
+
+            if (!specTableRows) {
+                specTableRows = `<tr><td colspan="2" style="padding: 8px 12px; text-align: center; color: var(--text-muted);">스펙 상세 항목 정보가 비어있습니다.</td></tr>`;
+            }
+
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+                            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-primary);">${escapeHtml(res.part_number)}</h3>
+                            <span style="font-size: 11px; background: rgba(255, 140, 0, 0.15); color: var(--accent-color); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255, 140, 0, 0.2); font-weight: 600;">
+                                ${escapeHtml(res.category)}
+                            </span>
+                            <span style="font-size: 11px; background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                                ${escapeHtml(res.manufacturer)}
+                            </span>
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted);">
+                            <span>카탈로그: <strong>${escapeHtml(res.catalog_name)}</strong></span>
+                            <span style="margin: 0 8px;">|</span>
+                            <span>출처 파일: <strong>${escapeHtml(res.source_file)}</strong></span>
+                        </div>
+                    </div>
+                    <div>
+                        ${similarityHtml}
+                    </div>
+                </div>
+
+                <div style="border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; background: rgba(0, 0, 0, 0.15); overflow: hidden;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                        <tbody>
+                            ${specTableRows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            resultsContainer.appendChild(card);
+        });
+
+    } catch (err) {
+        console.error("Hybrid Search Error:", err);
+        resultsContainer.innerHTML = `
+            <div style="color: #ef4444; text-align: center; padding: 40px 0; border: 1px dashed rgba(239, 68, 68, 0.3); border-radius: 12px; background: rgba(239, 68, 68, 0.05); font-size: 13px;">
+                ❌ 검색 오류 발생: ${err}
+            </div>
+        `;
+    }
+}
+
+// SQLite 메타데이터 필터 조건 dynamic 갱신
+async function refreshDbSearchFilters() {
+    const categorySelect = document.getElementById('db-search-category');
+    const manufacturerSelect = document.getElementById('db-search-manufacturer');
+    const catalogSelect = document.getElementById('db-search-catalog');
+
+    if (!categorySelect || !manufacturerSelect || !catalogSelect) return;
+
+    try {
+        const metadata = await invoke('plugin:rag|get_unique_metadata');
+
+        // 분류 갱신
+        const currentCategory = categorySelect.value;
+        categorySelect.innerHTML = '<option value="">전체 분류</option>';
+        if (metadata.categories) {
+            metadata.categories.forEach(cat => {
+                if (cat) {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    if (cat === currentCategory) opt.selected = true;
+                    categorySelect.appendChild(opt);
+                }
+            });
+        }
+
+        // 제조사 갱신
+        const currentManufacturer = manufacturerSelect.value;
+        manufacturerSelect.innerHTML = '<option value="">전체 제조사</option>';
+        if (metadata.manufacturers) {
+            metadata.manufacturers.forEach(mfg => {
+                if (mfg) {
+                    const opt = document.createElement('option');
+                    opt.value = mfg;
+                    opt.textContent = mfg;
+                    if (mfg === currentManufacturer) opt.selected = true;
+                    manufacturerSelect.appendChild(opt);
+                }
+            });
+        }
+
+        // 카탈로그 갱신
+        const currentCatalog = catalogSelect.value;
+        catalogSelect.innerHTML = '<option value="">전체 카탈로그</option>';
+        if (metadata.catalog_names) {
+            metadata.catalog_names.forEach(catName => {
+                if (catName) {
+                    const opt = document.createElement('option');
+                    opt.value = catName;
+                    opt.textContent = catName;
+                    if (catName === currentCatalog) opt.selected = true;
+                    catalogSelect.appendChild(opt);
+                }
+            });
+        }
+
+        console.log("DB Search Filter Dropdowns dynamically refreshed.");
+    } catch (err) {
+        console.error("Failed to dynamic refresh filters:", err);
+    }
+}
+
+// HTML 특수기호 이스케이프 헬퍼
+function escapeHtml(text) {
+    if (!text) return '';
+    return text
+        .toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }

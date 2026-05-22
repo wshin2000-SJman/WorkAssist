@@ -6897,10 +6897,22 @@
           "markdownDescription": "Enables the get_pdf_files_in_folder command without any pre-configured scope."
         },
         {
+          "description": "Enables the get_unique_metadata command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:allow-get-unique-metadata",
+          "markdownDescription": "Enables the get_unique_metadata command without any pre-configured scope."
+        },
+        {
           "description": "Enables the index_parsed_specs command without any pre-configured scope.",
           "type": "string",
           "const": "rag:allow-index-parsed-specs",
           "markdownDescription": "Enables the index_parsed_specs command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the ingest_reviewed_specs command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:allow-ingest-reviewed-specs",
+          "markdownDescription": "Enables the ingest_reviewed_specs command without any pre-configured scope."
         },
         {
           "description": "Enables the invoke_sidecar_test command without any pre-configured scope.",
@@ -6913,6 +6925,18 @@
           "type": "string",
           "const": "rag:allow-parse-excel",
           "markdownDescription": "Enables the parse_excel command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the preview_json_folder command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:allow-preview-json-folder",
+          "markdownDescription": "Enables the preview_json_folder command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the search_hybrid_specs command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:allow-search-hybrid-specs",
+          "markdownDescription": "Enables the search_hybrid_specs command without any pre-configured scope."
         },
         {
           "description": "Enables the search_specs command without any pre-configured scope.",
@@ -6933,10 +6957,22 @@
           "markdownDescription": "Denies the get_pdf_files_in_folder command without any pre-configured scope."
         },
         {
+          "description": "Denies the get_unique_metadata command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:deny-get-unique-metadata",
+          "markdownDescription": "Denies the get_unique_metadata command without any pre-configured scope."
+        },
+        {
           "description": "Denies the index_parsed_specs command without any pre-configured scope.",
           "type": "string",
           "const": "rag:deny-index-parsed-specs",
           "markdownDescription": "Denies the index_parsed_specs command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the ingest_reviewed_specs command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:deny-ingest-reviewed-specs",
+          "markdownDescription": "Denies the ingest_reviewed_specs command without any pre-configured scope."
         },
         {
           "description": "Denies the invoke_sidecar_test command without any pre-configured scope.",
@@ -6949,6 +6985,18 @@
           "type": "string",
           "const": "rag:deny-parse-excel",
           "markdownDescription": "Denies the parse_excel command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the preview_json_folder command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:deny-preview-json-folder",
+          "markdownDescription": "Denies the preview_json_folder command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the search_hybrid_specs command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:deny-search-hybrid-specs",
+          "markdownDescription": "Denies the search_hybrid_specs command without any pre-configured scope."
         },
         {
           "description": "Denies the search_specs command without any pre-configured scope.",
