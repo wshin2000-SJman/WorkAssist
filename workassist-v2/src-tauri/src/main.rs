@@ -69,6 +69,188 @@ async fn clear_demo_data_cmd(storage: State<'_, Arc<Storage>>) -> Result<(), Str
     storage.inner().clear_demo_data().map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn get_db_last_modified(storage: State<'_, Arc<Storage>>) -> Result<String, String> {
+    let db_path = &storage.inner().path;
+    if !db_path.exists() {
+        return Err("Database file does not exist".to_string());
+    }
+    
+    let metadata = std::fs::metadata(db_path).map_err(|e| e.to_string())?;
+    let modified = metadata.modified().map_err(|e| e.to_string())?;
+    
+    let datetime: chrono::DateTime<chrono::Local> = modified.into();
+    Ok(datetime.format("%y%m%d-%H%M%S").to_string())
+}
+
+#[tauri::command]
+async fn get_oxigraph_last_modified() -> Result<String, String> {
+    let mut db_path = if cfg!(windows) {
+        std::path::PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_else(|_| ".".into()))
+    } else {
+        std::path::PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
+    };
+    db_path.push("SJ_WorkAssist");
+    db_path.push("oxigraph_data");
+    
+    if !db_path.exists() {
+        return Ok("N/A".to_string());
+    }
+    
+    // Find the latest modified time among all files in the directory
+    let mut latest_time = None;
+    if let Ok(entries) = std::fs::read_dir(&db_path) {
+        for entry in entries.flatten() {
+            if let Ok(metadata) = entry.metadata() {
+                if metadata.is_file() {
+                    if let Ok(modified) = metadata.modified() {
+                        if latest_time.is_none() || Some(modified) > latest_time {
+                            latest_time = Some(modified);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    let time_to_use = match latest_time {
+        Some(t) => t,
+        None => {
+            let metadata = std::fs::metadata(&db_path).map_err(|e| e.to_string())?;
+            metadata.modified().map_err(|e| e.to_string())?
+        }
+    };
+    
+    let datetime: chrono::DateTime<chrono::Local> = time_to_use.into();
+    Ok(datetime.format("%y%m%d-%H%M%S").to_string())
+}
+
+fn copy_dir_all(src: impl AsRef<std::path::Path>, dst: impl AsRef<std::path::Path>) -> std::io::Result<()> {
+    std::fs::create_dir_all(&dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            std::fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn manual_backup_oxigraph(path: String) -> Result<String, String> {
+    let mut db_path = if cfg!(windows) {
+        std::path::PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_else(|_| ".".into()))
+    } else {
+        std::path::PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
+    };
+    db_path.push("SJ_WorkAssist");
+    db_path.push("oxigraph_data");
+    
+    if !db_path.exists() {
+        return Err("Oxigraph 데이터베이스가 아직 생성되지 않았습니다.".to_string());
+    }
+    
+    let dest_path = std::path::PathBuf::from(&path);
+    copy_dir_all(&db_path, &dest_path).map_err(|e| format!("백업 실패: {}", e))?;
+    
+    Ok(format!("Oxigraph 데이터베이스 백업 완료: {}", path))
+}
+
+#[tauri::command]
+async fn import_oxigraph(
+    #[cfg(feature = "rag")] state: tauri::State<'_, Arc<std::sync::Mutex<crate::modules::knowledge::KnowledgeStore>>>,
+    path: String,
+) -> Result<(), String> {
+    let mut db_path = if cfg!(windows) {
+        std::path::PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_else(|_| ".".into()))
+    } else {
+        std::path::PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
+    };
+    db_path.push("SJ_WorkAssist");
+    db_path.push("oxigraph_data");
+    
+    let backup_src = std::path::PathBuf::from(&path);
+    if !backup_src.exists() {
+        return Err("지정한 백업 경로가 존재하지 않습니다.".to_string());
+    }
+    
+    #[cfg(feature = "rag")]
+    {
+        let mut store_guard = state.lock().map_err(|e| e.to_string())?;
+        
+        // Temporarily clear storage instance to release RocksDB locks
+        let temp_store = oxigraph::store::Store::new().map_err(|e| e.to_string())?;
+        store_guard.store = temp_store;
+        
+        if db_path.exists() {
+            std::fs::remove_dir_all(&db_path).map_err(|e| format!("기존 DB 폴더 삭제 실패: {}", e))?;
+        }
+        
+        copy_dir_all(&backup_src, &db_path).map_err(|e| format!("백업 데이터 복사 실패: {}", e))?;
+        
+        let restored_store = oxigraph::store::Store::open(&db_path).map_err(|e| format!("복구된 스토어 오픈 실패: {}", e))?;
+        store_guard.store = restored_store;
+        
+        Ok(())
+    }
+    
+    #[cfg(not(feature = "rag"))]
+    {
+        Err("Oxigraph RAG 피처가 활성화되어 있지 않습니다.".to_string())
+    }
+}
+
+#[tauri::command]
+async fn open_oxigraph_backup_folder<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
+    let mut path = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    path.push("oxigraph_backups");
+    if !path.exists() {
+        std::fs::create_dir_all(&path).map_err(|e| e.to_string())?;
+    }
+    open::that(path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn initialize_oxigraph_data(
+    #[cfg(feature = "rag")] state: tauri::State<'_, Arc<std::sync::Mutex<crate::modules::knowledge::KnowledgeStore>>>,
+) -> Result<(), String> {
+    let mut db_path = if cfg!(windows) {
+        std::path::PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_else(|_| ".".into()))
+    } else {
+        std::path::PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
+    };
+    db_path.push("SJ_WorkAssist");
+    db_path.push("oxigraph_data");
+    
+    #[cfg(feature = "rag")]
+    {
+        let mut store_guard = state.lock().map_err(|e| e.to_string())?;
+        
+        let temp_store = oxigraph::store::Store::new().map_err(|e| e.to_string())?;
+        store_guard.store = temp_store;
+        
+        if db_path.exists() {
+            std::fs::remove_dir_all(&db_path).map_err(|e| format!("기존 DB 폴더 삭제 실패: {}", e))?;
+        }
+        std::fs::create_dir_all(&db_path).map_err(|e| format!("폴더 재생성 실패: {}", e))?;
+        
+        let new_store = oxigraph::store::Store::open(&db_path).map_err(|e| format!("새 스토어 생성 실패: {}", e))?;
+        store_guard.store = new_store;
+        
+        Ok(())
+    }
+    
+    #[cfg(not(feature = "rag"))]
+    {
+        Err("Oxigraph RAG 피처가 활성화되어 있지 않습니다.".to_string())
+    }
+}
+
+// --- Core Engine Commands (Stay in main for now) ---
+
 // --- Core Engine Plugin ---
 
 pub fn init_engine<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
@@ -80,7 +262,13 @@ pub fn init_engine<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             initialize_data,
             get_enabled_features,
             seed_demo_data_cmd,
-            clear_demo_data_cmd
+            clear_demo_data_cmd,
+            get_db_last_modified,
+            get_oxigraph_last_modified,
+            manual_backup_oxigraph,
+            import_oxigraph,
+            open_oxigraph_backup_folder,
+            initialize_oxigraph_data
         ])
         .build()
 }

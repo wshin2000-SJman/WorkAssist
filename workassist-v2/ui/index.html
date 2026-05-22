@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,28 +48,28 @@
       <div class="login-header">
         <img src="assets/icon_3.png" class="login-logo" alt="Logo">
         <h1>WorkAssist</h1>
-        <p>Login to your workspace</p>
+        <p>업무 보조 시스템 로그인</p>
       </div>
       <form id="form-login" autocomplete="off">
         <div class="form-group">
-          <input type="text" id="login-id" placeholder="Username" required autocomplete="off">
+          <input type="text" id="login-id" placeholder="사용자명" required autocomplete="off">
         </div>
         <div class="form-group">
-          <input type="password" id="login-pw" placeholder="Password" required autocomplete="off">
+          <input type="password" id="login-pw" placeholder="비밀번호" required autocomplete="off">
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Login</button>
+        <button type="submit" class="btn btn-primary btn-block">로그인</button>
       </form>
       <div class="login-footer">
         <div class="footer-links-main">
-          <button id="btn-show-signup" class="btn-link">Create ID</button>
-          <button id="btn-show-hint" class="btn-link">Password Hint</button>
-          <button id="btn-show-change-pw" class="btn-link">Change Password</button>
+          <button id="btn-show-signup" class="btn-link">아이디 생성</button>
+          <button id="btn-show-hint" class="btn-link">비밀번호 힌트</button>
+          <button id="btn-show-change-pw" class="btn-link">비밀번호 변경</button>
         </div>
         <div class="footer-bottom-section">
           <div class="footer-legal-links">
-            <a href="#" class="legal-link" id="link-privacy">Privacy Policy</a>
-            <a href="#" class="legal-link" id="link-terms">Terms of Use</a>
-            <a href="#" class="legal-link" id="link-contact">Contact Us</a>
+            <a href="#" class="legal-link" id="link-privacy">개인정보 처리방침</a>
+            <a href="#" class="legal-link" id="link-terms">이용 약관</a>
+            <a href="#" class="legal-link" id="link-contact">문의하기</a>
           </div>
           <div class="footer-copyright">
             <span>© 2026 Wonseup Shin. All rights reserved.</span>
@@ -88,38 +88,38 @@
       </div>
       <nav class="nav-menu">
         <a href="#" class="nav-item active" id="nav-dashboard">
-          <span class="nav-icon">📊</span> Dashboard
+          <span class="nav-icon">📊</span> 대시보드
         </a>
         <a href="#" class="nav-item" id="nav-kanban">
-          <span class="nav-icon">📋</span> Task Manager
+          <span class="nav-icon">📋</span> 업무 관리자
         </a>
         <a href="#" class="nav-item" id="nav-minutes">
-          <span class="nav-icon">📝</span> Minutes Manager
+          <span class="nav-icon">📝</span> 회의록 관리자
         </a>
         <a href="#" class="nav-item" id="nav-pm">
-          <span class="nav-icon">🏗️</span> Project Manager
+          <span class="nav-icon">🏗️</span> 프로젝트 관리자
         </a>
         <a href="#" class="nav-item" id="nav-rag">
-          <span class="nav-icon">🤖</span> RAG & PDF Parser
+          <span class="nav-icon">🤖</span> PDF & Excel 파싱
         </a>
         <a href="#" class="nav-item" id="nav-history">
-          <span class="nav-icon">📜</span> History Manager
+          <span class="nav-icon">📜</span> 히스토리 관리자
         </a>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-actions">
           <a href="#" class="nav-item" id="nav-settings">
-            <span class="nav-icon">⚙️</span> Settings
+            <span class="nav-icon">⚙️</span> 설정
           </a>
           <button class="btn-logout" id="btn-logout">
-            <span class="nav-icon">🚪</span> Logout
+            <span class="nav-icon">🚪</span> 로그아웃
           </button>
         </div>
         <div class="user-profile">
           <div class="avatar">AD</div>
           <div class="user-info">
-            <div class="user-name" id="sidebar-user-name">Admin User</div>
-            <div class="user-status" id="sidebar-status-info">v2.1.0 | 0 Tasks</div>
+            <div class="user-name" id="sidebar-user-name">관리자 사용자</div>
+            <div class="user-status" id="sidebar-status-info">v2.1.0 | 0개 업무</div>
           </div>
         </div>
       </div>
@@ -127,9 +127,9 @@
 
     <main class="main-content">
       <header class="top-bar">
-        <h1 id="page-title">Dashboard</h1>
+        <h1 id="page-title">대시보드</h1>
         <div class="top-actions">
-          <button class="btn btn-primary" id="btn-sync">Sync Data</button>
+          <button class="btn btn-primary" id="btn-sync">데이터 동기화</button>
           <div class="status-indicator">
             <img src="assets/typing_2.gif" class="typing-status" alt="Status">
           </div>
@@ -140,19 +140,19 @@
         <!-- Dashboard View -->
         <div class="view" id="view-dashboard">
           <div class="welcome-card">
-            <h2>Welcome to WorkAssist v2.1.0</h2>
-            <p>Systematic work brings tranquility.</p>
+            <h2>WorkAssist v2.1.0에 오신 것을 환영합니다</h2>
+            <p>체계적인 업무는 마음에 평온을 줍니다.</p>
             <div class="stats-grid">
               <div class="stat-card" id="card-tasks">
-                <span class="stat-label">Active Tasks</span>
+                <span class="stat-label">진행 중인 업무</span>
                 <span class="stat-value" id="stat-tasks">0</span>
               </div>
               <div class="stat-card" id="card-meetings">
-                <span class="stat-label">Meetings</span>
+                <span class="stat-label">회의 일정</span>
                 <span class="stat-value" id="stat-meetings">0</span>
               </div>
               <div class="stat-card" id="card-projects">
-                <span class="stat-label">Projects</span>
+                <span class="stat-label">참여 프로젝트</span>
                 <span class="stat-value" id="stat-projects">0</span>
               </div>
             </div>
@@ -162,7 +162,7 @@
           <div class="dashboard-charts-grid">
             <!-- 1. Task Status Donut Chart Card -->
             <div class="chart-card" id="chart-card-tasks">
-              <h3>🎯 Task Status Pipeline</h3>
+              <h3>🎯 업무 진행 파이프라인</h3>
               <div class="donut-chart-wrapper">
                 <div class="svg-container">
                   <svg id="svg-task-donut" viewBox="0 0 160 160" width="160" height="160"></svg>
@@ -173,7 +173,7 @@
               <!-- Imminent Tasks list -->
               <div class="imminent-tasks-section" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
                 <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                  <span>⏳</span> Imminent & Overdue Tasks
+                  <span>⏳</span> 마감 임박 및 기한 초과 업무
                 </h4>
                 <div id="imminent-tasks-list" class="imminent-tasks-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
                   <!-- Dynamically populated -->
@@ -186,12 +186,12 @@
               <!-- 2. Departmental Workload Card -->
               <div class="chart-card" id="chart-card-workload">
                 <div class="chart-card-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-                  <h3 style="margin-bottom: 0;">⚡ Departmental Workload</h3>
+                  <h3 style="margin-bottom: 0;">⚡ 부서별 담당 업무 현황</h3>
                   <div style="display: flex; gap: 8px; align-items: center;">
                     <!-- Metric Select (Logs vs Planned Days) -->
                     <select id="dashboard-workload-metric-select" class="form-select project-dropdown-compact" style="max-width: 120px; height: 32px; padding: 4px 28px 4px 10px; font-size: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); color: var(--text-primary); cursor: pointer; font-family: inherit; font-weight: 500; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'10\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'3\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 10px center; transition: all 0.2s ease;">
-                      <option value="logs" selected>Log Count</option>
-                      <option value="days">Planned Days</option>
+                      <option value="logs" selected>로그 개수</option>
+                      <option value="days">계획 일수</option>
                     </select>
 
                     <select id="dashboard-workload-project-select" class="form-select project-dropdown-compact" style="max-width: 180px; height: 32px; padding: 4px 28px 4px 10px; font-size: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); color: var(--text-primary); cursor: pointer; font-family: inherit; font-weight: 500; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'10\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'3\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 10px center; transition: all 0.2s ease;">
@@ -206,7 +206,7 @@
               
               <!-- 3. Meeting Categories Card -->
               <div class="chart-card" id="chart-card-categories">
-                <h3>📅 Meeting Categories</h3>
+                <h3>📅 회의 성격별 분류</h3>
                 <div class="categories-workload-list" id="categories-chart-list">
                   <!-- Generated dynamically in JS -->
                 </div>
@@ -609,8 +609,8 @@
         <!-- RAG View -->
         <div class="view hidden" id="view-rag">
           <div class="view-header" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; margin-bottom: 24px; text-align: left;">
-            <h2 style="margin: 0;">RAG & Spec Parser</h2>
-            <p class="view-desc" style="margin: 0; text-align: left; line-height: 1.6; white-space: normal; color: var(--text-secondary);">Offline PDF & Excel specification analysis and structured data extraction<br>(powered by opendataloader-pdf & calamine)</p>
+            <h2 style="margin: 0;">PDF & Excel 파싱</h2>
+            <p class="view-desc" style="margin: 0; text-align: left; line-height: 1.6; white-space: normal; color: var(--text-secondary);">오프라인 PDF & Excel 파일을 사용자가 원하는 텍스트기반 데이터로 추출합니다.<br>(Powered by opendataloader-pdf & calamine)</p>
           </div>
           
           <div class="rag-container" style="display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1200px; margin-top: 20px;">
@@ -618,82 +618,149 @@
             <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px;">
               <!-- Tab Selector -->
               <div class="view-tabs" id="rag-extraction-tabs" style="margin-bottom: 20px;">
-                <button class="view-tab active" data-rag-tab="pdf">📄 PDF Extraction</button>
-                <button class="view-tab" data-rag-tab="excel">📊 Excel Extraction</button>
+                <button class="view-tab active" data-rag-tab="pdf">📄 PDF파일 파싱하기</button>
+                <button class="view-tab" data-rag-tab="pdf-folder">📂 폴더 전체 파싱하기</button>
+                <button class="view-tab" data-rag-tab="excel">📊 Excel 데이터 추출</button>
               </div>
 
               <!-- ===== PDF Extraction Panel ===== -->
               <div id="rag-pdf-panel" class="rag-tab-panel">
-                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📂 PDF Specification Extraction (Ingestion)</h3>
-                <p class="settings-desc" style="margin-bottom: 20px;">Select a local component specification PDF catalog file to automatically extract structured spec data.</p>
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📄 PDF 파일 사양 추출 (파싱)</h3>
+                <p class="settings-desc" style="margin-bottom: 20px;">로컬 부품 사양서 PDF 카탈로그 파일을 선택하여 구조화된 사양 데이터를 자동으로 추출합니다.</p>
                 
                 <div style="display: flex; flex-direction: column; gap: 16px;">
                   <!-- File Selector Row -->
                   <div style="display: flex; gap: 12px; align-items: center;">
                     <div style="flex: 1;">
-                      <input type="text" id="rag-pdf-path" placeholder="Selected PDF file path" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                      <input type="text" id="rag-pdf-path" placeholder="선택된 PDF 파일 경로" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
                     </div>
                     <button id="btn-rag-select-pdf" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
-                      <span>📂</span> Select PDF File
+                      <span>📂</span> PDF 파일 선택
                     </button>
                   </div>
                   
                   <!-- Output Folder Selector Row -->
                   <div style="display: flex; gap: 12px; align-items: center;">
                     <div style="flex: 1;">
-                      <input type="text" id="rag-output-dir" placeholder="Output Folder path (Optional - Defaults to PDF file directory)" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                      <input type="text" id="rag-output-dir" placeholder="출력 폴더 경로 (선택 사항 - 기본값은 PDF 파일 디렉터리)" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
                     </div>
                     <button id="btn-rag-select-dir" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
-                      <span>📁</span> Select Output Folder
+                      <span>📁</span> 출력 폴더 선택
                     </button>
                   </div>
                   
                   <!-- Options Row -->
                   <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                      <label for="rag-output-format" style="font-size: 13px; color: var(--text-secondary);">Output Format:</label>
+                      <label for="rag-output-format" style="font-size: 13px; color: var(--text-secondary);">출력 형식:</label>
                       <select id="rag-output-format" class="form-select" style="width: 120px; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
                         <option value="json" selected>JSON</option>
                         <option value="markdown">Markdown</option>
-                        <option value="text">Plain Text</option>
+                        <option value="text">일반 텍스트</option>
                         <option value="html">HTML</option>
                       </select>
                     </div>
                     
                     <button id="btn-rag-run-parse" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 20px;">
-                      <span>⚡</span> Parse PDF
+                      <span>⚡</span> PDF 파싱 실행
                     </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ===== PDF Folder Extraction Panel ===== -->
+              <div id="rag-pdf-folder-panel" class="rag-tab-panel" style="display: none;">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📂 PDF 폴더 일괄 사양 추출 (일괄 파싱)</h3>
+                <p class="settings-desc" style="margin-bottom: 20px;">지정한 입력 폴더 내의 모든 PDF 파일을 탐색하여 일괄 파싱한 후, 사용자가 지정한 출력 폴더로 내보냅니다.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <!-- Source Folder Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="rag-pdf-folder-src-path" placeholder="파싱할 입력 폴더 경로" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-rag-select-pdf-folder" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📂</span> 폴더 선택
+                    </button>
+                  </div>
+                  
+                  <!-- Output Folder Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="rag-pdf-folder-out-path" placeholder="출력 폴더 경로 (기본값은 입력 폴더와 동일)" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-rag-select-pdf-folder-out" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📁</span> 출력 폴더 선택
+                    </button>
+                  </div>
+                  
+                  <!-- Options & Run Row -->
+                  <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <label for="rag-pdf-folder-format" style="font-size: 13px; color: var(--text-secondary);">출력 형식:</label>
+                      <select id="rag-pdf-folder-format" class="form-select" style="width: 120px; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="json" selected>JSON</option>
+                        <option value="markdown">Markdown</option>
+                        <option value="text">일반 텍스트</option>
+                        <option value="html">HTML</option>
+                      </select>
+                    </div>
+                    
+                    <button id="btn-rag-run-folder-parse" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 20px;">
+                      <span>⚡</span> 폴더 전체 파싱 실행
+                    </button>
+
+                    <button id="btn-rag-abort-folder-parse" class="btn" style="height: 38px; display: none; align-items: center; gap: 6px; padding: 0 20px; background-color: #ff5555; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#ff6e6e'" onmouseout="this.style.backgroundColor='#ff5555'">
+                      <span>🛑</span> 진행 중지
+                    </button>
+                  </div>
+
+                  <!-- Progress Section (수평 bar graph & %) -->
+                  <div id="rag-folder-progress-container" style="display: none; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; margin-top: 10px;">
+                    <!-- typing_3.gif 로딩 애니메이션 영역 (파싱 진행 중 활성화) -->
+                    <div id="rag-folder-progress-gif-container" style="display: none; justify-content: center; margin-bottom: 12px; align-items: center;">
+                      <img src="assets/typing_3.gif" alt="파싱 진행 중..." style="height: 90px; border-radius: 6px; opacity: 0.85; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));">
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                      <span id="rag-folder-progress-status" style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">파싱을 준비하고 있습니다...</span>
+                      <span id="rag-folder-progress-percent" style="font-size: 14px; color: var(--accent-color); font-weight: 700; font-family: 'Consolas', monospace;">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 5px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05);">
+                      <div id="rag-folder-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-color), #ff8c00); border-radius: 5px; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                    </div>
+                    <div id="rag-folder-progress-files" style="font-size: 11px; color: var(--text-secondary); opacity: 0.8; margin-top: 6px; font-family: 'Consolas', monospace;">(0 / 0 파일 완료)</div>
                   </div>
                 </div>
               </div>
 
               <!-- ===== Excel Extraction Panel ===== -->
               <div id="rag-excel-panel" class="rag-tab-panel" style="display: none;">
-                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📊 Excel Specification Extraction (Ingestion)</h3>
-                <p class="settings-desc" style="margin-bottom: 20px;">Select a local Excel or spreadsheet file (.xlsx, .xls, .xlsb, .ods) to extract structured specification data from worksheets.</p>
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📊 Excel 사양서 데이터 추출 (등록)</h3>
+                <p class="settings-desc" style="margin-bottom: 20px;">로컬 Excel 또는 스프레드시트 파일(.xlsx, .xls, .xlsb, .ods)을 선택하여 워크시트에서 구조화된 사양 데이터를 추출합니다.</p>
                 
                 <div style="display: flex; flex-direction: column; gap: 16px;">
                   <!-- Excel File Selector Row -->
                   <div style="display: flex; gap: 12px; align-items: center;">
                     <div style="flex: 1;">
-                      <input type="text" id="rag-excel-path" placeholder="Selected Excel file path" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                      <input type="text" id="rag-excel-path" placeholder="선택된 Excel 파일 경로" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
                     </div>
                     <button id="btn-rag-select-excel" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
-                      <span>📊</span> Select Excel File
+                      <span>📊</span> Excel 파일 선택
                     </button>
                   </div>
                   
                   <!-- Sheet Selector & Parse Row -->
                   <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                      <label for="rag-excel-sheet-select" style="font-size: 13px; color: var(--text-secondary);">Worksheet:</label>
+                      <label for="rag-excel-sheet-select" style="font-size: 13px; color: var(--text-secondary);">워크시트:</label>
                       <select id="rag-excel-sheet-select" class="form-select" style="min-width: 180px; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
-                        <option value="" disabled selected>— Parse a file first —</option>
+                        <option value="" disabled selected>— 먼저 파일을 분석해 주세요 —</option>
                       </select>
                     </div>
                     
                     <button id="btn-rag-run-excel" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 20px;">
-                      <span>⚡</span> Parse Excel
+                      <span>⚡</span> Excel 파싱 실행
                     </button>
                   </div>
                 </div>
@@ -705,11 +772,11 @@
               <div id="rag-result-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                   <span id="rag-result-toggle-icon" style="font-size: 12px; color: var(--accent-color); transition: transform 0.3s ease; display: inline-block;">▼</span>
-                  <h3 style="margin: 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">📊 Extraction & Analysis Result (Output)</h3>
+                  <h3 style="margin: 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">📊 데이터 추출 및 분석 결과 (출력)</h3>
                 </div>
                 <div style="display: flex; gap: 8px;" onclick="event.stopPropagation();">
-                  <button id="btn-rag-index-db" class="btn btn-primary btn-sm" style="display: none; padding: 6px 12px; font-size: 12px; height: 32px; gap: 4px; align-items: center;">⚡ Index to DB</button>
-                  <button id="btn-rag-copy-output" class="btn btn-secondary btn-sm" style="display: none; padding: 6px 12px; font-size: 12px; height: 32px;">📋 Copy Result</button>
+                  <button id="btn-rag-index-db" class="btn btn-primary btn-sm" style="display: none; padding: 6px 12px; font-size: 12px; height: 32px; gap: 4px; align-items: center;">⚡ DB에 인덱싱</button>
+                  <button id="btn-rag-copy-output" class="btn btn-secondary btn-sm" style="display: none; padding: 6px 12px; font-size: 12px; height: 32px;">📋 결과 복사</button>
                 </div>
               </div>
               
@@ -718,29 +785,29 @@
                 <!-- Loading State -->
                 <div id="rag-loader" style="display: none; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 40px 0; gap: 16px;">
                   <img src="assets/typing_3.gif" style="width: 160px; height: auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); opacity: 0.95; margin-bottom: 8px;" alt="Loading">
-                  <div style="color: var(--accent-color); font-weight: 600; font-size: 14px;">Specification analysis engine is running. Please wait...</div>
-                  <div style="color: var(--text-secondary); font-size: 12px; max-width: 400px; text-align: center; line-height: 1.6;">(opendataloader-pdf-cli.jar is running as an asynchronous subprocess to fully analyze the local PDF text and table structures.)</div>
+                  <div style="color: var(--accent-color); font-weight: 600; font-size: 14px;">사양 분석 엔진이 실행 중입니다. 잠시만 기다려 주세요...</div>
+                  <div style="color: var(--text-secondary); font-size: 12px; max-width: 400px; text-align: center; line-height: 1.6;">(로컬 PDF 텍스트 및 표 구조를 완벽하게 분석하기 위해 opendataloader-pdf-cli.jar가 비동기 서브프로세스로 실행 중입니다.)</div>
                 </div>
                 
                 <!-- Code Output -->
                 <div id="rag-output-container" style="flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; overflow: auto; display: flex; flex-direction: column; min-height: 300px;">
-                  <pre id="rag-output-pre" style="margin: 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; color: #a9b1d6; white-space: pre-wrap; word-break: break-all; flex: 1;">(The extracted specifications will be displayed here. Please select a PDF file and click 'Parse PDF'.)</pre>
+                  <pre id="rag-output-pre" style="margin: 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; color: #a9b1d6; white-space: pre-wrap; word-break: break-all; flex: 1;">(추출된 사양 정보가 여기에 표시됩니다. PDF 파일을 선택하고 'PDF 파싱 실행'을 클릭해 주세요.)</pre>
                 </div>
               </div>
             </div>
 
             <!-- Offline Semantic Search Card -->
             <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; display: flex; flex-direction: column; gap: 20px;">
-              <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 4px;">🔍 Offline Dynamic Semantic Search (Hybrid Vector + Metadata)</h3>
-              <p class="settings-desc" style="margin-bottom: 10px; color: var(--text-secondary);">Execute real-time semantic query searches across your locally indexed specification database powered by LanceDB & SQLite specs.</p>
+              <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 4px;">🔍 오프라인 동적 시맨틱 검색 (하이브리드 벡터 + 메타데이터)</h3>
+              <p class="settings-desc" style="margin-bottom: 10px; color: var(--text-secondary);">LanceDB 및 SQLite 기반으로 로컬에 인덱싱된 사양 데이터베이스에서 실시간 시맨틱 쿼리 검색을 실행합니다.</p>
               
               <!-- Search Row -->
               <div style="display: flex; gap: 12px; align-items: center;">
                 <div style="flex: 1;">
-                  <input type="text" id="rag-search-query" placeholder="Type a keyword or ask a question (e.g., '48V framed servo motor' or 'rated torque 2.4 Nm')" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                  <input type="text" id="rag-search-query" placeholder="키워드를 입력하거나 질문을 작성해 주세요 (예: '48V 프레임 서보 모터' 또는 '정격 토크 2.4 Nm')" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                  <label for="rag-search-limit" style="font-size: 13px; color: var(--text-secondary);">Limit:</label>
+                  <label for="rag-search-limit" style="font-size: 13px; color: var(--text-secondary);">검색 개수:</label>
                   <select id="rag-search-limit" style="width: 70px; height: 42px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
                     <option value="3">3</option>
                     <option value="5" selected>5</option>
@@ -748,14 +815,14 @@
                   </select>
                 </div>
                 <button id="btn-rag-search" class="btn btn-primary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 20px;">
-                  <span>🔍</span> Vector Search
+                  <span>🔍</span> 벡터 검색
                 </button>
               </div>
 
               <!-- Search Results Display -->
               <div id="rag-search-results" style="display: flex; flex-direction: column; gap: 16px; max-height: 500px; overflow-y: auto; padding-right: 4px;">
                 <div style="color: var(--text-secondary); text-align: center; padding: 40px 0; border: 1px dashed var(--card-border); border-radius: 10px; background: rgba(0,0,0,0.1); font-size: 13px;">
-                  No queries run yet. Enter a query above to see dynamic hybrid search in action!
+                  아직 검색이 실행되지 않았습니다. 상단에 검색어를 입력하여 동적 하이브리드 검색을 실행해 보세요!
                 </div>
               </div>
             </div>
@@ -1158,19 +1225,83 @@
         <div class="settings-section">
           <h3>Database Management</h3>
           <p class="settings-desc">Manage your data with manual backups, imports, or full initialization.</p>
-          <div class="settings-actions-grid">
-            <button id="btn-manual-backup" class="btn btn-secondary">
-              <span>💾</span> Manual Backup
-            </button>
-            <button id="btn-import-db" class="btn btn-secondary">
-              <span>📥</span> Import Backup
-            </button>
-            <button id="btn-open-backup-dir" class="btn btn-secondary">
-              <span>📂</span> Open Backup Folder
-            </button>
-            <button id="btn-initialize-db" class="btn btn-danger-outline">
-              <span>⚠️</span> Initialize Data
-            </button>
+          
+          <!-- SQLite RDBMS Group -->
+          <div style="margin-bottom: 24px;">
+            <!-- SQLite RDBMS Information Card -->
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 16px; margin: 12px 0 10px 0; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px; margin-bottom: 10px;">
+                <span style="font-weight: 600; color: var(--accent-color); font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                  <span>🗄️</span> SQLite (RDBMS) - Main Storage
+                </span>
+                <span style="font-size: 11px; background: rgba(80, 250, 123, 0.15); color: #50fa7b; padding: 3px 8px; border-radius: 6px; font-weight: 500; font-family: monospace;">
+                  최근 업데이트: <span id="db-last-modified-time">로딩 중...</span>
+                </span>
+              </div>
+              <div style="margin-bottom: 8px;">
+                <strong style="color: var(--text-primary);">• 역할:</strong> 일반 비즈니스 데이터 저장소 (Main RDBMS)
+              </div>
+              <div style="margin-bottom: 8px;">
+                <strong style="color: var(--text-primary);">• 설명:</strong> 프로젝트 정보, 칸반 보드 내의 태스크, 회의록 및 사용자 권한과 같은 핵심 애플리케이션 데이터를 파일 기반으로 안정적으로 영속 보존하는 일반 관계형 데이터베이스입니다.
+              </div>
+              <div>
+                <strong style="color: var(--text-primary);">• 타겟 데이터:</strong> 프로젝트 목록, 이정표(Milestones), 업무/개인/회의 회의록, 칸반 태스크 상태 및 태그, 부서별 상태 로그, 사용자 정보
+              </div>
+            </div>
+            
+            <div class="settings-actions-grid" style="margin-top: 10px;">
+              <button id="btn-manual-backup" class="btn btn-secondary">
+                <span>💾</span> Manual Backup
+              </button>
+              <button id="btn-import-db" class="btn btn-secondary">
+                <span>📥</span> Import Backup
+              </button>
+              <button id="btn-open-backup-dir" class="btn btn-secondary">
+                <span>📂</span> Open Backup Folder
+              </button>
+              <button id="btn-initialize-db" class="btn btn-danger-outline">
+                <span>⚠️</span> Initialize Data
+              </button>
+            </div>
+          </div>
+
+          <!-- Oxigraph Graph DB Group -->
+          <div style="margin-bottom: 24px;">
+            <!-- Oxigraph Graph DB Information Card -->
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 16px; margin: 12px 0 10px 0; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px; margin-bottom: 10px;">
+                <span style="font-weight: 600; color: var(--accent-color); font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                  <span>📊</span> Oxigraph (Graph DB) — oxigraph
+                </span>
+                <span style="font-size: 11px; background: rgba(80, 250, 123, 0.15); color: #50fa7b; padding: 3px 8px; border-radius: 6px; font-weight: 500; font-family: monospace;">
+                  최근 업데이트: <span id="oxigraph-last-modified-time">로딩 중...</span>
+                </span>
+              </div>
+              <div style="margin-bottom: 8px;">
+                <strong style="color: var(--text-primary);">• 역할:</strong> 지식 데이터베이스 저장소 (Graph DB / Semantic Web 스토어)
+              </div>
+              <div style="margin-bottom: 8px;">
+                <strong style="color: var(--text-primary);">• 설명:</strong> 프로젝트별 BOM(자재명세서) 데이터, 부품 간의 연결 관계(RDF Graph), 그리고 RAG 설계 문서의 지식 개념망 데이터를 SPARQL 쿼리 및 시맨틱 링크 네트워크 형태로 고속 영속 보존하는 데이터베이스입니다.
+              </div>
+              <div>
+                <strong style="color: var(--text-primary);">• 타겟 데이터:</strong> 부품 연계 RDF 트리플, BOM 아이템 매핑 정보, RAG 지식 온톨로지 스키마, 프로젝트 메타데이터 그래프
+              </div>
+            </div>
+            
+            <div class="settings-actions-grid" style="margin-top: 10px;">
+              <button id="btn-manual-backup-oxigraph" class="btn btn-secondary">
+                <span>💾</span> Manual Backup
+              </button>
+              <button id="btn-import-db-oxigraph" class="btn btn-secondary">
+                <span>📥</span> Import Backup
+              </button>
+              <button id="btn-open-backup-dir-oxigraph" class="btn btn-secondary">
+                <span>📂</span> Open Backup Folder
+              </button>
+              <button id="btn-initialize-db-oxigraph" class="btn btn-danger-outline">
+                <span>⚠️</span> Initialize Data
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1628,23 +1759,23 @@
   <div id="modal-privacy" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Privacy Policy</h2>
+        <h2>개인정보 처리방침</h2>
         <button class="btn-close" id="btn-close-privacy">&times;</button>
       </div>
       <div class="legal-content">
-        <p><strong>Last Updated: May 2026</strong></p>
+        <p><strong>최종 수정일: 2026년 5월</strong></p>
         <br>
-        <h3>1. Information We Collect</h3>
-        <p>WorkAssist v2.1.0 processes your project data locally. We do not transmit your personal data to external servers unless explicitly configured for synchronization by the user.</p>
+        <h3>1. 수집하는 정보의 범위</h3>
+        <p>WorkAssist v2.1.0은 모든 프로젝트 관련 데이터를 사용자의 로컬 환경 내에서만 처리합니다. 당사는 사용자가 명시적으로 동기화 설정을 수행하지 않는 한, 개인정보나 프로젝트 데이터를 외부 서버로 절대 전송하지 않습니다.</p>
         <br>
-        <h3>2. Data Security</h3>
-        <p>All meeting records, tasks, and project details are stored in your local database. We recommend maintaining regular backups of your local data directory.</p>
+        <h3>2. 데이터 보안 및 로컬 저장 원칙</h3>
+        <p>작성하신 회의록, 태스크, 프로젝트 진행 상태 등 모든 비즈니스 데이터는 사용자의 PC 로컬 데이터베이스 내에만 안전하게 보관됩니다. 데이터 유실을 방지하기 위해 설정 메뉴를 통한 주기적인 수동 백업 수행을 강력히 권장합니다.</p>
         <br>
-        <h3>3. Your Rights</h3>
-        <p>You have full control over your data. You can delete your account and all associated data at any time through the system settings.</p>
+        <h3>3. 정보 주체의 권리</h3>
+        <p>귀하는 본인의 데이터에 대해 완벽한 통제권을 행사할 수 있습니다. 시스템 설정 메뉴를 사용하여 언제든지 생성한 계정과 관련된 모든 데이터를 영구적으로 초기화하거나 제거할 수 있습니다.</p>
         <br>
-        <h3>4. Contact Us</h3>
-        <p>For any privacy-related inquiries, please contact Wonseup Shin (wsshin@sjautomation.com).</p>
+        <h3>4. 문의사항 및 관리자 신원</h3>
+        <p>개인정보 보호 관련 문의사항이 있거나 권리 행사가 필요한 경우, 시스템 개발자 신원섭 (wsshin@sjautomation.com) 앞으로 연락해 주시기 바랍니다.</p>
       </div>
     </div>
   </div>
@@ -1653,23 +1784,23 @@
   <div id="modal-terms" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Terms of Use</h2>
+        <h2>이용 약관</h2>
         <button class="btn-close" id="btn-close-terms">&times;</button>
       </div>
       <div class="legal-content">
-        <p><strong>Last Updated: May 2026</strong></p>
+        <p><strong>최종 수정일: 2026년 5월</strong></p>
         <br>
-        <h3>1. Acceptance of Terms</h3>
-        <p>By using WorkAssist v2.1.0, you agree to comply with and be bound by these terms. This software is provided "as is" without any warranties.</p>
+        <h3>1. 약관의 동의 및 적용 범위</h3>
+        <p>WorkAssist v2.1.0 서비스를 이용함으로써 귀하는 본 약관에 동의하는 것으로 간주됩니다. 본 소프트웨어는 '있는 그대로(AS IS)' 제공되며, 명시적 또는 묵시적인 어떠한 형태의 보증도 제공하지 않습니다.</p>
         <br>
-        <h3>2. Local Data Responsibility</h3>
-        <p>WorkAssist is a local-first productivity tool. The user is solely responsible for the management, security, and backup of their local database files.</p>
+        <h3>2. 로컬 데이터 관리 책임 소재</h3>
+        <p>WorkAssist는 로컬 우선(Local-first) 업무 관리 도구입니다. 사용자 본인이 데이터베이스 파일의 관리, 보안 유지 및 백업에 대한 전적인 책임과 의무를 집니다.</p>
         <br>
-        <h3>3. Intellectual Property</h3>
-        <p>The software, including its design, source code, and assets, is the intellectual property of Wonseup Shin.</p>
+        <h3>3. 지식 재산권 및 라이선스</h3>
+        <p>소프트웨어의 UI 디자인, 소스 코드, 이미지 에셋을 포함하여 제공되는 모든 기능적 자산은 삼정오토메이션 신원섭 개발자에게 귀속되는 고유한 지식 재산입니다.</p>
         <br>
-        <h3>4. Limitation of Liability</h3>
-        <p>Wonseup Shin shall not be liable for any data loss or damages arising from the use of this software.</p>
+        <h3>4. 책임의 한계 조항</h3>
+        <p>본 소프트웨어의 사용 과정에서 발생하는 예기치 못한 데이터 유실, 손실 또는 제반 업무 장애에 대해 개발자 및 삼정오토메이션은 어떠한 민형사상 법적 책임도 지지 않습니다.</p>
       </div>
     </div>
   </div>
@@ -1678,23 +1809,23 @@
   <div id="modal-contact" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Contact Us</h2>
+        <h2>문의하기</h2>
         <button class="btn-close" id="btn-close-contact">&times;</button>
       </div>
       <div class="legal-content">
-        <p>If you have any questions, bug reports, or feature requests, please reach out to us through the following channels:</p>
+        <p>시스템 이용 중 발생하는 버그 제보, 기능 건의사항 또는 기타 비즈니스 협업 관련 제안이 있으실 경우 아래 경로를 통해 연락해 주시기 바랍니다.</p>
         <br>
         <div class="contact-method">
-          <span class="info-label">Email</span>
+          <span class="info-label">이메일 문의</span>
           <p><a href="mailto:wsshin@sjautomation.com" class="accent-text">wsshin@sjautomation.com</a></p>
         </div>
         <br>
         <div class="contact-method">
-          <span class="info-label">GitHub Repository</span>
+          <span class="info-label">공식 GitHub 저장소</span>
           <p><a href="https://github.com/wshin2000-SJman/WorkAssist/" target="_blank" class="accent-text">github.com/wshin2000-SJman/WorkAssist</a></p>
         </div>
         <br>
-        <p class="text-muted">We typically respond within 24-48 hours. Thank you for using WorkAssist!</p>
+        <p class="text-muted">보내주신 의견에는 보통 영업일 기준 24~48시간 이내에 답변을 드리고자 노력하고 있습니다. WorkAssist를 사용해 주셔서 대단히 감사합니다.</p>
       </div>
     </div>
   </div>
@@ -1742,13 +1873,21 @@
         <button class="btn-close" id="btn-close-knowledge-detail" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; transition: color 0.2s;">&times;</button>
       </div>
       
-      <div class="modal-body-scroll" style="max-height: 450px; overflow-y: auto; padding: 20px 0;">
+      <div class="modal-body-scroll" style="max-height: 450px; overflow-y: auto; padding: 0 0 20px 0;">
         <div id="knowledge-detail-content" style="display: flex; flex-direction: column; gap: 16px;">
           <!-- Dynamically populated detail items -->
         </div>
       </div>
 
-      <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; display: flex; justify-content: flex-end;">
+      <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn btn-secondary" id="btn-export-knowledge-md" style="padding: 8px 16px; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 6px; background: rgba(255, 121, 198, 0.1); color: #ff79c6; border: 1px solid rgba(255, 121, 198, 0.2); transition: all 0.2s;" onmouseover="this.style.background='rgba(255, 121, 198, 0.2)'" onmouseout="this.style.background='rgba(255, 121, 198, 0.1)'">
+            <span>📝</span> MD파일로 내보내기
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-export-knowledge-csv" style="padding: 8px 16px; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 6px; background: rgba(80, 250, 123, 0.1); color: #50fa7b; border: 1px solid rgba(80, 250, 123, 0.2); transition: all 0.2s;" onmouseover="this.style.background='rgba(80, 250, 123, 0.2)'" onmouseout="this.style.background='rgba(80, 250, 123, 0.1)'">
+            <span>📊</span> csv파일로 내보내기
+          </button>
+        </div>
         <button type="button" class="btn btn-secondary" id="btn-close-knowledge-detail-footer" style="padding: 8px 20px; border-radius: 8px; font-weight: 500;">닫기</button>
       </div>
     </div>

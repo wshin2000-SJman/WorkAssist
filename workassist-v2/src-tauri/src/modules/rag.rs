@@ -722,6 +722,40 @@ fn cell_to_json(cell: &calamine::Data) -> Value {
     }
 }
 
+#[tauri::command]
+async fn get_pdf_files_in_folder(folder_path: String) -> Result<Vec<String>, String> {
+    let path = std::path::PathBuf::from(&folder_path);
+    if !path.exists() {
+        return Err(format!("지정된 경로가 존재하지 않습니다: {}", folder_path));
+    }
+    if !path.is_dir() {
+        return Err(format!("지정된 경로가 폴더가 아닙니다: {}", folder_path));
+    }
+
+    let mut pdf_files = Vec::new();
+    let entries = std::fs::read_dir(&path)
+        .map_err(|e| format!("폴더 읽기 실패: {}", e))?;
+
+    for entry in entries {
+        if let Ok(entry) = entry {
+            let file_path = entry.path();
+            if file_path.is_file() {
+                if let Some(ext) = file_path.extension() {
+                    let ext_str = ext.to_string_lossy().to_lowercase();
+                    if ext_str == "pdf" {
+                        pdf_files.push(file_path.to_string_lossy().to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // 파일 정렬하여 일관성 보장
+    pdf_files.sort();
+
+    Ok(pdf_files)
+}
+
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("rag")
         .invoke_handler(tauri::generate_handler![
@@ -729,8 +763,10 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             generate_embeddings_test,
             index_parsed_specs,
             search_specs,
-            parse_excel
+            parse_excel,
+            get_pdf_files_in_folder
         ])
         .build()
 }
+
 

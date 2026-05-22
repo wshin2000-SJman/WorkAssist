@@ -1648,6 +1648,36 @@ function setupSettings() {
     if (btnCloseSettings) btnCloseSettings.onclick = closeSettings;
     if (btnCloseSettingsOk) btnCloseSettingsOk.onclick = closeSettings;
 
+    // 실시간 DB 최근 업데이트 시점 갱신 핸들러 추가
+    const updateDbLastModified = async () => {
+        const timeElem = document.getElementById('db-last-modified-time');
+        const oxigraphTimeElem = document.getElementById('oxigraph-last-modified-time');
+        
+        if (timeElem) {
+            try {
+                const lastModified = await invoke('plugin:engine|get_db_last_modified');
+                timeElem.innerText = lastModified;
+            } catch (err) {
+                console.error("Failed to get DB last modified time:", err);
+                timeElem.innerText = "N/A";
+            }
+        }
+        
+        if (oxigraphTimeElem) {
+            try {
+                const lastModified = await invoke('plugin:engine|get_oxigraph_last_modified');
+                oxigraphTimeElem.innerText = lastModified;
+            } catch (err) {
+                console.error("Failed to get Oxigraph last modified time:", err);
+                oxigraphTimeElem.innerText = "N/A";
+            }
+        }
+    };
+
+    // 초기 1회 실행 및 2초 단위 주기적 폴링 감시 루프
+    updateDbLastModified();
+    setInterval(updateDbLastModified, 2000);
+
     // Database Actions
     const btnManualBackup = document.getElementById('btn-manual-backup');
     const btnImportDb = document.getElementById('btn-import-db');
@@ -1681,6 +1711,7 @@ function setupSettings() {
                 if (path) {
                     const msg = await invoke('plugin:engine|manual_backup', { path });
                     alert(msg);
+                    await updateDbLastModified(); // 백업 직후 강제 갱신
                 }
             } catch (err) { alert("Backup Failed: " + err); }
         };
@@ -1701,6 +1732,66 @@ function setupSettings() {
                     await invoke('plugin:engine|initialize_data', { user: currentUser });
                     alert("Database Initialized.");
                     window.location.reload();
+                } catch (err) { alert("Init Failed: " + err); }
+            }
+        };
+    }
+
+    // Oxigraph Actions
+    const btnManualBackupOxigraph = document.getElementById('btn-manual-backup-oxigraph');
+    const btnImportDbOxigraph = document.getElementById('btn-import-db-oxigraph');
+    const btnOpenBackupDirOxigraph = document.getElementById('btn-open-backup-dir-oxigraph');
+    const btnInitializeDbOxigraph = document.getElementById('btn-initialize-db-oxigraph');
+
+    if (btnManualBackupOxigraph) {
+        btnManualBackupOxigraph.onclick = async () => {
+            try {
+                const path = await window.__TAURI__.dialog.save({
+                    title: 'Oxigraph Backup Destination',
+                    defaultPath: 'sjworkassist_v2_oxigraph_backup'
+                });
+                
+                if (path) {
+                    const msg = await invoke('plugin:engine|manual_backup_oxigraph', { path });
+                    alert(msg);
+                    await updateDbLastModified();
+                }
+            } catch (err) { alert("Backup Failed: " + err); }
+        };
+    }
+
+    if (btnImportDbOxigraph) {
+        btnImportDbOxigraph.onclick = async () => {
+            try {
+                const selected = await window.__TAURI__.dialog.open({
+                    title: 'Select Oxigraph Backup Directory',
+                    multiple: false,
+                    directory: true
+                });
+                if (selected) {
+                    await invoke('plugin:engine|import_oxigraph', { path: selected });
+                    alert("Oxigraph Database imported successfully.");
+                    await updateDbLastModified();
+                }
+            } catch (err) { alert("Import Failed: " + err); }
+        };
+    }
+
+    if (btnOpenBackupDirOxigraph) {
+        btnOpenBackupDirOxigraph.onclick = async () => {
+            try {
+                await invoke('plugin:engine|open_oxigraph_backup_folder');
+            } catch (err) { console.error("Open Folder Error:", err); }
+        };
+    }
+
+    if (btnInitializeDbOxigraph) {
+        btnInitializeDbOxigraph.onclick = async () => {
+            if (await askConfirm("Are you sure? All Oxigraph Graph data will be permanently deleted!")) {
+                try {
+                    await invoke('plugin:engine|initialize_oxigraph_data');
+                    alert("Oxigraph Database Initialized.");
+                    await updateDbLastModified();
                 } catch (err) { alert("Init Failed: " + err); }
             }
         };
@@ -1937,16 +2028,16 @@ async function loadView(viewId) {
     
     // Update active nav and title manually for direct calls
     const titles = {
-        'nav-dashboard': 'Dashboard',
-        'nav-kanban': 'Task Manager',
-        'nav-trash': 'Trash Bin',
-        'nav-minutes-trash': 'Trash Bin',
-        'nav-pm-trash': 'Trash Bin',
-        'nav-pm-completed': 'Completed Projects',
-        'nav-minutes': 'Minutes Manager',
-        'nav-pm': 'Project Manager',
-        'nav-rag': 'RAG & PDF Parser',
-        'nav-history': 'History Manager'
+        'nav-dashboard': '대시보드',
+        'nav-kanban': '업무 관리자',
+        'nav-trash': '휴지통',
+        'nav-minutes-trash': '휴지통',
+        'nav-pm-trash': '휴지통',
+        'nav-pm-completed': '완료된 프로젝트',
+        'nav-minutes': '회의록 관리자',
+        'nav-pm': '프로젝트 관리자',
+        'nav-rag': 'PDF & Excel 파싱',
+        'nav-history': '히스토리 관리자'
     };
 
     const pageTitle = document.getElementById('page-title');
@@ -6470,6 +6561,23 @@ function setupRag() {
     const btnRunExcel = document.getElementById('btn-rag-run-excel');
     const selectExcelSheet = document.getElementById('rag-excel-sheet-select');
 
+    // PDF Folder Extraction Elements
+    const ragPdfFolderPanel = document.getElementById('rag-pdf-folder-panel');
+    const btnSelectPdfFolder = document.getElementById('btn-rag-select-pdf-folder');
+    const inputPdfFolderSrcPath = document.getElementById('rag-pdf-folder-src-path');
+    const btnSelectPdfFolderOut = document.getElementById('btn-rag-select-pdf-folder-out');
+    const inputPdfFolderOutPath = document.getElementById('rag-pdf-folder-out-path');
+    const selectPdfFolderFormat = document.getElementById('rag-pdf-folder-format');
+    const btnRunFolderParse = document.getElementById('btn-rag-run-folder-parse');
+    const btnAbortFolderParse = document.getElementById('btn-rag-abort-folder-parse');
+
+    const progressContainer = document.getElementById('rag-folder-progress-container');
+    const progressGifContainer = document.getElementById('rag-folder-progress-gif-container');
+    const progressStatus = document.getElementById('rag-folder-progress-status');
+    const progressPercent = document.getElementById('rag-folder-progress-percent');
+    const progressBar = document.getElementById('rag-folder-progress-bar');
+    const progressFiles = document.getElementById('rag-folder-progress-files');
+
     if (!btnSelectPdf || !inputPdfPath || !btnSelectDir || !inputOutputDir || !selectFormat || 
         !btnRunParse || !btnCopyOutput || !ragLoader || !ragOutputContainer || !ragOutputPre ||
         !btnIndexDb || !btnSearch || !inputSearchQuery || !selectSearchLimit || !searchResultsContainer) {
@@ -6490,13 +6598,213 @@ function setupRag() {
                 const target = btn.getAttribute('data-rag-tab');
                 if (target === 'pdf') {
                     ragPdfPanel.style.display = '';
+                    if (ragPdfFolderPanel) ragPdfFolderPanel.style.display = 'none';
+                    ragExcelPanel.style.display = 'none';
+                } else if (target === 'pdf-folder') {
+                    ragPdfPanel.style.display = 'none';
+                    if (ragPdfFolderPanel) ragPdfFolderPanel.style.display = '';
                     ragExcelPanel.style.display = 'none';
                 } else {
                     ragPdfPanel.style.display = 'none';
+                    if (ragPdfFolderPanel) ragPdfFolderPanel.style.display = 'none';
                     ragExcelPanel.style.display = '';
                 }
             };
         });
+    }
+
+    // ─── PDF Folder Selection & Processing Logic ───
+    if (btnSelectPdfFolder && inputPdfFolderSrcPath) {
+        btnSelectPdfFolder.onclick = async () => {
+            try {
+                if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+                    alert("Tauri dialog API는 지원되지 않는 환경입니다.");
+                    return;
+                }
+                const dir = await window.__TAURI__.dialog.open({
+                    directory: true,
+                    multiple: false,
+                    title: "파싱할 입력 폴더 선택"
+                });
+                if (dir) {
+                    inputPdfFolderSrcPath.value = dir;
+                }
+            } catch (err) {
+                console.error("입력 폴더 선택 오류:", err);
+                alert("폴더 선택 오류: " + err);
+            }
+        };
+    }
+
+    if (btnSelectPdfFolderOut && inputPdfFolderOutPath) {
+        btnSelectPdfFolderOut.onclick = async () => {
+            try {
+                if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+                    alert("Tauri dialog API는 지원되지 않는 환경입니다.");
+                    return;
+                }
+                const dir = await window.__TAURI__.dialog.open({
+                    directory: true,
+                    multiple: false,
+                    title: "파싱 결과를 저장할 출력 폴더 선택"
+                });
+                if (dir) {
+                    inputPdfFolderOutPath.value = dir;
+                }
+            } catch (err) {
+                console.error("출력 폴더 선택 오류:", err);
+                alert("출력 폴더 선택 오류: " + err);
+            }
+        };
+    }
+
+    if (btnRunFolderParse && inputPdfFolderSrcPath) {
+        btnRunFolderParse.onclick = async () => {
+            const srcPath = inputPdfFolderSrcPath.value.trim();
+            const outPath = inputPdfFolderOutPath.value.trim();
+            const format = selectPdfFolderFormat ? selectPdfFolderFormat.value : 'json';
+
+            if (!srcPath) {
+                alert("파싱할 입력 폴더를 지정해 주세요.");
+                return;
+            }
+
+            // 결과 카드 펼치기
+            expandResultCard();
+
+            // 진행률 UI 초기화
+            if (progressContainer) progressContainer.style.display = 'block';
+            if (progressGifContainer) progressGifContainer.style.display = 'flex';
+            if (progressStatus) progressStatus.textContent = "입력 폴더에서 PDF 파일 목록을 검색하고 있습니다...";
+            if (progressPercent) progressPercent.textContent = "0%";
+            if (progressBar) progressBar.style.width = "0%";
+            if (progressFiles) progressFiles.textContent = "(0 / 0 파일 완료)";
+
+            btnRunFolderParse.disabled = true;
+
+            // 진행 중지 버튼 활성화 및 바인딩
+            let isFolderParseAborted = false;
+            if (btnAbortFolderParse) {
+                btnAbortFolderParse.style.display = 'flex';
+                btnAbortFolderParse.disabled = false;
+                btnAbortFolderParse.onclick = () => {
+                    isFolderParseAborted = true;
+                    btnAbortFolderParse.disabled = true;
+                    if (progressStatus) progressStatus.textContent = "작업 중지 요청 중...";
+                    ragOutputPre.textContent += `\n[중지 요청] 사용자가 중지 버튼을 누르셨습니다. 현재 파일 파싱 완료 후 작업이 중단됩니다...\n`;
+                    ragOutputContainer.scrollTop = ragOutputContainer.scrollHeight;
+                };
+            }
+
+            ragLoader.style.display = 'none';
+            ragOutputContainer.style.display = 'flex';
+            btnCopyOutput.style.display = 'none';
+            btnIndexDb.style.display = 'none';
+            ragOutputPre.textContent = '일괄 파싱을 준비 중입니다...';
+
+            try {
+                // Rust 백엔드를 통해 PDF 파일 리스트 획득
+                console.log(`[RAG UI] Retrieving PDF files in: ${srcPath}`);
+                const pdfFiles = await invoke('plugin:rag|get_pdf_files_in_folder', { folderPath: srcPath });
+
+                if (!pdfFiles || pdfFiles.length === 0) {
+                    if (progressStatus) progressStatus.textContent = "오류: 폴더에 PDF 파일이 없습니다.";
+                    if (progressGifContainer) progressGifContainer.style.display = 'none';
+                    if (btnAbortFolderParse) btnAbortFolderParse.style.display = 'none';
+                    ragOutputPre.textContent = `[알림] 입력 폴더 내에 PDF 파일(.pdf)이 존재하지 않습니다.\n대상 폴더: ${srcPath}`;
+                    alert("선택하신 폴더 내에 PDF 파일이 존재하지 않습니다.");
+                    btnRunFolderParse.disabled = false;
+                    return;
+                }
+
+                const totalFiles = pdfFiles.length;
+                if (progressStatus) progressStatus.textContent = `총 ${totalFiles}개의 PDF 파일을 발견했습니다. 파싱을 시작합니다...`;
+                if (progressFiles) progressFiles.textContent = `(0 / ${totalFiles} 파일 완료)`;
+                ragOutputPre.textContent = `발견된 PDF 파일 수: ${totalFiles}개\n파싱 작업을 시작합니다...\n\n`;
+
+                let successCount = 0;
+                let failCount = 0;
+                let resultsSummary = [];
+
+                // 순차적으로 비동기 파싱 실행
+                for (let i = 0; i < totalFiles; i++) {
+                    if (isFolderParseAborted) {
+                        ragOutputPre.textContent += `\n[알림] 사용자에 의해 일괄 파싱 작업이 중단되었습니다.\n`;
+                        resultsSummary.push(`- [중단됨] 남은 ${totalFiles - i}개 파일은 파싱되지 않았습니다.`);
+                        break;
+                    }
+                    const filePath = pdfFiles[i];
+                    const sepIdx = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+                    const fileName = sepIdx !== -1 ? filePath.substring(sepIdx + 1) : filePath;
+
+                    if (progressStatus) {
+                        progressStatus.textContent = `파싱 중 (${i + 1}/${totalFiles}): ${fileName}`;
+                    }
+                    ragOutputPre.textContent += `[${i + 1}/${totalFiles}] "${fileName}" 파싱 중...\n`;
+                    ragOutputContainer.scrollTop = ragOutputContainer.scrollHeight;
+
+                    try {
+                        const res = await invoke('plugin:rag|invoke_sidecar_test', {
+                            filePath: filePath,
+                            format: format,
+                            outputDir: outPath ? outPath : undefined
+                        });
+
+                        if (res && res.status === 'success') {
+                            successCount++;
+                            resultsSummary.push(`- [성공] ${fileName}`);
+                            ragOutputPre.textContent += `  => 성공!\n`;
+                        } else {
+                            failCount++;
+                            resultsSummary.push(`- [실패] ${fileName} (원인: 알 수 없음)`);
+                            ragOutputPre.textContent += `  => 실패 (알 수 없는 결과)\n`;
+                        }
+                    } catch (fileErr) {
+                        console.error(`Error parsing file ${filePath}:`, fileErr);
+                        failCount++;
+                        resultsSummary.push(`- [실패] ${fileName} (오류: ${fileErr})`);
+                        ragOutputPre.textContent += `  => 실패 (오류: ${fileErr})\n`;
+                    }
+
+                    // 프로그레스 바 및 % 갱신
+                    const currentCompleted = i + 1;
+                    const percent = Math.round((currentCompleted / totalFiles) * 100);
+                    if (progressPercent) progressPercent.textContent = `${percent}%`;
+                    if (progressBar) progressBar.style.width = `${percent}%`;
+                    if (progressFiles) progressFiles.textContent = `(${currentCompleted} / ${totalFiles} 파일 완료)`;
+                    ragOutputContainer.scrollTop = ragOutputContainer.scrollHeight;
+                }
+
+                // 완료 보고서 작성
+                if (progressStatus) {
+                    progressStatus.textContent = `일괄 파싱 완료! (성공: ${successCount}, 실패: ${failCount})`;
+                }
+                
+                const finalReport = `========================================\n` +
+                                    `📂 폴더 일괄 파싱 작업 완료 보고서\n` +
+                                    `========================================\n` +
+                                    `- 대상 입력 폴더: ${srcPath}\n` +
+                                    `- 저장 출력 폴더: ${outPath || '입력 폴더와 동일'}\n` +
+                                    `- 출력 형식: ${format.toUpperCase()}\n` +
+                                    `- 총 대상 파일: ${totalFiles}개\n` +
+                                    `- 파싱 성공: ${successCount}개\n` +
+                                    `- 파싱 실패: ${failCount}개\n\n` +
+                                    `[세부 파일별 결과]\n` +
+                                    resultsSummary.join('\n') + `\n`;
+                
+                ragOutputPre.textContent = finalReport;
+                ragOutputContainer.scrollTop = 0;
+
+            } catch (err) {
+                console.error("폴더 일괄 파싱 전역 오류:", err);
+                if (progressStatus) progressStatus.textContent = "오류: 일괄 작업 중 예외가 발생했습니다.";
+                ragOutputPre.textContent = `[전역 오류] 작업을 실행하는 동안 예외가 발생했습니다:\n\n${err}`;
+            } finally {
+                if (progressGifContainer) progressGifContainer.style.display = 'none';
+                if (btnAbortFolderParse) btnAbortFolderParse.style.display = 'none';
+                btnRunFolderParse.disabled = false;
+            }
+        };
     }
 
     // ─── Excel File Selection ───
@@ -7199,6 +7507,9 @@ function setupHistory() {
     }
 
     // 7. 지식 데이터베이스(DB) 검색 실행
+    let activeKnowledgeComponents = [];
+    let currentKnowledgeTitle = "부품목록";
+
     const btnRunSparql = document.getElementById('btn-history-run-sparql');
     const btnViewComponents = document.getElementById('btn-history-view-components');
     const inputKeyword = document.getElementById('history-db-search-keyword');
@@ -7347,9 +7658,12 @@ SELECT DISTINCT ?대상 ?속성명 ?값 WHERE {
                 btnViewComponents.disabled = true;
 
                 // 팝업창을 띄우고 로딩 메시지 표시
+                const titleText = projectCode ? `지식 DB 프로젝트 부품 목록 (wa:Project_${projectCode.trim().replace(/ /g, "_")})` : "지식 DB 부품 목록 (전체)";
                 if (titleElem) {
-                    titleElem.innerText = projectCode ? `지식 DB 프로젝트 부품 목록 (wa:Project_${projectCode.trim().replace(/ /g, "_")})` : "지식 DB 부품 목록 (전체)";
+                    titleElem.innerText = titleText;
                 }
+                currentKnowledgeTitle = projectCode ? `Project_${projectCode.trim().replace(/ /g, "_")}_부품목록` : "전체_부품목록";
+                
                 detailContent.innerHTML = `<div style="text-align: center; color: var(--accent-color); padding: 24px;">Component 목록을 가져오는 중...</div>`;
                 modalDetail.classList.remove('hidden');
 
@@ -7391,30 +7705,34 @@ SELECT DISTINCT ?컴포넌트 ?partNumber ?category ?itemName ?maker ?spec ?desc
                     detailContent.innerHTML = "";
 
                     if (!results || results.length === 0) {
+                        activeKnowledgeComponents = [];
                         detailContent.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 24px;">등록된 Component가 존재하지 않습니다.</div>`;
                         return;
                     }
 
+                    // 내보내기용 글로벌 세션 데이터 캐싱
+                    activeKnowledgeComponents = results.map(row => ({
+                        partNumber: row.partNumber ? row.partNumber.value : "-",
+                        category: row.category ? row.category.value : "-",
+                        itemName: row.itemName ? row.itemName.value : "-",
+                        maker: row.maker ? row.maker.value : "-",
+                        spec: row.spec ? row.spec.value : "-",
+                        description: row.description ? row.description.value : "-"
+                    }));
+
                     // 가로형 표 형태로 모든 부품의 목록을 구성
                     let tableRowsHtml = "";
-                    results.forEach(row => {
-                        const partNumber = row.partNumber ? row.partNumber.value : "-";
-                        const category = row.category ? row.category.value : "-";
-                        const itemName = row.itemName ? row.itemName.value : "-";
-                        const maker = row.maker ? row.maker.value : "-";
-                        const spec = row.spec ? row.spec.value : "-";
-                        const description = row.description ? row.description.value : "-";
-
+                    activeKnowledgeComponents.forEach(c => {
                         tableRowsHtml += `
                         <tr style="color: var(--text-color); border-bottom: 1px solid rgba(255,255,255,0.05); transition: background-color 0.15s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
-                            <td style="padding: 16px; font-weight: 600; font-family: monospace; color: var(--text-primary); font-size: 14px;">${partNumber}</td>
-                            <td style="padding: 16px; color: var(--text-secondary);">${category}</td>
-                            <td style="padding: 16px; color: var(--text-secondary);">${itemName}</td>
-                            <td style="padding: 16px; color: var(--text-primary); font-weight: 500;">${maker}</td>
+                            <td style="padding: 16px; font-weight: 600; font-family: monospace; color: var(--text-primary); font-size: 14px;">${c.partNumber}</td>
+                            <td style="padding: 16px; color: var(--text-secondary);">${c.category}</td>
+                            <td style="padding: 16px; color: var(--text-secondary);">${c.itemName}</td>
+                            <td style="padding: 16px; color: var(--text-primary); font-weight: 500;">${c.maker}</td>
                             <td style="padding: 16px; font-family: monospace;">
-                                <span style="background: rgba(255,255,255,0.06); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: var(--accent-color); font-weight: 500; display: inline-block;">${spec}</span>
+                                <span style="background: rgba(255,255,255,0.06); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: var(--accent-color); font-weight: 500; display: inline-block;">${c.spec}</span>
                             </td>
-                            <td style="padding: 16px; color: var(--text-secondary); white-space: pre-wrap; word-break: break-all; max-width: 250px;">${description}</td>
+                            <td style="padding: 16px; color: var(--text-secondary); white-space: pre-wrap; word-break: break-all; max-width: 250px;">${c.description}</td>
                         </tr>`;
                     });
 
@@ -7422,13 +7740,13 @@ SELECT DISTINCT ?컴포넌트 ?partNumber ?category ?itemName ?maker ?spec ?desc
                     <div style="overflow-x: auto; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2); box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 100%;">
                             <thead>
-                                <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--accent-color);">
-                                    <th style="padding: 14px 16px; font-weight: 600;">부품 번호</th>
-                                    <th style="padding: 14px 16px; font-weight: 600;">분류</th>
-                                    <th style="padding: 14px 16px; font-weight: 600;">품명</th>
-                                    <th style="padding: 14px 16px; font-weight: 600;">제조사<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Maker)</span></th>
-                                    <th style="padding: 14px 16px; font-weight: 600;">규격 및 상세 사양<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Spec)</span></th>
-                                    <th style="padding: 14px 16px; font-weight: 600;">견적 비용 및 비고<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Description)</span></th>
+                                <tr style="color: var(--accent-color);">
+                                    <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">부품 번호</th>
+                                    <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">분류</th>
+                                    <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">품명</th>
+                                    <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">제조사<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Maker)</span></th>
+                                    <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">규격 및 상세 사양<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Spec)</span></th>
+                                    <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">견적 비용 및 비고<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Description)</span></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -7506,6 +7824,7 @@ SELECT DISTINCT ?속성명 ?값 WHERE {
             detailContent.innerHTML = "";
 
             if (!results || results.length === 0) {
+                activeKnowledgeComponents = [];
                 detailContent.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 24px;">속성 정보가 존재하지 않습니다.</div>`;
                 return;
             }
@@ -7527,17 +7846,31 @@ SELECT DISTINCT ?속성명 ?값 WHERE {
             const spec = properties["http://workassist.local/ontology/spec"] || "-";
             const description = properties["http://workassist.local/ontology/description"] || "-";
 
+            // 내보내기용 글로벌 세션 데이터 캐싱
+            activeKnowledgeComponents = [{
+                partNumber: partNumber,
+                category: category,
+                itemName: itemName,
+                maker: maker,
+                spec: spec,
+                description: description
+            }];
+
+            const shortenedUri = targetUri.replace("http://workassist.local/ontology/", "wa:");
+            const cleanPart = shortenedUri.replace("wa:Component_", "");
+            currentKnowledgeTitle = `부품상세_${cleanPart}`;
+
             let html = `
             <div style="overflow-x: auto; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2); box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);">
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 100%;">
                     <thead>
-                        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--accent-color);">
-                            <th style="padding: 14px 16px; font-weight: 600;">부품 번호</th>
-                            <th style="padding: 14px 16px; font-weight: 600;">분류</th>
-                            <th style="padding: 14px 16px; font-weight: 600;">품명</th>
-                            <th style="padding: 14px 16px; font-weight: 600;">제조사<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Maker)</span></th>
-                            <th style="padding: 14px 16px; font-weight: 600;">규격 및 상세 사양<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Spec)</span></th>
-                            <th style="padding: 14px 16px; font-weight: 600;">견적 비용 및 비고<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Description)</span></th>
+                        <tr style="color: var(--accent-color);">
+                            <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">부품 번호</th>
+                            <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">분류</th>
+                            <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">품명</th>
+                            <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">제조사<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Maker)</span></th>
+                            <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">규격 및 상세 사양<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Spec)</span></th>
+                            <th style="padding: 14px 16px; font-weight: 600; position: sticky; top: 0; background: rgb(18, 22, 28); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">견적 비용 및 비고<br><span style="font-size: 10px; opacity: 0.6; font-weight: normal;">(Description)</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -7594,13 +7927,90 @@ SELECT DISTINCT ?속성명 ?값 WHERE {
 
             const titleElem = document.getElementById('knowledge-detail-title');
             if (titleElem) {
-                const shortenedUri = targetUri.replace("http://workassist.local/ontology/", "wa:");
                 titleElem.innerText = `지식 DB 부품 상세 정보 (${shortenedUri})`;
             }
 
         } catch (err) {
             detailContent.innerHTML = `<div style="text-align: center; color: #f87171; padding: 24px;">상세 정보 조회 오류:<br>${err}</div>`;
         }
+    }
+
+    // 지식 DB 부품 목록 내보내기 (MD, CSV)
+    const btnExportMd = document.getElementById('btn-export-knowledge-md');
+    const btnExportCsv = document.getElementById('btn-export-knowledge-csv');
+
+    function cleanMarkdownCell(val) {
+        if (!val) return "-";
+        return val.toString().replace(/\|/g, "\\|").replace(/\n/g, " ");
+    }
+
+    function cleanCSVCell(val) {
+        if (!val) return "";
+        return val.toString().replace(/"/g, '""');
+    }
+
+    if (btnExportMd) {
+        btnExportMd.onclick = async () => {
+            if (!activeKnowledgeComponents || activeKnowledgeComponents.length === 0) {
+                alert("내보낼 부품 데이터가 존재하지 않습니다.");
+                return;
+            }
+            if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+                alert("Tauri 데스크톱 환경에서만 파일 저장 대화상자가 지원됩니다.");
+                return;
+            }
+            try {
+                let md = `# ${currentKnowledgeTitle.replace(/_/g, " ")}\n\n`;
+                md += `| 부품 번호 | 분류 | 품명 | 제조사 (Maker) | 규격 및 상세 사양 (Spec) | 견적 비용 및 비고 (Description) |\n`;
+                md += `| :--- | :--- | :--- | :--- | :--- | :--- |\n`;
+                activeKnowledgeComponents.forEach(c => {
+                    md += `| ${cleanMarkdownCell(c.partNumber)} | ${cleanMarkdownCell(c.category)} | ${cleanMarkdownCell(c.itemName)} | ${cleanMarkdownCell(c.maker)} | ${cleanMarkdownCell(c.spec)} | ${cleanMarkdownCell(c.description)} |\n`;
+                });
+                md += `\n---\n*Exported by WorkAssist*`;
+
+                const savePath = await window.__TAURI__.dialog.save({
+                    filters: [{ name: 'Markdown', extensions: ['md'] }],
+                    defaultPath: `${currentKnowledgeTitle}.md`
+                });
+                if (savePath) {
+                    await invoke('plugin:minutes|save_text_file', { path: savePath, content: md });
+                    alert(`성공적으로 내보냈습니다!\n저장 경로: ${savePath}`);
+                }
+            } catch (err) {
+                alert("Markdown 내보내기에 실패했습니다: " + err);
+            }
+        };
+    }
+
+    if (btnExportCsv) {
+        btnExportCsv.onclick = async () => {
+            if (!activeKnowledgeComponents || activeKnowledgeComponents.length === 0) {
+                alert("내보낼 부품 데이터가 존재하지 않습니다.");
+                return;
+            }
+            if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+                alert("Tauri 데스크톱 환경에서만 파일 저장 대화상자가 지원됩니다.");
+                return;
+            }
+            try {
+                let csv = `\ufeff`;
+                csv += `"부품 번호","분류","품명","제조사 (Maker)","규격 및 상세 사양 (Spec)","견적 비용 및 비고 (Description)"\n`;
+                activeKnowledgeComponents.forEach(c => {
+                    csv += `"${cleanCSVCell(c.partNumber)}","${cleanCSVCell(c.category)}","${cleanCSVCell(c.itemName)}","${cleanCSVCell(c.maker)}","${cleanCSVCell(c.spec)}","${cleanCSVCell(c.description)}"\n`;
+                });
+
+                const savePath = await window.__TAURI__.dialog.save({
+                    filters: [{ name: 'CSV', extensions: ['csv'] }],
+                    defaultPath: `${currentKnowledgeTitle}.csv`
+                });
+                if (savePath) {
+                    await invoke('plugin:minutes|save_text_file', { path: savePath, content: csv });
+                    alert(`성공적으로 내보냈습니다!\n저장 경로: ${savePath}`);
+                }
+            } catch (err) {
+                alert("CSV 내보내기에 실패했습니다: " + err);
+            }
+        };
     }
 
     // 9. Refresh Graph button

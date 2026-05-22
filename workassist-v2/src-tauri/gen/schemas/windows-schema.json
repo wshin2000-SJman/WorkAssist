@@ -4347,10 +4347,22 @@
           "markdownDescription": "Enables the clear_demo_data_cmd command without any pre-configured scope."
         },
         {
+          "description": "Enables the get_db_last_modified command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:allow-get-db-last-modified",
+          "markdownDescription": "Enables the get_db_last_modified command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_enabled_features command without any pre-configured scope.",
           "type": "string",
           "const": "engine:allow-get-enabled-features",
           "markdownDescription": "Enables the get_enabled_features command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_oxigraph_last_modified command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:allow-get-oxigraph-last-modified",
+          "markdownDescription": "Enables the get_oxigraph_last_modified command without any pre-configured scope."
         },
         {
           "description": "Enables the import_db command without any pre-configured scope.",
@@ -4359,10 +4371,22 @@
           "markdownDescription": "Enables the import_db command without any pre-configured scope."
         },
         {
+          "description": "Enables the import_oxigraph command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:allow-import-oxigraph",
+          "markdownDescription": "Enables the import_oxigraph command without any pre-configured scope."
+        },
+        {
           "description": "Enables the initialize_data command without any pre-configured scope.",
           "type": "string",
           "const": "engine:allow-initialize-data",
           "markdownDescription": "Enables the initialize_data command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the initialize_oxigraph_data command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:allow-initialize-oxigraph-data",
+          "markdownDescription": "Enables the initialize_oxigraph_data command without any pre-configured scope."
         },
         {
           "description": "Enables the manual_backup command without any pre-configured scope.",
@@ -4371,10 +4395,22 @@
           "markdownDescription": "Enables the manual_backup command without any pre-configured scope."
         },
         {
+          "description": "Enables the manual_backup_oxigraph command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:allow-manual-backup-oxigraph",
+          "markdownDescription": "Enables the manual_backup_oxigraph command without any pre-configured scope."
+        },
+        {
           "description": "Enables the open_backup_folder command without any pre-configured scope.",
           "type": "string",
           "const": "engine:allow-open-backup-folder",
           "markdownDescription": "Enables the open_backup_folder command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the open_oxigraph_backup_folder command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:allow-open-oxigraph-backup-folder",
+          "markdownDescription": "Enables the open_oxigraph_backup_folder command without any pre-configured scope."
         },
         {
           "description": "Enables the seed_demo_data_cmd command without any pre-configured scope.",
@@ -4389,10 +4425,22 @@
           "markdownDescription": "Denies the clear_demo_data_cmd command without any pre-configured scope."
         },
         {
+          "description": "Denies the get_db_last_modified command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:deny-get-db-last-modified",
+          "markdownDescription": "Denies the get_db_last_modified command without any pre-configured scope."
+        },
+        {
           "description": "Denies the get_enabled_features command without any pre-configured scope.",
           "type": "string",
           "const": "engine:deny-get-enabled-features",
           "markdownDescription": "Denies the get_enabled_features command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_oxigraph_last_modified command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:deny-get-oxigraph-last-modified",
+          "markdownDescription": "Denies the get_oxigraph_last_modified command without any pre-configured scope."
         },
         {
           "description": "Denies the import_db command without any pre-configured scope.",
@@ -4401,10 +4449,22 @@
           "markdownDescription": "Denies the import_db command without any pre-configured scope."
         },
         {
+          "description": "Denies the import_oxigraph command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:deny-import-oxigraph",
+          "markdownDescription": "Denies the import_oxigraph command without any pre-configured scope."
+        },
+        {
           "description": "Denies the initialize_data command without any pre-configured scope.",
           "type": "string",
           "const": "engine:deny-initialize-data",
           "markdownDescription": "Denies the initialize_data command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the initialize_oxigraph_data command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:deny-initialize-oxigraph-data",
+          "markdownDescription": "Denies the initialize_oxigraph_data command without any pre-configured scope."
         },
         {
           "description": "Denies the manual_backup command without any pre-configured scope.",
@@ -4413,10 +4473,22 @@
           "markdownDescription": "Denies the manual_backup command without any pre-configured scope."
         },
         {
+          "description": "Denies the manual_backup_oxigraph command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:deny-manual-backup-oxigraph",
+          "markdownDescription": "Denies the manual_backup_oxigraph command without any pre-configured scope."
+        },
+        {
           "description": "Denies the open_backup_folder command without any pre-configured scope.",
           "type": "string",
           "const": "engine:deny-open-backup-folder",
           "markdownDescription": "Denies the open_backup_folder command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the open_oxigraph_backup_folder command without any pre-configured scope.",
+          "type": "string",
+          "const": "engine:deny-open-oxigraph-backup-folder",
+          "markdownDescription": "Denies the open_oxigraph_backup_folder command without any pre-configured scope."
         },
         {
           "description": "Denies the seed_demo_data_cmd command without any pre-configured scope.",
@@ -6819,6 +6891,12 @@
           "markdownDescription": "Enables the generate_embeddings_test command without any pre-configured scope."
         },
         {
+          "description": "Enables the get_pdf_files_in_folder command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:allow-get-pdf-files-in-folder",
+          "markdownDescription": "Enables the get_pdf_files_in_folder command without any pre-configured scope."
+        },
+        {
           "description": "Enables the index_parsed_specs command without any pre-configured scope.",
           "type": "string",
           "const": "rag:allow-index-parsed-specs",
@@ -6847,6 +6925,12 @@
           "type": "string",
           "const": "rag:deny-generate-embeddings-test",
           "markdownDescription": "Denies the generate_embeddings_test command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_pdf_files_in_folder command without any pre-configured scope.",
+          "type": "string",
+          "const": "rag:deny-get-pdf-files-in-folder",
+          "markdownDescription": "Denies the get_pdf_files_in_folder command without any pre-configured scope."
         },
         {
           "description": "Denies the index_parsed_specs command without any pre-configured scope.",
