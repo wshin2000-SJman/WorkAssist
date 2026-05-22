@@ -8580,18 +8580,23 @@ async function setupDbManager() {
                 progressStatus.textContent = '인입이 완료되었습니다!';
                 document.getElementById('db-ingest-loading').style.display = 'none';
 
-                if (result.success) {
-                    successCount = result.ingested_count;
-                    failCount = itemsToIngest.length - successCount;
-                    
-                    document.getElementById('db-stat-success').textContent = successCount;
-                    document.getElementById('db-stat-failed').textContent = failCount;
-                    
+                // Backend returns IngestResult { indexed_count, errors }
+                successCount = result.indexed_count || 0;
+                failCount = itemsToIngest.length - successCount;
+                
+                document.getElementById('db-stat-success').textContent = successCount;
+                document.getElementById('db-stat-failed').textContent = failCount;
+                
+                if (result.errors && result.errors.length > 0) {
+                    result.errors.forEach(errMsg => writeDbLog(`[경고] ${errMsg}`, true));
+                }
+                
+                if (successCount > 0) {
                     writeDbLog(`인입 완료! SQLite 및 LanceDB(벡터 인덱스) 적재 성공: ${successCount}건, 실패: ${failCount}건.`);
                     alert(`사양 데이터 인입 성공! (${successCount}개 항목 적재 완료)`);
                 } else {
-                    writeDbLog(`인입 실패: ${result.error_message || '알 수 없는 오류'}`, true);
-                    alert("인입 실행 중 에러 발생: " + result.error_message);
+                    writeDbLog(`인입 실패: 모든 항목에서 오류가 발생했습니다.`, true);
+                    alert("인입 실행 중 에러 발생: " + (result.errors ? result.errors.join(', ') : '알 수 없는 오류'));
                 }
 
                 // 검색 필터 dynamic 갱신
