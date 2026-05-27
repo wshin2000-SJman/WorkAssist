@@ -182,7 +182,7 @@ body {
   background-color: var(--bg-color);
   color: var(--text-primary);
   height: 100vh;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: hidden;
 }
 
@@ -190,7 +190,7 @@ body {
   display: flex;
   height: 100vh;
   background: transparent;
-  min-width: 1440px;
+  width: 100%;
 }
 
 /* Sidebar */
@@ -4134,4 +4134,43 @@ tr:has(.status-review) {
   justify-content: flex-start !important;
   text-align: left !important;
   gap: 8px !important;
+}
+
+/* Fallback for when backdrop-filter is not supported (e.g. no GPU hardware acceleration in WebView2) */
+@supports not (backdrop-filter: blur(1px)) {
+  :root {
+    --sidebar-bg: #0d1117;
+    --card-bg: rgba(255, 255, 255, 0.08);
+  }
+  .sidebar {
+    background: #0d1117 !important;
+  }
+  .welcome-card {
+    background: #141923 !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+  .login-overlay {
+    background-color: #080a0f !important;
+  }
+  .login-card {
+    background: #11151e !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  }
+  .modal-content {
+    background: #121620 !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  }
+  .chart-card {
+    background: #141923 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+  .timetable-tooltip, #chart-tooltip {
+    background: #161b26 !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    opacity: 1 !important;
+  }
+  .modal-content.large {
+    background: #121620 !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
 }
