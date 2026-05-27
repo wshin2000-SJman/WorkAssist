@@ -5,8 +5,11 @@ use crate::modules::kanban::KanbanModule;
 use crate::modules::minutes::MinutesModule;
 #[cfg(feature = "pm")]
 use crate::modules::pm::PmModule;
+#[cfg(feature = "orders")]
+use crate::modules::orders::OrdersModule;
 use crate::modules::auth::AuthModule;
 use crate::modules::gateway::GatewayModule;
+use crate::modules::motor::MotorModule;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -27,6 +30,10 @@ impl Api {
         AuthModule::new(self.storage.clone())
     }
 
+    pub fn motor(&self) -> MotorModule {
+        MotorModule::new(self.storage.clone())
+    }
+
     #[cfg(feature = "kanban")]
     pub fn kanban(&self) -> KanbanModule {
         KanbanModule::new(self.storage.clone())
@@ -40,6 +47,11 @@ impl Api {
     #[cfg(feature = "pm")]
     pub fn pm(&self) -> PmModule {
         PmModule::new(self.storage.clone())
+    }
+
+    #[cfg(feature = "orders")]
+    pub fn orders(&self) -> OrdersModule {
+        OrdersModule::new(self.storage.clone())
     }
 
     pub fn backup(&self) -> Result<(), String> {

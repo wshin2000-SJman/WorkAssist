@@ -53,6 +53,11 @@
     "pm:allow-update-status-log-deleted",
     "pm:allow-export-project-db",
     "pm:allow-import-project-db",
+    "orders:allow-get-orders",
+    "orders:allow-save-order",
+    "orders:allow-delete-order",
+    "orders:allow-import-excel-orders",
+    "orders:allow-export-excel-template",
     "gateway:allow-get-ai-ready-tasks",
     "gateway:allow-process-ai-response",
     "engine:allow-manual-backup",
@@ -84,6 +89,13 @@
     "knowledge:allow-query-knowledge",
     "knowledge:allow-get-graph-data",
     "knowledge:allow-delete-knowledge-entity",
-    "knowledge:allow-get-all-projects"
+    "knowledge:allow-get-all-projects",
+    "motor:allow-calculate-torque",
+    "motor:allow-calculate-inertia",
+    "motor:allow-convert-speed",
+    "motor:allow-calculate-angular-acceleration",
+    "motor:allow-calculate-combined-torque",
+    "motor:allow-calculate-motor-specs",
+    "motor:allow-calculate-rms-cycle"
   ]
 }

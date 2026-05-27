@@ -22,6 +22,8 @@ async fn get_enabled_features() -> Vec<String> {
     features.push("minutes".to_string());
     #[cfg(feature = "pm")]
     features.push("pm".to_string());
+    #[cfg(feature = "orders")]
+    features.push("orders".to_string());
     #[cfg(feature = "rag")]
     features.push("rag".to_string());
     features
@@ -307,6 +309,7 @@ fn main() {
     // Register Business Plugins
     builder = builder.plugin(crate::modules::auth::init());
     builder = builder.plugin(crate::modules::gateway::init());
+    builder = builder.plugin(crate::modules::motor::init());
 
     #[cfg(feature = "kanban")]
     {
@@ -321,6 +324,11 @@ fn main() {
     #[cfg(feature = "pm")]
     {
         builder = builder.plugin(crate::modules::pm::init());
+    }
+
+    #[cfg(feature = "orders")]
+    {
+        builder = builder.plugin(crate::modules::orders::init());
     }
 
     #[cfg(feature = "rag")]

@@ -104,3 +104,37 @@ pub struct StatusLog {
     #[serde(default)]
     pub is_deleted: bool,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Order {
+    pub id: Option<i64>,
+    pub owner_id: Option<i64>,
+    
+    // 수주매출 현황 (21개 컬럼)
+    pub order_date: Option<String>,
+    pub project_code: Option<String>,
+    pub category: Option<String>,
+    pub client: String,
+    pub client_po_num: Option<String>,
+    pub product_name: Option<String>,
+    pub client_manager: Option<String>,
+    pub sales_manager: Option<String>,
+    pub request_date: Option<String>,
+    pub purchase_place: Option<String>,
+    pub qty: Option<i64>,
+    pub order_price: Option<i64>,
+    pub order_amount: Option<i64>,
+    pub estimate_delivery_date: Option<String>,
+    pub actual_delivery_date: Option<String>,
+    pub tax_invoice_1: Option<String>,
+    pub tax_invoice_2: Option<String>,
+    pub settlement_1: Option<i64>,
+    pub settlement_2: Option<i64>,
+    pub description: Option<String>,
+    
+    pub status: String,
+    pub created_at: String,
+    #[serde(default)]
+    pub is_deleted: bool,
+}
+

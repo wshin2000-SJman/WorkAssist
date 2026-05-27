@@ -34,7 +34,7 @@ arrow-schema = "58.0"
 oxigraph = "0.5"
 ort = "2.0.0-rc.12"
 ndarray = "0.17"
-calamine = { version = "0.26", features = ["chrono"] }
+calamine = { version = "0.26", features = ["dates"] }
 
 
 
@@ -45,8 +45,16 @@ tauri-build = { version = "2.0.0", features = [] }
 tempfile = "3.10"
 
 [features]
-default = ["kanban", "minutes", "pm", "rag"]
+default = ["kanban", "minutes", "pm", "orders", "rag"]
 kanban = []
 minutes = []
 pm = []
+orders = []
 rag = []
+
+[profile.release]
+opt-level = "z"       # 크기 및 용량 중심 압축 최적화
+lto = true            # Link-Time Optimization 활성화 (미사용 백엔드 코드 제거)
+codegen-units = 1     # 코드 생성 단위를 1로 제한하여 LTO 성능 시너지 극대화
+panic = "abort"       # 패닉 언와인딩 정보 스택 제거 (크기 감축)
+strip = true          # 심볼 정보 및 디버그 메타데이터 완전 제거

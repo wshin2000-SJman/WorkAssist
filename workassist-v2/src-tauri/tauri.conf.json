@@ -27,7 +27,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis", "msi"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -37,7 +37,16 @@
     ],
     "resources": {
       "bin/jre": "bin/jre",
-      "bin/opendataloader-pdf-cli.jar": "bin/opendataloader-pdf-cli.jar"
+      "bin/opendataloader-pdf-cli.jar": "bin/opendataloader-pdf-cli.jar",
+      "../scripts/order_template.xlsx": "scripts/order_template.xlsx"
+    },
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "installMode": "perMachine",
+        "languages": ["Korean"]
+      }
     }
   }
 }

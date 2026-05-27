@@ -8,6 +8,8 @@ pub mod kanban;
 pub mod minutes;
 #[cfg(feature = "pm")]
 pub mod pm;
+#[cfg(feature = "orders")]
+pub mod orders;
 #[cfg(feature = "rag")]
 pub mod rag;
 #[cfg(feature = "rag")]
@@ -15,3 +17,4 @@ pub mod embedding;
 #[cfg(feature = "rag")]
 pub mod knowledge;
 
+pub mod motor;

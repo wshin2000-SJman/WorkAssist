@@ -103,10 +103,16 @@
           <span class="nav-icon">🤖</span> PDF & Excel 파싱
         </a>
         <a href="#" class="nav-item" id="nav-db-manager">
-          <span class="nav-icon">🗄️</span> DB관리자
+          <span class="nav-icon">🗄️</span> 제품DB 관리자
+        </a>
+        <a href="#" class="nav-item" id="nav-order-db">
+          <span class="nav-icon">💼</span> 수주DB 관리자
         </a>
         <a href="#" class="nav-item" id="nav-history">
           <span class="nav-icon">📜</span> 히스토리 관리자
+        </a>
+        <a href="#" class="nav-item" id="nav-motor-calc">
+          <span class="nav-icon">⚙️</span> 모터사양 계산기
         </a>
       </nav>
       <div class="sidebar-footer">
@@ -799,36 +805,6 @@
               </div>
             </div>
 
-            <!-- Offline Semantic Search Card -->
-            <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; display: flex; flex-direction: column; gap: 20px;">
-              <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 4px;">🔍 오프라인 동적 시맨틱 검색 (하이브리드 벡터 + 메타데이터)</h3>
-              <p class="settings-desc" style="margin-bottom: 10px; color: var(--text-secondary);">LanceDB 및 SQLite 기반으로 로컬에 인덱싱된 사양 데이터베이스에서 실시간 시맨틱 쿼리 검색을 실행합니다.</p>
-              
-              <!-- Search Row -->
-              <div style="display: flex; gap: 12px; align-items: center;">
-                <div style="flex: 1;">
-                  <input type="text" id="rag-search-query" placeholder="키워드를 입력하거나 질문을 작성해 주세요 (예: '48V 프레임 서보 모터' 또는 '정격 토크 2.4 Nm')" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                  <label for="rag-search-limit" style="font-size: 13px; color: var(--text-secondary);">검색 개수:</label>
-                  <select id="rag-search-limit" style="width: 70px; height: 42px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
-                    <option value="3">3</option>
-                    <option value="5" selected>5</option>
-                    <option value="10">10</option>
-                  </select>
-                </div>
-                <button id="btn-rag-search" class="btn btn-primary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 20px;">
-                  <span>🔍</span> 벡터 검색
-                </button>
-              </div>
-
-              <!-- Search Results Display -->
-              <div id="rag-search-results" style="display: flex; flex-direction: column; gap: 16px; max-height: 500px; overflow-y: auto; padding-right: 4px;">
-                <div style="color: var(--text-secondary); text-align: center; padding: 40px 0; border: 1px dashed var(--card-border); border-radius: 10px; background: rgba(0,0,0,0.1); font-size: 13px;">
-                  아직 검색이 실행되지 않았습니다. 상단에 검색어를 입력하여 동적 하이브리드 검색을 실행해 보세요!
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -1016,6 +992,333 @@
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order DB Manager View -->
+        <div class="view hidden" id="view-order-db">
+          <style>
+            .form-tab {
+              background: transparent;
+              border: none;
+              padding: 10px 16px;
+              color: var(--text-secondary);
+              cursor: pointer;
+              font-size: 13px;
+              font-weight: 600;
+              border-bottom: 2px solid transparent;
+              transition: all 0.2s;
+            }
+            .form-tab:hover {
+              color: var(--text-primary);
+            }
+            .form-tab.active {
+              color: var(--accent-color) !important;
+              border-bottom: 2px solid var(--accent-color) !important;
+            }
+            .form-panel {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+            }
+            /* Custom Wide Scrollable Spreadsheet styling */
+            .order-grid-th {
+              padding: 12px 10px;
+              font-weight: 600;
+              white-space: nowrap;
+              border-bottom: 1px solid var(--card-border);
+              font-size: 12.5px;
+            }
+            .order-grid-td {
+              padding: 10px 8px;
+              font-size: 12.5px;
+              white-space: nowrap;
+              text-overflow: ellipsis;
+              overflow: hidden;
+              border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            }
+          </style>
+
+          <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; text-align: left; width: 100%; max-width: 1300px;">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <h2 style="margin: 0;">💼 수주DB 관리자</h2>
+              <p class="view-desc" style="margin: 0; text-align: left; line-height: 1.6; white-space: normal; color: var(--text-secondary);">
+                로컬 수주 고립 데이터베이스(SQLite)에 신규 수주 건을 등록/수정하며, 월별 수주 및 매출 비교 차트 대시보드를 실시간 조회합니다.
+              </p>
+            </div>
+            <!-- Export / Import Control Buttons -->
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button id="btn-export-excel-template" class="btn btn-secondary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 16px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                <span>📥</span> 양식 내보내기
+              </button>
+              <button id="btn-import-excel-orders" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 16px; border-radius: 8px; background: var(--accent-color); border: none;">
+                <span>📊</span> 엑셀 가져오기
+              </button>
+            </div>
+          </div>
+
+          <!-- 1. Comparison Chart Dashboard Card -->
+          <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; margin-bottom: 24px; max-width: 1300px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+              <h3 style="margin: 0; color: var(--text-primary); font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                📊 월별 수주 및 매출 추이 비교 (차트)
+              </h3>
+              <!-- Legend & Year select -->
+              <div style="display: flex; gap: 16px; align-items: center;">
+                <div style="display: flex; gap: 12px; font-size: 11px; color: var(--text-secondary);">
+                  <span style="display: flex; align-items: center; gap: 4px;">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #bd93f9; border-radius: 2px;"></span> 수주금액
+                  </span>
+                  <span style="display: flex; align-items: center; gap: 4px;">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #50fa7b; border-radius: 2px;"></span> 매출금액
+                  </span>
+                </div>
+                <select id="select-chart-year" class="form-select" style="width: 100px; height: 30px; font-size: 12.5px; background-color: rgba(255, 255, 255, 0.06); padding: 4px 24px 4px 8px; border-radius: 6px; color: var(--text-color);">
+                  <option value="2026" selected>2026년</option>
+                  <option value="2025">2025년</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- SVG Chart drawing wrapper -->
+            <div id="order-chart-container" style="width: 100%; height: 220px; background: rgba(0, 0, 0, 0.2); border-radius: 10px; border: 1px solid var(--card-border); overflow: hidden;">
+              <!-- Drawn by renderOrdersChart() inside app.js -->
+            </div>
+          </div>
+
+          <!-- Metrics Summary Row -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; max-width: 1300px;">
+            <div class="stat-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 18px 20px; border-radius: 12px; text-align: left; display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">누적 수주금액</span>
+              <span id="order-stat-total-amount" style="font-size: 22px; color: var(--accent-color); font-weight: 700;">₩0</span>
+            </div>
+            <div class="stat-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 18px 20px; border-radius: 12px; text-align: left; display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">누적 매출금액</span>
+              <span id="order-stat-total-revenue" style="font-size: 22px; color: #50fa7b; font-weight: 700;">₩0</span>
+            </div>
+            <div class="stat-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 18px 20px; border-radius: 12px; text-align: left; display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">총 수주 건수</span>
+              <span id="order-stat-total-count" style="font-size: 22px; color: var(--text-primary); font-weight: 700;">0건</span>
+            </div>
+            <div class="stat-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 18px 20px; border-radius: 12px; text-align: left; display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">미수금 대기 건수</span>
+              <span id="order-stat-uncollected-count" style="font-size: 22px; color: #ff5555; font-weight: 700;">0건</span>
+            </div>
+          </div>
+
+          <!-- Main Layout Split Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 2.4fr; gap: 24px; max-width: 1300px; align-items: start; margin-bottom: 40px;">
+            
+            <!-- Left Side: Register/Edit Form -->
+            <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 20px; border-radius: 16px; text-align: left; display: flex; flex-direction: column; gap: 12px;">
+              <h3 id="order-form-title" style="margin: 0; color: var(--accent-color); font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 6px;">✍️ 수주 등록</h3>
+              
+              <input type="hidden" id="order-id-input">
+              
+              <!-- Tab Navigation -->
+              <div style="display: flex; border-bottom: 1px solid var(--card-border); margin-bottom: 8px; gap: 2px;">
+                <button type="button" class="form-tab active" data-form-tab="basic">기본 정보</button>
+                <button type="button" class="form-tab" data-form-tab="pricing">정산 정보</button>
+                <button type="button" class="form-tab" data-form-tab="delivery">계산서/일정</button>
+              </div>
+
+              <!-- 2.1 Basic Panel -->
+              <div id="form-panel-basic" class="form-panel">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">구분</label>
+                    <select id="order-category" class="form-select" style="width: 100%; height: 36px; background-color: rgba(255,255,255,0.06); padding: 4px 10px; border-radius: 6px; font-size: 13px;">
+                      <option value="상품" selected>상품</option>
+                      <option value="제품">제품</option>
+                      <option value="용역">용역</option>
+                      <option value="기타">기타</option>
+                    </select>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">수주일자</label>
+                    <input type="date" id="order-date" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px; color-scheme: dark;">
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 12px; color: var(--text-secondary);">프로젝트코드</label>
+                  <input type="text" id="order-project-code" placeholder="예: DGD-22370" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px;">
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 12px; color: var(--text-secondary);">고객사 <span style="color:var(--accent-color);">*</span></label>
+                  <input type="text" id="order-client" placeholder="예: 베큠월드" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px;">
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 12px; color: var(--text-secondary);">고객 발주번호</label>
+                  <input type="text" id="order-client-po-num" placeholder="예: SJPS22010" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px;">
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 12px; color: var(--text-secondary);">제품명 (모델명)</label>
+                  <input type="text" id="order-product-name" placeholder="예: M21NRXB-LSS-NS-08" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">고객 담당자</label>
+                    <input type="text" id="order-client-manager" placeholder="예: 장장철" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px;">
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">영업담당자</label>
+                    <input type="text" id="order-sales-manager" placeholder="예: 정영화" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2.2 Pricing Panel -->
+              <div id="form-panel-pricing" class="form-panel" style="display: none;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 12px; color: var(--text-secondary);">매입처</label>
+                  <input type="text" id="order-purchase-place" placeholder="예: Kollmorgen" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 10px;">
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">수량</label>
+                    <input type="number" id="order-qty" placeholder="0" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px;">
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">수주단가 (원)</label>
+                    <input type="number" id="order-price" placeholder="0" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px;">
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 12px; color: var(--text-secondary);">수주금액 (원) <span style="font-size:11px; color:#50fa7b;">(수량*단가 자동계산)</span></label>
+                  <input type="number" id="order-amount" placeholder="0" readonly style="width: 100%; box-sizing: border-box; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border); color: var(--accent-color); padding: 8px 10px; border-radius: 6px; font-size: 13px; font-weight: 600;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">1차 정산금 (원)</label>
+                    <input type="number" id="order-settlement-1" placeholder="0" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px;">
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">2차 정산금 (원)</label>
+                    <input type="number" id="order-settlement-2" placeholder="0" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2.3 Delivery Panel -->
+              <div id="form-panel-delivery" class="form-panel" style="display: none;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">납품요청일</label>
+                    <input type="date" id="order-request-date" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px; color-scheme: dark;">
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">납품 예정일</label>
+                    <input type="date" id="order-estimate-delivery-date" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px; color-scheme: dark;">
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 12px; color: var(--text-secondary);">실제 납품일</label>
+                  <input type="date" id="order-actual-delivery-date" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px; color-scheme: dark;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">1차 계산서 발행일</label>
+                    <input type="date" id="order-tax-invoice-1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px; color-scheme: dark;">
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">2차 계산서 발행일</label>
+                    <input type="date" id="order-tax-invoice-2" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px; color-scheme: dark;">
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 10px;">
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary);">진행 상태</label>
+                    <select id="order-status" class="form-select" style="width: 100%; height: 36px; background-color: rgba(255, 255, 255, 0.06); padding: 4px 10px; border-radius: 6px; font-size: 13px;">
+                      <option value="대기" selected>대기</option>
+                      <option value="진행중">진행중</option>
+                      <option value="완료">완료</option>
+                      <option value="보류">보류</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 12px; color: var(--text-secondary);">비고 (설명)</label>
+                  <textarea id="order-description" placeholder="특이사항 및 비고 기재" style="width: 100%; height: 50px; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 10px; border-radius: 6px; font-size: 13px; font-family: inherit; resize: none;"></textarea>
+                </div>
+              </div>
+
+              <!-- Buttons -->
+              <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button id="btn-save-order" class="btn btn-primary" style="flex: 1; height: 38px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                  <span>💾</span> 저장하기
+                </button>
+                <button id="btn-cancel-order-edit" class="btn btn-secondary" style="height: 38px; display: none; align-items: center; justify-content: center; width: 60px;">
+                  취소
+                </button>
+              </div>
+            </div>
+
+            <!-- Right Side: Data Grid Table Spreadsheet-like -->
+            <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 20px; border-radius: 16px; text-align: left; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <h3 style="margin: 0; color: var(--text-primary); font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                  💼 수주 대장 상세 목록 (21개 컬럼 브라우저)
+                </h3>
+                <!-- Filters -->
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <select id="filter-order-status" class="form-select" style="width: 110px; height: 32px; padding: 4px 24px 4px 8px; font-size: 12.5px; background-color: rgba(255, 255, 255, 0.06); border-radius: 6px;">
+                    <option value="all">모든 상태</option>
+                    <option value="대기">대기</option>
+                    <option value="진행중">진행중</option>
+                    <option value="완료">완료</option>
+                    <option value="보류">보류</option>
+                  </select>
+                  <input type="text" id="search-order" placeholder="고객사/제품명/프로젝트코드 검색..." style="height: 32px; width: 220px; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 0 10px; border-radius: 6px; font-size: 12.5px;">
+                </div>
+              </div>
+
+              <!-- Wide Table wrapper with Horizontal Scrolling -->
+              <div style="overflow-x: auto; border: 1px solid var(--card-border); border-radius: 10px; background: rgba(0, 0, 0, 0.15); min-height: 350px; max-height: 480px; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12.5px; color: var(--text-primary); table-layout: fixed;">
+                  <thead>
+                    <tr style="background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid var(--card-border); position: sticky; top: 0; z-index: 10;">
+                      <th class="order-grid-th" style="width: 50px; text-align: center;">관리</th>
+                      <th class="order-grid-th" style="width: 90px; text-align: center;">수주일자</th>
+                      <th class="order-grid-th" style="width: 110px;">프로젝트코드</th>
+                      <th class="order-grid-th" style="width: 70px; text-align: center;">구분</th>
+                      <th class="order-grid-th" style="width: 140px;">고객사</th>
+                      <th class="order-grid-th" style="width: 120px;">고객 발주번호</th>
+                      <th class="order-grid-th" style="width: 180px;">제품명 (모델명)</th>
+                      <th class="order-grid-th" style="width: 90px; text-align: center;">고객 담당자</th>
+                      <th class="order-grid-th" style="width: 90px; text-align: center;">영업담당자</th>
+                      <th class="order-grid-th" style="width: 90px; text-align: center;">납품요청일</th>
+                      <th class="order-grid-th" style="width: 120px;">매입처</th>
+                      <th class="order-grid-th" style="width: 60px; text-align: center;">수량</th>
+                      <th class="order-grid-th" style="width: 100px; text-align: right;">수주단가</th>
+                      <th class="order-grid-th" style="width: 110px; text-align: right; color: var(--accent-color);">수주금액</th>
+                      <th class="order-grid-th" style="width: 90px; text-align: center;">납품 예정일</th>
+                      <th class="order-grid-th" style="width: 90px; text-align: center;">실제 납품일</th>
+                      <th class="order-grid-th" style="width: 95px; text-align: center;">1차 계산서</th>
+                      <th class="order-grid-th" style="width: 95px; text-align: center;">2차 계산서</th>
+                      <th class="order-grid-th" style="width: 110px; text-align: right; color: #50fa7b;">1차 정산금</th>
+                      <th class="order-grid-th" style="width: 110px; text-align: right; color: #50fa7b;">2차 정산금</th>
+                      <th class="order-grid-th" style="width: 80px; text-align: center;">진행상태</th>
+                      <th class="order-grid-th" style="width: 180px;">비고</th>
+                    </tr>
+                  </thead>
+                  <tbody id="order-table-body">
+                    <!-- Dynamic Rows Injected by JS -->
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -1220,6 +1523,509 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Motor Spec & Torque Calculator View (Initially Hidden) -->
+        <div class="view hidden" id="view-motor-calc">
+          <div class="view-header" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; margin-bottom: 24px; text-align: left;">
+            <h2 style="margin: 0; color: var(--accent-color); font-size: 26px; font-weight: 800;">⚙️ 모터사양 및 토크 계산기</h2>
+            <p class="view-desc" style="margin: 0; text-align: left; line-height: 1.6; color: var(--text-secondary);">
+              삼정 오토메이션 모터 토크 계산 가이드를 기반으로 한 물리 연산 웹 도구입니다.<br>
+              가속/중력 부하 및 모터 권선 스펙(B-EMF) 분석, RMS 듀티 사이클에 따른 연속 출력 파워를 즉시 모의 연산합니다.
+            </p>
+          </div>
+
+          <!-- Quick Presets Row -->
+          <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 16px 20px; border-radius: 16px; margin-bottom: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 13px; font-weight: 700; color: var(--accent-color);">📋 PDF 예제 불러오기:</span>
+            <button class="btn btn-secondary btn-sm" id="btn-preset-torque" style="font-size: 12px; padding: 6px 12px; height: auto;">가속 토크 (0.5kg·㎡ / 4rad/s²)</button>
+            <button class="btn btn-secondary btn-sm" id="btn-preset-combined" style="font-size: 12px; padding: 6px 12px; height: auto;">가속+중력 (30deg 경사 / 1kg / 1m)</button>
+            <button class="btn btn-secondary btn-sm" id="btn-preset-motor" style="font-size: 12px; padding: 6px 12px; height: auto;">모터 사양 (320V 공급 / RBE Winding C)</button>
+            <button class="btn btn-secondary btn-sm" id="btn-preset-rms" style="font-size: 12px; padding: 6px 12px; height: auto;">RMS 4초 주기 (1Nm 가속-등속-감속)</button>
+          </div>
+
+          <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px;">
+            <!-- Sub-Tab Navigation -->
+            <div class="view-tabs" id="motor-calc-tabs" style="margin-bottom: 24px;">
+              <button class="view-tab active" data-motor-tab="torque">🌀 회전 토크 (T = J × α)</button>
+              <button class="view-tab" data-motor-tab="inertia">🔩 관성 모멘트 (J = m × r²)</button>
+              <button class="view-tab" data-motor-tab="speed">🔄 속도/각속도 & 각가속도</button>
+              <button class="view-tab" data-motor-tab="combined">⚖️ 가속도 + 중력 합산</button>
+              <button class="view-tab" data-motor-tab="specs">⚡ 모터 사양 및 전류</button>
+              <button class="view-tab" data-motor-tab="rms">📈 RMS 토크 & 파워</button>
+            </div>
+
+            <!-- ===== 1. ROTATIONAL TORQUE PANEL ===== -->
+            <div id="panel-motor-torque" class="motor-tab-panel">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">🌀 회전 운동 토크 기본 공식</h4>
+                <div style="font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #fff;">
+                  T = J · α
+                </div>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                  <li><strong>T (토크)</strong>: 회전시키기 위해 가해야 하는 힘 (단위: <strong>Nm</strong>)</li>
+                  <li><strong>J (관성 모멘트)</strong>: 회전 운동에 저항하는 질량의 크기 (단위: <strong>kg·㎡</strong>)</li>
+                  <li><strong>α (각가속도)</strong>: 회전 속도의 초당 변화량 (단위: <strong>rad/s²</strong>)</li>
+                  <li><strong>단위 환산</strong>: 1 Nm = 100 Ncm = 10.197 kgf·cm (1 kgf·cm ≈ 0.098 Nm)</li>
+                </ul>
+              </div>
+
+              <!-- Input / Output Grid -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                <!-- Inputs Group -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border);">
+                  <h4 style="margin-top: 0; margin-bottom: 16px; font-size: 14px; color: var(--text-primary);">📥 입력값 설정</h4>
+                  <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">관성 모멘트 J (kg·m²)</label>
+                    <input type="number" id="input-torque-inertia" value="0.5" step="0.01" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px;">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">각가속도 α (rad/s²)</label>
+                    <input type="number" id="input-torque-accel" value="4" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px;">
+                  </div>
+                  <button id="btn-calc-torque" class="btn btn-primary btn-block" style="display: flex; align-items: center; justify-content: center; height: 42px;">⚡ 토크 계산하기</button>
+                </div>
+
+                <!-- Outputs Group -->
+                <div style="background: rgba(166, 227, 161, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(166, 227, 161, 0.2); height: 100%; box-sizing: border-box;">
+                  <h4 style="margin-top: 0; margin-bottom: 16px; font-size: 14px; color: var(--brand-green);">🏆 계산 결과</h4>
+                  <div style="display: flex; flex-direction: column; gap: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                      <span style="font-size: 13px; color: var(--text-secondary);">회전 토크 (Nm)</span>
+                      <span id="output-torque-nm" style="font-size: 20px; font-weight: 800; color: #fff;">2.000 Nm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                      <span style="font-size: 13px; color: var(--text-secondary);">회전 토크 (Ncm)</span>
+                      <span id="output-torque-ncm" style="font-size: 16px; font-weight: 700; color: var(--text-primary);">200.0 Ncm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px;">
+                      <span style="font-size: 13px; color: var(--text-secondary);">회전 토크 (kgf·cm)</span>
+                      <span id="output-torque-kgfcm" style="font-size: 18px; font-weight: 800; color: var(--brand-green);">20.394 kgf·cm</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 2. INERTIA PANEL ===== -->
+            <div id="panel-motor-inertia" class="motor-tab-panel" style="display: none;">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">🔩 질량 및 형상별 관성 모멘트 공식</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary); display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px;">
+                  <li><strong>1점 관성 / 얇은 링</strong>: J = m × r²</li>
+                  <li><strong>원판 / 실린더 회전축</strong>: J = 1/2 × M × R²</li>
+                  <li><strong>원통 가로축 (중심 회전)</strong>: J = 1/4 × M × R² + 1/12 × M × L²</li>
+                  <li><strong>원통 가로축 (끝단 회전)</strong>: J = 1/4 × M × R² + 1/3 × M × L²</li>
+                </ul>
+                <div style="margin-top: 8px; font-size: 12px; color: var(--brand-yellow); font-weight: 500;">
+                  ⚠️ 주의: 모든 수치(mm, g)는 계산 전 내부적으로 미터(m) 및 킬로그램(kg) 단위로 자동 변환됩니다.
+                </div>
+              </div>
+
+              <!-- Inertia Options -->
+              <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start;">
+                <!-- Selection & Config Panel -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 16px;">
+                  <h4 style="margin-top: 0; margin-bottom: 0; font-size: 14px; color: var(--text-primary);">📥 형상 및 수치 입력</h4>
+                  
+                  <div class="form-group">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">물체 형상 선택</label>
+                    <select id="select-inertia-shape" class="form-select" style="width: 100%; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                      <option value="point_mass">1점 관성 / 얇은 링 (J = m × r²)</option>
+                      <option value="disc">원판 / 실린더 회전축 (J = 1/2 × M × R²)</option>
+                      <option value="cylinder_center">원통 가로축 (중심축 회전) (J = 1/4 × M × R² + 1/12 × M × L²)</option>
+                      <option value="cylinder_end">원통 가로축 (끝단 회전) (J = 1/4 × M × R² + 1/3 × M × L²)</option>
+                      <option value="multiple_points">다중 1점 관성 합산 (Σ m_i × r_i²)</option>
+                    </select>
+                  </div>
+
+                  <!-- Shape Parameters Group -->
+                  <div id="inertia-params-basic" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div class="form-group">
+                        <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">질량 (M)</label>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                          <input type="number" id="input-inertia-mass" value="1.0" step="0.1" style="flex: 1; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px;">
+                          <select id="unit-inertia-mass" class="form-select" style="width: 60px; height: 34px; padding: 4px; font-size: 12px; border-radius: 8px;">
+                            <option value="kg" selected>kg</option>
+                            <option value="g">g</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">반지름/거리 (R)</label>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                          <input type="number" id="input-inertia-radius" value="1.0" step="0.1" style="flex: 1; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px;">
+                          <select id="unit-inertia-radius" class="form-select" style="width: 60px; height: 34px; padding: 4px; font-size: 12px; border-radius: 8px;">
+                            <option value="m" selected>m</option>
+                            <option value="cm">cm</option>
+                            <option value="mm">mm</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Cylinder length (only visible when cylinder center/end selected) -->
+                    <div class="form-group" id="group-inertia-length" style="display: none;">
+                      <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">원통 전체 길이 (L)</label>
+                      <div style="display: flex; align-items: center; gap: 4px;">
+                        <input type="number" id="input-inertia-length" value="0.5" step="0.1" style="flex: 1; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px;">
+                        <select id="unit-inertia-length" class="form-select" style="width: 60px; height: 34px; padding: 4px; font-size: 12px; border-radius: 8px;">
+                          <option value="m" selected>m</option>
+                          <option value="cm">cm</option>
+                          <option value="mm">mm</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Multiple Point Inertia Table (Only visible when selected) -->
+                  <div id="inertia-params-multiple" style="display: none; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <label style="font-size: 13px; font-weight: 700; color: var(--text-primary);">지점 목록</label>
+                      <button id="btn-inertia-add-point" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 11px;">+ 지점 추가</button>
+                    </div>
+                    <div style="max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; border: 1px solid var(--card-border);">
+                      <table style="width:100%; font-size:12px; border-collapse: collapse; text-align: left;" id="table-inertia-points">
+                        <thead>
+                          <tr style="border-bottom: 1px solid var(--card-border); color: var(--text-secondary);">
+                            <th style="padding: 4px;">무게</th>
+                            <th style="padding: 4px;">축과의 거리</th>
+                            <th style="padding: 4px; text-align: right;">삭제</th>
+                          </tr>
+                        </thead>
+                        <tbody id="tbody-inertia-points">
+                          <!-- JS dynamic insertion -->
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <button id="btn-calc-inertia" class="btn btn-primary btn-block" style="display: flex; align-items: center; justify-content: center; height: 42px;">⚡ 관성 모멘트 계산</button>
+                </div>
+
+                <!-- Result Display Panel -->
+                <div style="background: rgba(166, 227, 161, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(166, 227, 161, 0.2); height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+                  <h4 style="margin-top: 0; margin-bottom: 0; font-size: 14px; color: var(--brand-green);">🏆 관성 모멘트 결과</h4>
+                  <div style="text-align: center; padding: 20px 10px; background: rgba(0,0,0,0.15); border-radius: 10px; border: 1px solid var(--card-border);">
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">계산된 관성치 J</div>
+                    <div id="output-inertia-value" style="font-size: 26px; font-weight: 800; color: var(--brand-green);">1.0000 kg·m²</div>
+                    <div id="output-inertia-detail" style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">질량: 1.00 kg | 거리: 1.00 m</div>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--text-secondary); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;">
+                    <div style="display: flex; justify-content: space-between;">
+                      <span>단위 환산 J (kg·cm²):</span>
+                      <span id="output-inertia-kgcm" style="font-weight: bold; color: #fff;">10,000.00 kg·cm²</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                      <span>단위 환산 J (g·cm²):</span>
+                      <span id="output-inertia-gcm" style="font-weight: bold; color: #fff;">10,000,000.00 g·cm²</span>
+                    </div>
+                  </div>
+                  <button id="btn-inertia-apply" class="btn btn-secondary btn-sm btn-block" style="margin-top: auto; font-size: 12px; height: 34px;">이 관성치를 [1번 탭(회전 토크)] 입력에 적용</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 3. SPEED & ANGULAR ACCELERATION PANEL ===== -->
+            <div id="panel-motor-speed" class="motor-tab-panel" style="display: none;">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">🔄 속도/각속도 환산 및 각가속도 기본 공식</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                  <li><strong>각속도 (ω)</strong>: 회전 각 변화 비율. ω = Δθ / Δt (단위: <strong>rad/s</strong>)</li>
+                  <li><strong>RPM ⇄ rad/sec 환산</strong>: 1 rad/sec ≈ 9.55 rpm (1 rpm ≈ 0.105 rad/sec)</li>
+                  <li><strong>deg/sec ⇄ rad/sec 환산</strong>: 1 rad/sec ≈ 57.3 deg/sec (1 deg/sec ≈ 0.0175 rad/sec)</li>
+                  <li><strong>각가속도 (α)</strong>: 각속도의 변화율. α = (ω_final - ω_initial) / Δt (단위: <strong>rad/s²</strong>)</li>
+                </ul>
+              </div>
+
+              <!-- Speed converters and Acceleration solver side-by-side -->
+              <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; align-items: start;">
+                <!-- Speed Converter Block -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 14px;">
+                  <h4 style="margin-top: 0; margin-bottom: 4px; font-size: 14px; color: var(--text-primary);">🔀 각속도 단위 간편 변환</h4>
+                  <div class="form-group">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">변환할 수치 입력</label>
+                    <div style="display: flex; gap: 8px;">
+                      <input type="number" id="input-conv-val" value="1.0" step="0.1" style="flex: 1; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px;">
+                      <select id="select-conv-from" class="form-select" style="width: 100px; height: 42px;">
+                        <option value="rads" selected>rad/sec</option>
+                        <option value="rpm">rpm</option>
+                        <option value="degs">deg/sec</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 16px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--card-border); margin-top: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">rad/sec</span>
+                      <span id="output-speed-rads" style="font-weight: bold; color: #fff;">1.000 rad/sec</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">rpm</span>
+                      <span id="output-speed-rpm" style="font-weight: bold; color: #fff;">9.549 rpm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">deg/sec</span>
+                      <span id="output-speed-degs" style="font-weight: bold; color: #fff;">57.296 deg/sec</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Angular Acceleration Solver Block -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 12px;">
+                  <h4 style="margin-top: 0; margin-bottom: 4px; font-size: 14px; color: var(--text-primary);">🧮 각가속도 (α) 계산기</h4>
+                  
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">속도 단위</label>
+                      <select id="select-accelsolver-unit" class="form-select" style="width: 100%; height: 34px; padding: 4px; font-size: 12px;">
+                        <option value="rads" selected>rad/sec</option>
+                        <option value="rpm">rpm</option>
+                        <option value="degs">deg/sec</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">가속 시간 (초)</label>
+                      <input type="number" id="input-accelsolver-time" value="1.0" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 7px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">초기 회전속도 (ω₀)</label>
+                      <input type="number" id="input-accelsolver-v0" value="0.0" step="1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 7px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">최종 회전속도 (ωₜ)</label>
+                      <input type="number" id="input-accelsolver-vt" value="4.0" step="1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 7px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                  </div>
+
+                  <!-- Solver Results Display -->
+                  <div style="background: rgba(166, 227, 161, 0.05); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(166, 227, 161, 0.2); display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-size: 12px; color: var(--text-secondary);">도출된 각가속도 α</span>
+                      <span id="output-accelsolver-val" style="font-size: 16px; font-weight: 800; color: var(--brand-green);">4.000 rad/s²</span>
+                    </div>
+                  </div>
+
+                  <button id="btn-accelsolver-apply" class="btn btn-secondary btn-sm btn-block" style="font-size: 11px; height: 32px;">이 각가속도를 [1번 탭(회전 토크)] 입력에 적용</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 4. COMBINED ACCEL & GRAVITY PANEL ===== -->
+            <div id="panel-motor-combined" class="motor-tab-panel" style="display: none;">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">⚖️ 가속 부하와 중력 부하 합산 공식</h4>
+                <div style="font-family: 'Courier New', monospace; font-size: 15px; font-weight: bold; margin-bottom: 8px; color: #fff;">
+                  T_total = T_a + T_g
+                </div>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                  <li><strong>가속 토크 (T_a)</strong>: J × α = (m × d²) × α (회전축에 매달린 링크를 가속하는 데 필요한 회전력)</li>
+                  <li><strong>중력 토크 (T_g)</strong>: m × g × d × cos(θ) (암의 중력 하중 토크, g = 9.8 m/s²)</li>
+                  <li><strong>각도 (θ)</strong>: 지면 수평면 기준 회전 암 각도 (0°가 완전 수평, 90°는 완전 수직)</li>
+                </ul>
+              </div>
+
+              <!-- Input / Output Grid -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                <!-- Inputs Group -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 14px;">
+                  <h4 style="margin-top: 0; margin-bottom: 4px; font-size: 14px; color: var(--text-primary);">📥 암 스펙 설정</h4>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">끝단 질량 (m - kg)</label>
+                      <input type="number" id="input-comb-mass" value="1.0" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">암 회전 길이 (d - m)</label>
+                      <input type="number" id="input-comb-length" value="1.0" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">수평 기준 각도 (deg)</label>
+                      <input type="number" id="input-comb-angle" value="0" step="5" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">각가속도 (rad/s²)</label>
+                      <input type="number" id="input-comb-accel" value="1.0" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                  </div>
+                  <button id="btn-calc-combined" class="btn btn-primary btn-block" style="display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px;">⚡ 가속 및 중력 토크 합산하기</button>
+                </div>
+
+                <!-- Outputs Group -->
+                <div style="background: rgba(166, 227, 161, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(166, 227, 161, 0.2); height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+                  <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; color: var(--brand-green);">🏆 합산 및 성분별 토크</h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">관성 가속 토크 (T_a)</span>
+                      <span id="output-comb-ta" style="font-weight: 700; color: #fff;">1.00 Nm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">중력 정하중 토크 (T_g)</span>
+                      <span id="output-comb-tg" style="font-weight: 700; color: #fff;">9.80 Nm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 4px; font-size: 14px; align-items: center;">
+                      <span style="font-weight: 700; color: var(--text-primary);">전체 합산 토크 (T_total)</span>
+                      <span id="output-comb-total" style="font-size: 22px; font-weight: 800; color: var(--brand-green);">10.80 Nm</span>
+                    </div>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; margin-top: 12px;">
+                    💡 암을 수평에서 위 방향으로 회전시킬 때 필요한 토크입니다. 암 질량과 중력 가속도가 가속 시 합쳐져 회전축에 높은 토크를 요구하게 됩니다.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 5. MOTOR SPECS & CURRENT PANEL ===== -->
+            <div id="panel-motor-specs" class="motor-tab-panel" style="display: none;">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">⚡ 모터 역기전력 및 필요 전류 물리 공식</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                  <li><strong>무부하 한계 최대 속도</strong>: Max Speed (rpm) = [ Vin / Kb (V/kRPM) ] × 1000</li>
+                  <li><strong>실무 구동 추천 마진 (70%)</strong>: Safe Speed = Max Speed × 70% (70% 이내 작동 권장)</li>
+                  <li><strong>토크 감도 환산 (Kt)</strong>: Kt (Nm/A) = [ Kb (V/kRPM) / 1000 ] × 9.55</li>
+                  <li><strong>필요 구동 전류</strong>: Required Current (A) = Required Torque (Nm) / Kt (Nm/A)</li>
+                </ul>
+              </div>
+
+              <!-- Input / Output Grid -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                <!-- Inputs Group -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 14px;">
+                  <h4 style="margin-top: 0; margin-bottom: 4px; font-size: 14px; color: var(--text-primary);">📥 공급 전원 및 모터 파라미터</h4>
+                  <div class="form-group">
+                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">모터 드라이버 공급 전압 Vin (Vdc)</label>
+                    <input type="number" id="input-specs-vin" value="320" step="10" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                  </div>
+                  <div class="form-group">
+                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">역기전력 상수 Kb (V/kRPM)</label>
+                    <input type="number" id="input-specs-kb" value="90.9" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                  </div>
+                  <div class="form-group">
+                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">요구 부하 토크 T_required (Nm)</label>
+                    <input type="number" id="input-specs-tr" value="3.0" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                  </div>
+                  <button id="btn-calc-specs" class="btn btn-primary btn-block" style="display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px;">⚡ 모터 특성 및 필요 전류 연산</button>
+                </div>
+
+                <!-- Outputs Group -->
+                <div style="background: rgba(166, 227, 161, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(166, 227, 161, 0.2); height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+                  <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; color: var(--brand-green);">🏆 특성 및 전하량 분석</h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">환산된 토크 감도 (Kt)</span>
+                      <span id="output-specs-kt" style="font-weight: 700; color: #fff;">0.868 Nm/Amp</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">한계 무부하 최대 속도</span>
+                      <span id="output-specs-maxspd" style="font-weight: 700; color: #fff;">3,520 rpm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">안전 실제 권장 속도 (70%)</span>
+                      <span id="output-specs-safespd" style="font-weight: 700; color: var(--brand-blue);">2,464 rpm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 4px; font-size: 14px; align-items: center;">
+                      <span style="font-weight: 700; color: var(--text-primary);">부하 요구 전류 (I_req)</span>
+                      <span id="output-specs-current" style="font-size: 22px; font-weight: 800; color: var(--brand-green);">3.46 A</span>
+                    </div>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; margin-top: 12px;">
+                    ℹ️ 모터 드라이버가 공급 전압 320V 조건에서 역기전력을 극복하고 3.0 Nm 하중 토크를 생성하기 위해 소모하는 연속 전류는 <strong>3.46 A</strong>입니다.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 6. RMS TORQUE & POWER PANEL ===== -->
+            <div id="panel-motor-rms" class="motor-tab-panel" style="display: none;">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">📈 구동 주기(Cycle)별 실효 RMS 토크 및 연속 파워</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                  <li><strong>RMS 실효 토크</strong>: RMS Torque = √[ Σ(t_i × τ_i²) / t_total ]</li>
+                  <li><strong>평균 구동 속도 (RPM)</strong>: Speed_avg = Σ(t_i × |Speed_i|) / t_total</li>
+                  <li><strong>평균 각속도 환산 (rad/sec)</strong>: Speed_avg_rad = Speed_avg × 2π / 60</li>
+                  <li><strong>연속 출력 파워 (W)</strong>: Continuous Power (W) = RMS Torque × Speed_avg_rad</li>
+                </ul>
+              </div>
+
+              <!-- Cycle Stages Grid & Results -->
+              <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start;">
+                <!-- Stages Editor Block -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h4 style="margin: 0; font-size: 14px; color: var(--text-primary);">📋 속도/토크 구간 프로파일 편집</h4>
+                    <button id="btn-rms-add-stage" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 11px;">+ 구간 추가</button>
+                  </div>
+                  
+                  <div style="max-height: 220px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; border: 1px solid var(--card-border);">
+                    <table style="width:100%; font-size:12px; border-collapse: collapse; text-align: left;" id="table-rms-stages">
+                      <thead>
+                        <tr style="border-bottom: 1px solid var(--card-border); color: var(--text-secondary);">
+                          <th style="padding: 6px 4px;">구간 번호</th>
+                          <th style="padding: 6px 4px;">지속시간 (s)</th>
+                          <th style="padding: 6px 4px;">구간 토크 (Nm)</th>
+                          <th style="padding: 6px 4px;">평균속도 (rpm)</th>
+                          <th style="padding: 6px 4px; text-align: right;">삭제</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbody-rms-stages">
+                        <!-- JS dynamic insertion -->
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Dynamic SVG Graph Container -->
+                  <div id="rms-graph-container" style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px; margin-bottom: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-secondary);">
+                      <span>📊 실시간 구동 프로파일 (파랑: 속도 RPM, 주황: 토크 Nm)</span>
+                    </div>
+                    <svg id="svg-rms-profile" viewBox="0 0 450 160" style="width: 100%; height: 160px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 10px; padding: 10px 15px; box-sizing: border-box; overflow: visible;"></svg>
+                  </div>
+
+                  <button id="btn-calc-rms" class="btn btn-primary btn-block" style="display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px;">⚡ RMS 실효 토크 및 요구 파워 연산</button>
+                </div>
+
+                <!-- Results display -->
+                <div style="background: rgba(166, 227, 161, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(166, 227, 161, 0.2); height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+                  <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; color: var(--brand-green);">🏆 구동 주기 실효 결과</h4>
+                  
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">구동 주기 전체 소요 시간</span>
+                      <span id="output-rms-time" style="font-weight: 700; color: #fff;">4.00 초</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">실효 RMS 평균 토크</span>
+                      <span id="output-rms-torque" style="font-weight: 700; color: #fff;">0.707 Nm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">주기 내 가중 평균 속도</span>
+                      <span id="output-rms-speed" style="font-weight: 700; color: #fff;">7.16 rpm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 4px; font-size: 14px; align-items: center;">
+                      <span style="font-weight: 700; color: var(--text-primary);">정격 연속 출력 파워 (W)</span>
+                      <span id="output-rms-power" style="font-size: 22px; font-weight: 800; color: var(--brand-green);">0.530 W</span>
+                    </div>
+                  </div>
+
+                  <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; margin-top: 12px;">
+                    💡 계산된 RMS 토크가 모터의 연속 정격 토크 허용 한계보다 낮고, 연속 출력 파워(Watt)가 모터 정격 사양을 초과하지 않아야 장비 장기 안정성이 확보됩니다.
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -1488,19 +2294,7 @@
           </div>
         </div>
 
-        <!-- Tutorial Section -->
-        <div class="settings-section">
-          <h3>튜토리얼 및 데모</h3>
-          <p class="settings-desc">보안 게이트웨이 기능을 테스트하기 위해 데모 데이터를 로드하거나, 새로 시작하기 위해 데이터를 초기화합니다.</p>
-          <div class="settings-actions-grid">
-            <button id="btn-seed-demo" class="btn btn-primary">
-              <span>🚀</span> 데모 데이터 로드
-            </button>
-            <button id="btn-clear-demo" class="btn btn-secondary">
-              <span>🧹</span> 데모 데이터 초기화
-            </button>
-          </div>
-        </div>
+
 
 
       </div>

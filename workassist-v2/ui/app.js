@@ -237,6 +237,7 @@ const init = () => {
     setupRag();
     setupHistory();
     setupDbManager();
+    setupOrderDb();
 
     // Global escape key listener
     window.addEventListener('keydown', (e) => {
@@ -1679,6 +1680,54 @@ function setupSettings() {
     updateDbLastModified();
     setInterval(updateDbLastModified, 2000);
 
+    // Database Auto-Rebuild LanceDB Loader Helpers
+    const showAutoRebuildLoader = (message) => {
+        let loader = document.getElementById('lancedb-rebuild-loader');
+        if (!loader) {
+            loader = document.createElement('div');
+            loader.id = 'lancedb-rebuild-loader';
+            loader.style.position = 'fixed';
+            loader.style.top = '0';
+            loader.style.left = '0';
+            loader.style.width = '100vw';
+            loader.style.height = '100vh';
+            loader.style.background = 'rgba(15, 12, 30, 0.85)';
+            loader.style.backdropFilter = 'blur(12px)';
+            loader.style.webKitBackdropFilter = 'blur(12px)';
+            loader.style.display = 'flex';
+            loader.style.flexDirection = 'column';
+            loader.style.alignItems = 'center';
+            loader.style.justifyContent = 'center';
+            loader.style.zIndex = '99999';
+            loader.style.transition = 'opacity 0.4s ease';
+            
+            loader.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; text-align: center; max-width: 500px; padding: 40px; border-radius: 24px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);">
+                    <div class="loader-spinner" style="width: 50px; height: 50px; border: 4px solid rgba(255, 140, 0, 0.1); border-top: 4px solid #ff8c00; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <div style="font-size: 18px; font-weight: 600; color: #ffffff; margin-top: 10px;">LanceDB 인덱스 자동 재구축 중</div>
+                    <div id="lancedb-rebuild-message" style="font-size: 13px; color: rgba(255, 255, 255, 0.6); line-height: 1.6; word-break: keep-all; white-space: pre-wrap;">${message}</div>
+                </div>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+            document.body.appendChild(loader);
+        } else {
+            document.getElementById('lancedb-rebuild-message').textContent = message;
+            loader.style.display = 'flex';
+        }
+    };
+
+    const hideAutoRebuildLoader = () => {
+        const loader = document.getElementById('lancedb-rebuild-loader');
+        if (loader) {
+            loader.style.display = 'none';
+        }
+    };
+
     // Database Actions
     const btnManualBackup = document.getElementById('btn-manual-backup');
     const btnImportDb = document.getElementById('btn-import-db');
@@ -1693,11 +1742,30 @@ function setupSettings() {
                     multiple: false,
                 });
                 if (selected) {
+                    showAutoRebuildLoader("새로운 RDBMS 기준으로 로컬 백터 DB(LanceDB) 인덱스를 자동으로 재구성하는 중입니다. 이 작업은 사양 데이터 수에 따라 다소 시간이 걸릴 수 있습니다...");
+                    
+                    // 1. SQLite DB Import
                     await invoke('plugin:engine|import_db', { path: selected, user: currentUser });
-                    alert("Database imported successfully. The application will now reload to apply changes.");
+                    
+                    // 2. Rebuild LanceDB
+                    showAutoRebuildLoader("RDBMS 임포트 완료. 이제 SQLite에 등록된 제품 사양 정보를 바탕으로 고성능 LanceDB 로컬 임베딩 인덱스를 구축하고 있습니다...");
+                    try {
+                        const rebuildRes = await invoke('plugin:rag|rebuild_lancedb_index');
+                        console.log("LanceDB index rebuilt successfully:", rebuildRes);
+                        alert(`데이터베이스 임포트 및 LanceDB 인덱스 자동 재구축 완료!\n총 ${rebuildRes.indexed_count}개의 제품 사양이 임베딩 인덱스로 동기화되었습니다.`);
+                    } catch (rebuildErr) {
+                        console.error("LanceDB Rebuild Failed:", rebuildErr);
+                        alert("데이터베이스 임포트는 완료되었으나, LanceDB 인덱스 재구축 중 오류가 발생했습니다:\n" + rebuildErr);
+                    } finally {
+                        hideAutoRebuildLoader();
+                    }
+                    
                     window.location.reload();
                 }
-            } catch (err) { alert("Import Failed: " + err); }
+            } catch (err) { 
+                hideAutoRebuildLoader();
+                alert("Import Failed: " + err); 
+            }
         };
     }
 
@@ -1798,33 +1866,6 @@ function setupSettings() {
         };
     }
 
-    // Demo Actions
-    const btnSeedDemo = document.getElementById('btn-seed-demo');
-    const btnClearDemo = document.getElementById('btn-clear-demo');
-
-    if (btnSeedDemo) {
-        btnSeedDemo.onclick = async () => {
-            if (await askConfirm('Load rich demo data? This will add several tasks, projects, and meetings.')) {
-                try {
-                    await invoke('plugin:engine|seed_demo_data_cmd');
-                    alert('Demo data loaded successfully!');
-                    window.location.reload();
-                } catch (err) { alert("Seed Failed: " + err); }
-            }
-        };
-    }
-
-    if (btnClearDemo) {
-        btnClearDemo.onclick = async () => {
-            if (await askConfirm('Clear all demo data? Only data marked as demo will be removed.')) {
-                try {
-                    await invoke('plugin:engine|clear_demo_data_cmd');
-                    alert("Database cleared.");
-                    window.location.reload();
-                } catch (err) { alert("Clear Failed: " + err); }
-            }
-        };
-    }
 }
 
 function setupKanbanTabs() {
@@ -2039,7 +2080,9 @@ async function loadView(viewId) {
         'nav-pm': '프로젝트 관리자',
         'nav-rag': 'PDF & Excel 파싱',
         'nav-history': '히스토리 관리자',
-        'nav-db-manager': 'DB관리자'
+        'nav-db-manager': '제품DB 관리자',
+        'nav-order-db': '수주DB 관리자',
+        'nav-motor-calc': '모터사양 및 토크 계산기'
     };
 
     const pageTitle = document.getElementById('page-title');
@@ -2087,6 +2130,8 @@ async function loadView(viewId) {
     else if (viewId === 'nav-dashboard') await refreshStats();
     else if (viewId === 'nav-history') await refreshHistory();
     else if (viewId === 'nav-db-manager') await refreshDbSearchFilters();
+    else if (viewId === 'nav-order-db') await refreshOrders();
+    else if (viewId === 'nav-motor-calc') await refreshMotorCalc();
 }
 
 async function refreshStats() {
@@ -6550,10 +6595,6 @@ function setupRag() {
     const ragOutputPre = document.getElementById('rag-output-pre');
 
     const btnIndexDb = document.getElementById('btn-rag-index-db');
-    const btnSearch = document.getElementById('btn-rag-search');
-    const inputSearchQuery = document.getElementById('rag-search-query');
-    const selectSearchLimit = document.getElementById('rag-search-limit');
-    const searchResultsContainer = document.getElementById('rag-search-results');
 
     // Excel Extraction Elements
     const ragExtractionTabs = document.getElementById('rag-extraction-tabs');
@@ -6583,7 +6624,7 @@ function setupRag() {
 
     if (!btnSelectPdf || !inputPdfPath || !btnSelectDir || !inputOutputDir || !selectFormat || 
         !btnRunParse || !btnCopyOutput || !ragLoader || !ragOutputContainer || !ragOutputPre ||
-        !btnIndexDb || !btnSearch || !inputSearchQuery || !selectSearchLimit || !searchResultsContainer) {
+        !btnIndexDb) {
         console.warn("RAG & PDF Parser UI elements not fully found in DOM.");
         return;
     }
@@ -7150,178 +7191,7 @@ function setupRag() {
         }
     };
 
-    // Beautiful Search Results Renderer
-    const renderSearchResults = (hits) => {
-        searchResultsContainer.innerHTML = '';
-        if (!hits || hits.length === 0) {
-            searchResultsContainer.innerHTML = `
-                <div style="color: var(--text-secondary); text-align: center; padding: 40px 0; border: 1px dashed var(--card-border); border-radius: 10px; background: rgba(0,0,0,0.1); font-size: 13px;">
-                    No results found for your query. Try a different query or make sure the specifications are indexed!
-                </div>
-            `;
-            return;
-        }
 
-        hits.forEach(hit => {
-            const card = document.createElement('div');
-            card.className = 'search-result-card';
-            card.style.cssText = `
-                background: rgba(255, 255, 255, 0.02);
-                border: 1px solid var(--card-border);
-                border-radius: 14px;
-                padding: 18px;
-                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                position: relative;
-                overflow: hidden;
-            `;
-
-            // Hover interactions
-            card.onmouseenter = () => {
-                card.style.borderColor = 'var(--accent-color)';
-                card.style.background = 'rgba(255, 255, 255, 0.04)';
-                card.style.boxShadow = '0 6px 20px rgba(249, 115, 22, 0.08)';
-                card.style.transform = 'translateY(-2px)';
-            };
-            card.onmouseleave = () => {
-                card.style.borderColor = 'var(--card-border)';
-                card.style.background = 'rgba(255, 255, 255, 0.02)';
-                card.style.boxShadow = 'none';
-                card.style.transform = 'translateY(0)';
-            };
-
-            const partNum = hit.part_number || "Unknown Part";
-            const category = hit.category || "General";
-            const manufacturer = hit.manufacturer || "Unknown";
-            const catalogName = hit.catalog_name || "Catalog";
-            const desc = hit.description || "";
-            const dist = hit.similarity_score !== undefined ? hit.similarity_score.toFixed(4) : "N/A";
-
-            // Spec metadata rendering
-            let specsHtml = '';
-            if (hit.spec_data && typeof hit.spec_data === 'object' && !Array.isArray(hit.spec_data)) {
-                specsHtml = `<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">`;
-                for (const [key, val] of Object.entries(hit.spec_data)) {
-                    if (val !== null && val !== undefined && val !== '') {
-                        const cleanKey = key.replace(/_/g, ' ');
-                        specsHtml += `
-                            <div style="
-                                display: inline-flex;
-                                align-items: center;
-                                gap: 6px;
-                                background: rgba(0, 0, 0, 0.3);
-                                border: 1px solid rgba(255, 255, 255, 0.08);
-                                border-radius: 8px;
-                                padding: 4px 10px;
-                                font-size: 12px;
-                            ">
-                                <span style="color: var(--text-secondary); font-weight: 500;">${cleanKey}:</span>
-                                <span style="color: var(--accent-color); font-weight: 600;">${val}</span>
-                            </div>
-                        `;
-                    }
-                }
-                specsHtml += `</div>`;
-            }
-
-            card.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <div style="font-weight: 800; font-size: 16px; color: var(--text-primary); letter-spacing: 0.5px; font-family: 'Consolas', monospace;">${partNum}</div>
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
-                            <span class="badge" style="background: rgba(249, 115, 22, 0.15); color: var(--accent-color); border: 1px solid rgba(249, 115, 22, 0.3); font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: bold; text-transform: uppercase;">${category}</span>
-                            <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">🏭 ${manufacturer}</span>
-                            <span style="font-size: 12px; color: var(--text-secondary); opacity: 0.8;">📄 ${catalogName}</span>
-                        </div>
-                    </div>
-                    <div style="
-                        background: rgba(255, 255, 255, 0.05);
-                        border: 1px solid rgba(255, 255, 255, 0.08);
-                        border-radius: 8px;
-                        padding: 4px 10px;
-                        font-size: 11px;
-                        font-family: 'Consolas', monospace;
-                        color: var(--text-secondary);
-                        display: flex;
-                        align-items: center;
-                        gap: 4px;
-                    ">
-                        Distance: <span style="color: #10b981; font-weight: bold;">${dist}</span>
-                    </div>
-                </div>
-                
-                ${desc ? `<div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-top: 2px;">${desc}</div>` : ''}
-                
-                ${specsHtml}
-                
-                <div style="
-                    margin-top: 6px;
-                    font-size: 11px;
-                    color: var(--text-secondary);
-                    opacity: 0.6;
-                    background: rgba(0, 0, 0, 0.15);
-                    padding: 8px 12px;
-                    border-radius: 8px;
-                    border-left: 3px solid var(--accent-color);
-                    font-style: italic;
-                    line-height: 1.4;
-                ">
-                    Search Chunk: "${hit.chunk_text || ''}"
-                </div>
-            `;
-            searchResultsContainer.appendChild(card);
-        });
-    };
-
-    // Vector search call
-    const runSearch = async () => {
-        const query = inputSearchQuery.value.trim();
-        if (!query) {
-            alert("Please enter a search query.");
-            return;
-        }
-
-        btnSearch.disabled = true;
-        const originalHtml = btnSearch.innerHTML;
-        btnSearch.innerHTML = "🔍 Searching...";
-        searchResultsContainer.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; padding: 40px 0; gap: 12px; color: var(--text-secondary);">
-                <div class="spinner" style="border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--accent-color); width: 20px; height: 20px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <span>Retrieving local semantic matches (< 50ms)...</span>
-            </div>
-        `;
-
-        try {
-            const limit = parseInt(selectSearchLimit.value, 10) || 5;
-            console.log(`[RAG UI] Searching specs for: "${query}" (limit: ${limit})`);
-            const hits = await invoke('plugin:rag|search_specs', {
-                query: query,
-                limit: limit
-            });
-
-            renderSearchResults(hits);
-        } catch (err) {
-            console.error("Search failed:", err);
-            searchResultsContainer.innerHTML = `
-                <div style="color: #f87171; text-align: center; padding: 40px 0; border: 1px dashed rgba(248, 113, 113, 0.3); border-radius: 10px; background: rgba(248, 113, 113, 0.05); font-size: 13px;">
-                    <strong>Search Error:</strong><br>${err}
-                </div>
-            `;
-        } finally {
-            btnSearch.disabled = false;
-            btnSearch.innerHTML = originalHtml;
-        }
-    };
-
-    btnSearch.onclick = runSearch;
-
-    inputSearchQuery.onkeydown = (e) => {
-        if (e.key === 'Enter') {
-            runSearch();
-        }
-    };
 }
 
 // ===== HISTORY MANAGER (Oxigraph + D3.js Knowledge Graph) =====
@@ -8906,3 +8776,1294 @@ function escapeHtml(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+// ==========================================
+// ====== 수주DB 관리자 (Orders DB) 모듈 ======
+// ==========================================
+
+let currentOrders = [];
+
+// 수주DB 이벤트 리스너 설정
+function setupOrderDb() {
+    console.log("Setting up Order DB event listeners...");
+    
+    // 1. Form Tab Switching Logic
+    const tabButtons = document.querySelectorAll('.form-tab');
+    tabButtons.forEach(btn => {
+        btn.onclick = (e) => {
+            e.preventDefault();
+            tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const targetTab = btn.getAttribute('data-form-tab');
+            document.getElementById('form-panel-basic').style.display = 'none';
+            document.getElementById('form-panel-pricing').style.display = 'none';
+            document.getElementById('form-panel-delivery').style.display = 'none';
+            
+            const panel = document.getElementById(`form-panel-${targetTab}`);
+            if (panel) panel.style.display = 'flex';
+        };
+    });
+
+    // 2. Export Excel Template Action
+    const btnExportTemplate = document.getElementById('btn-export-excel-template');
+    if (btnExportTemplate) {
+        btnExportTemplate.onclick = async () => {
+            if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+                alert("Tauri API가 로드되지 않았습니다.");
+                return;
+            }
+            try {
+                const savePath = await window.__TAURI__.dialog.save({
+                    title: "수주매출 현황 엑셀 양식 저장",
+                    defaultPath: "수주매출_현황_양식.xlsx",
+                    filters: [{ name: "Excel Files", extensions: ["xlsx"] }]
+                });
+                
+                if (savePath) {
+                    console.log("Exporting template to:", savePath);
+                    await invoke('plugin:orders|export_excel_template', { filePath: savePath });
+                    alert("수주매출 현황 엑셀 양식이 성공적으로 내보내기 되었습니다!");
+                }
+            } catch (err) {
+                console.error("Failed to export template:", err);
+                alert("양식 내보내기 실패: " + err);
+            }
+        };
+    }
+
+    // 3. Import Excel Orders Action
+    const btnImportOrders = document.getElementById('btn-import-excel-orders');
+    if (btnImportOrders) {
+        btnImportOrders.onclick = async () => {
+            if (!window.__TAURI__ || !window.__TAURI__.dialog) {
+                alert("Tauri API가 로드되지 않았습니다.");
+                return;
+            }
+            try {
+                const openPath = await window.__TAURI__.dialog.open({
+                    title: "수주매출 엑셀 파일 가져오기",
+                    filters: [{ name: "Excel Files", extensions: ["xlsx", "xlsm"] }]
+                });
+                
+                if (openPath) {
+                    console.log("Importing excel orders from:", openPath);
+                    
+                    // Show progress status
+                    const btnText = btnImportOrders.innerHTML;
+                    btnImportOrders.disabled = true;
+                    btnImportOrders.innerHTML = "<span>⏳</span> 임포트 중...";
+                    
+                    const resultMsg = await invoke('plugin:orders|import_excel_orders', {
+                        ownerId: currentUser.id,
+                        filePath: openPath
+                    });
+                    
+                    btnImportOrders.disabled = false;
+                    btnImportOrders.innerHTML = btnText;
+                    
+                    alert(resultMsg);
+                    await refreshOrders();
+                }
+            } catch (err) {
+                console.error("Failed to import orders:", err);
+                const btnImport = document.getElementById('btn-import-excel-orders');
+                if (btnImport) {
+                    btnImport.disabled = false;
+                    btnImport.innerHTML = "<span>📊</span> 엑셀 가져오기";
+                }
+                alert("엑셀 데이터 가져오기 실패: " + err);
+            }
+        };
+    }
+
+    // 4. Dynamic Auto-calculation Form triggers
+    const qtyInput = document.getElementById('order-qty');
+    const priceInput = document.getElementById('order-price');
+    const amountInput = document.getElementById('order-amount');
+
+    const handleAutoCalc = () => {
+        const qty = parseInt(qtyInput.value) || 0;
+        const price = parseInt(priceInput.value) || 0;
+        amountInput.value = qty * price;
+    };
+    if (qtyInput) qtyInput.oninput = handleAutoCalc;
+    if (priceInput) priceInput.oninput = handleAutoCalc;
+
+    // 5. Year change chart redraw
+    const chartYearSelect = document.getElementById('select-chart-year');
+    if (chartYearSelect) {
+        chartYearSelect.onchange = () => {
+            renderOrdersChart();
+            renderOrdersTable();
+        };
+    }
+
+    const btnSave = document.getElementById('btn-save-order');
+    if (btnSave) {
+        btnSave.onclick = async () => {
+            await saveOrder();
+        };
+    }
+
+    const btnCancel = document.getElementById('btn-cancel-order-edit');
+    if (btnCancel) {
+        btnCancel.onclick = () => {
+            cancelOrderEdit();
+        };
+    }
+
+    const filterStatus = document.getElementById('filter-order-status');
+    if (filterStatus) {
+        filterStatus.onchange = () => {
+            renderOrdersTable();
+        };
+    }
+
+    const searchInput = document.getElementById('search-order');
+    if (searchInput) {
+        searchInput.oninput = () => {
+            renderOrdersTable();
+        };
+    }
+
+    // 전역 스코프에 핸들러 노출 (인라인 onclick 동작 보장)
+    window.editOrder = editOrder;
+    window.deleteOrder = deleteOrder;
+}
+
+// 수주 목록 새로고침 및 메트릭 산출
+async function refreshOrders() {
+    if (!currentUser) return;
+    
+    try {
+        console.log("Refreshing orders from local isolated SQLite db...");
+        const orders = await invoke('plugin:orders|get_orders', { ownerId: currentUser.id });
+        currentOrders = orders || [];
+        
+        renderOrdersTable();
+        renderOrdersChart();
+    } catch (err) {
+        console.error("Failed to fetch orders from SQLite:", err);
+    }
+}
+
+// 수주 목록 테이블 렌더링 및 통계 계산
+function renderOrdersTable() {
+    const tableBody = document.getElementById('order-table-body');
+    if (!tableBody) return;
+
+    const filterStatus = document.getElementById('filter-order-status');
+    const searchInput = document.getElementById('search-order');
+    const chartYearSelect = document.getElementById('select-chart-year');
+
+    const statusFilter = filterStatus ? filterStatus.value : 'all';
+    const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const selectedYear = chartYearSelect ? chartYearSelect.value : '2026';
+
+    // 필터링 적용
+    const filteredOrders = currentOrders.filter(order => {
+        const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+        
+        const clientText = (order.client || '').toLowerCase();
+        const productText = (order.product_name || '').toLowerCase();
+        const codeText = (order.project_code || '').toLowerCase();
+        
+        const matchesSearch = searchQuery === '' || 
+                              clientText.includes(searchQuery) || 
+                              productText.includes(searchQuery) ||
+                              codeText.includes(searchQuery);
+
+        return matchesStatus && matchesSearch;
+    });
+
+    // 선택 연도 기준 누계 통계 연산
+    let totalAmount = 0;
+    let totalRevenue = 0;
+    let totalCount = 0;
+    let uncollectedCount = 0;
+
+    currentOrders.forEach(order => {
+        const orderDateStr = order.order_date || '';
+        const orderYear = orderDateStr.split('-')[0];
+        
+        if (orderYear === selectedYear) {
+            totalCount++;
+            totalAmount += (order.order_amount || 0);
+            
+            // Uncollected logic: if actual delivery date exists but settlement amount < order amount
+            const actualDeliv = order.actual_delivery_date || '';
+            const set1 = order.settlement_1 || 0;
+            const set2 = order.settlement_2 || 0;
+            const collected = set1 + set2;
+            const orderAmt = order.order_amount || 0;
+            
+            if (actualDeliv && collected < orderAmt) {
+                uncollectedCount++;
+            }
+        }
+
+        // Cumulative revenue calculation based on tax invoice issue dates for selected year
+        const tax1Str = order.tax_invoice_1 || '';
+        const tax2Str = order.tax_invoice_2 || '';
+        if (tax1Str.startsWith(selectedYear)) {
+            totalRevenue += (order.settlement_1 || 0);
+        }
+        if (tax2Str.startsWith(selectedYear)) {
+            totalRevenue += (order.settlement_2 || 0);
+        }
+    });
+
+    // 메트릭 엘리먼트 업데이트
+    const statAmount = document.getElementById('order-stat-total-amount');
+    const statRevenue = document.getElementById('order-stat-total-revenue');
+    const statCount = document.getElementById('order-stat-total-count');
+    const statUncollected = document.getElementById('order-stat-uncollected-count');
+
+    if (statAmount) statAmount.textContent = `₩${totalAmount.toLocaleString()}`;
+    if (statRevenue) statRevenue.textContent = `₩${totalRevenue.toLocaleString()}`;
+    if (statCount) statCount.textContent = `${totalCount}건`;
+    if (statUncollected) statUncollected.textContent = `${uncollectedCount}건`;
+
+    // 테이블 행 렌더링
+    tableBody.innerHTML = '';
+    if (filteredOrders.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="22" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">
+                    검색 조건에 맞는 수주 정보가 없습니다.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    filteredOrders.forEach(order => {
+        const id = order.id;
+        const orderDate = order.order_date || '-';
+        const projectCode = escapeHtml(order.project_code || '-');
+        const category = escapeHtml(order.category || '-');
+        const client = escapeHtml(order.client);
+        const clientPoNum = escapeHtml(order.client_po_num || '-');
+        const productName = escapeHtml(order.product_name || '-');
+        const clientManager = escapeHtml(order.client_manager || '-');
+        const salesManager = escapeHtml(order.sales_manager || '-');
+        const requestDate = order.request_date || '-';
+        const purchasePlace = escapeHtml(order.purchase_place || '-');
+        const qty = order.qty !== null ? order.qty : '-';
+        const orderPrice = order.order_price !== null ? `₩${order.order_price.toLocaleString()}` : '-';
+        const orderAmount = `₩${(order.order_amount || 0).toLocaleString()}`;
+        const estimateDeliveryDate = order.estimate_delivery_date || '-';
+        const actualDeliveryDate = order.actual_delivery_date || '-';
+        const taxInvoice1 = order.tax_invoice_1 || '-';
+        const taxInvoice2 = order.tax_invoice_2 || '-';
+        const settlement1 = order.settlement_1 !== null ? `₩${order.settlement_1.toLocaleString()}` : '-';
+        const settlement2 = order.settlement_2 !== null ? `₩${order.settlement_2.toLocaleString()}` : '-';
+        const status = order.status || '대기';
+        const description = escapeHtml(order.description || '-');
+
+        // 상태별 뱃지 스타일
+        let badgeBg = 'rgba(100, 116, 139, 0.15)';
+        let badgeColor = '#64748b';
+        if (status === '진행중') {
+            badgeBg = 'rgba(59, 130, 246, 0.15)';
+            badgeColor = '#3b82f6';
+        } else if (status === '완료') {
+            badgeBg = 'rgba(16, 185, 129, 0.15)';
+            badgeColor = '#10b981';
+        } else if (status === '보류') {
+            badgeBg = 'rgba(245, 158, 11, 0.15)';
+            badgeColor = '#f59e0b';
+        }
+
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255, 255, 255, 0.04)';
+        tr.style.transition = 'background-color 0.2s';
+        tr.onmouseover = () => tr.style.backgroundColor = 'rgba(255, 255, 255, 0.01)';
+        tr.onmouseout = () => tr.style.backgroundColor = 'transparent';
+
+        tr.innerHTML = `
+            <td class="order-grid-td" style="text-align: center; display: flex; gap: 4px; justify-content: center; align-items: center; border-bottom: none; height: 38px;">
+                <span style="color: var(--accent-color); cursor: pointer; font-weight:600;" onclick="editOrder(${id})">✍️</span>
+                <span style="color: #ff5555; cursor: pointer; font-weight:600;" onclick="deleteOrder(${id})">❌</span>
+            </td>
+            <td class="order-grid-td" style="text-align: center; font-family: monospace;">${orderDate}</td>
+            <td class="order-grid-td" style="font-weight: 500;">${projectCode}</td>
+            <td class="order-grid-td" style="text-align: center;">${category}</td>
+            <td class="order-grid-td" style="font-weight: 600; color: var(--text-color);">${client}</td>
+            <td class="order-grid-td">${clientPoNum}</td>
+            <td class="order-grid-td">${productName}</td>
+            <td class="order-grid-td" style="text-align: center;">${clientManager}</td>
+            <td class="order-grid-td" style="text-align: center;">${salesManager}</td>
+            <td class="order-grid-td" style="text-align: center; font-family: monospace;">${requestDate}</td>
+            <td class="order-grid-td">${purchasePlace}</td>
+            <td class="order-grid-td" style="text-align: center;">${qty}</td>
+            <td class="order-grid-td" style="text-align: right; font-family: monospace;">${orderPrice}</td>
+            <td class="order-grid-td" style="text-align: right; font-weight: 600; color: var(--accent-color); font-family: monospace;">${orderAmount}</td>
+            <td class="order-grid-td" style="text-align: center; font-family: monospace;">${estimateDeliveryDate}</td>
+            <td class="order-grid-td" style="text-align: center; font-family: monospace;">${actualDeliveryDate}</td>
+            <td class="order-grid-td" style="text-align: center; font-family: monospace;">${taxInvoice1}</td>
+            <td class="order-grid-td" style="text-align: center; font-family: monospace;">${taxInvoice2}</td>
+            <td class="order-grid-td" style="text-align: right; color: #50fa7b; font-family: monospace;">${settlement1}</td>
+            <td class="order-grid-td" style="text-align: right; color: #50fa7b; font-family: monospace;">${settlement2}</td>
+            <td class="order-grid-td" style="text-align: center;">
+                <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; border: 1px solid ${badgeColor}30;">${status}</span>
+            </td>
+            <td class="order-grid-td">${description}</td>
+        `;
+        tableBody.appendChild(tr);
+    });
+}
+
+// Monthly Comparison Chart renderer inside SVG
+function renderOrdersChart() {
+    const container = document.getElementById('order-chart-container');
+    if (!container) return;
+
+    const chartYearSelect = document.getElementById('select-chart-year');
+    const selectedYear = chartYearSelect ? chartYearSelect.value : '2026';
+
+    // 12 months array initialization
+    let monthlyOrders = Array(12).fill(0);
+    let monthlySales = Array(12).fill(0);
+
+    // Compute live values from currentOrders
+    currentOrders.forEach(order => {
+        const orderDateStr = order.order_date || '';
+        const parts = orderDateStr.split('-');
+        if (parts.length === 3 && parts[0] === selectedYear) {
+            const mIdx = parseInt(parts[1]) - 1;
+            if (mIdx >= 0 && mIdx < 12) {
+                monthlyOrders[mIdx] += (order.order_amount || 0);
+            }
+        }
+
+        // 매출 인식 logic
+        const tax1Str = order.tax_invoice_1 || '';
+        const tax2Str = order.tax_invoice_2 || '';
+        const tax1Parts = tax1Str.split('-');
+        const tax2Parts = tax2Str.split('-');
+
+        if (tax1Parts.length === 3 && tax1Parts[0] === selectedYear) {
+            const mIdx = parseInt(tax1Parts[1]) - 1;
+            if (mIdx >= 0 && mIdx < 12) {
+                monthlySales[mIdx] += (order.settlement_1 || 0);
+            }
+        }
+        if (tax2Parts.length === 3 && tax2Parts[0] === selectedYear) {
+            const mIdx = parseInt(tax2Parts[1]) - 1;
+            if (mIdx >= 0 && mIdx < 12) {
+                monthlySales[mIdx] += (order.settlement_2 || 0);
+            }
+        }
+    });
+
+    // Find the max value to scale the chart dynamically
+    const maxVal = Math.max(...monthlyOrders, ...monthlySales, 50000000); // minimum scale ceiling 5,000만원
+    
+    // Draw SVG Chart
+    const width = container.clientWidth || 800;
+    const height = 220;
+    const paddingLeft = 90;
+    const paddingRight = 30;
+    const paddingTop = 30;
+    const paddingBottom = 30;
+    
+    const graphWidth = width - paddingLeft - paddingRight;
+    const graphHeight = height - paddingTop - paddingBottom;
+
+    let svgHtml = `<svg width="${width}" height="${height}" style="background: transparent; font-family: inherit;">`;
+
+    // 1. Grid horizontal lines & Y Labels
+    const gridLines = 4;
+    for (let i = 0; i <= gridLines; i++) {
+        const y = paddingTop + (graphHeight / gridLines) * i;
+        const val = maxVal - (maxVal / gridLines) * i;
+        const formattedVal = (val / 1000000).toFixed(0) + "M"; // in Millions (₩)
+        
+        svgHtml += `
+            <line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3" />
+            <text x="${paddingLeft - 12}" y="${y + 4}" fill="var(--text-secondary)" font-size="10.5" text-anchor="end">${formattedVal}</text>
+        `;
+    }
+
+    // 2. Draw 12 Months Bars & month labels
+    const barSpacing = graphWidth / 12;
+    const innerBarWidth = barSpacing * 0.32;
+
+    for (let m = 0; m < 12; m++) {
+        const xCenter = paddingLeft + barSpacing * m + barSpacing / 2;
+        
+        // Month Label
+        svgHtml += `
+            <text x="${xCenter}" y="${height - 10}" fill="var(--text-secondary)" font-size="11" text-anchor="middle" font-weight="500">${m + 1}월</text>
+        `;
+
+        // a) 수주금액 Bar (Dracula Purple)
+        const orderVal = monthlyOrders[m];
+        const orderBarHeight = (orderVal / maxVal) * graphHeight;
+        const orderY = height - paddingBottom - orderBarHeight;
+        const orderX = xCenter - innerBarWidth - 2;
+
+        if (orderVal > 0) {
+            svgHtml += `
+                <rect x="${orderX}" y="${orderY}" width="${innerBarWidth}" height="${orderBarHeight}" fill="#bd93f9" rx="3" style="transition: all 0.3s;" />
+                <!-- Hover value label -->
+                <text x="${orderX + innerBarWidth / 2}" y="${orderY - 6}" fill="#bd93f9" font-size="9" text-anchor="middle" font-weight="600">${(orderVal / 1000000).toFixed(0)}M</text>
+            `;
+        }
+
+        // b) 매출금액 Bar (Dracula Green)
+        const salesVal = monthlySales[m];
+        const salesBarHeight = (salesVal / maxVal) * graphHeight;
+        const salesY = height - paddingBottom - salesBarHeight;
+        const salesX = xCenter + 2;
+
+        if (salesVal > 0) {
+            svgHtml += `
+                <rect x="${salesX}" y="${salesY}" width="${innerBarWidth}" height="${salesBarHeight}" fill="#50fa7b" rx="3" style="transition: all 0.3s;" />
+                <!-- Hover value label -->
+                <text x="${salesX + innerBarWidth / 2}" y="${salesY - 6}" fill="#50fa7b" font-size="9" text-anchor="middle" font-weight="600">${(salesVal / 1000000).toFixed(0)}M</text>
+            `;
+        }
+    }
+
+    // Baseline axis
+    svgHtml += `
+        <line x1="${paddingLeft}" y1="${height - paddingBottom}" x2="${width - paddingRight}" y2="${height - paddingBottom}" stroke="rgba(255,255,255,0.15)" stroke-width="1.2" />
+    `;
+
+    svgHtml += `</svg>`;
+    container.innerHTML = svgHtml;
+}
+
+// 신규 수주 저장 또는 기존 수정
+async function saveOrder() {
+    if (!currentUser) return;
+
+    const idInput = document.getElementById('order-id-input');
+    const categorySelect = document.getElementById('order-category');
+    const orderDateInput = document.getElementById('order-date');
+    const projectCodeInput = document.getElementById('order-project-code');
+    const clientInput = document.getElementById('order-client');
+    const clientPoNumInput = document.getElementById('order-client-po-num');
+    const productNameInput = document.getElementById('order-product-name');
+    const clientManagerInput = document.getElementById('order-client-manager');
+    const salesManagerInput = document.getElementById('order-sales-manager');
+    const requestDateInput = document.getElementById('order-request-date');
+    const purchasePlaceInput = document.getElementById('order-purchase-place');
+    const qtyInput = document.getElementById('order-qty');
+    const priceInput = document.getElementById('order-price');
+    const amountInput = document.getElementById('order-amount');
+    const estimateDeliveryInput = document.getElementById('order-estimate-delivery-date');
+    const actualDeliveryInput = document.getElementById('order-actual-delivery-date');
+    const taxInvoice1Input = document.getElementById('order-tax-invoice-1');
+    const taxInvoice2Input = document.getElementById('order-tax-invoice-2');
+    const settlement1Input = document.getElementById('order-settlement-1');
+    const settlement2Input = document.getElementById('order-settlement-2');
+    const statusSelect = document.getElementById('order-status');
+    const descTextarea = document.getElementById('order-description');
+
+    const client = clientInput ? clientInput.value.trim() : '';
+    if (!client) {
+        alert("고객사명을 입력해 주세요.");
+        return;
+    }
+
+    const orderId = idInput && idInput.value ? parseInt(idInput.value) : null;
+    
+    // Auto-calculate order amount
+    const qty = qtyInput ? parseInt(qtyInput.value) : null;
+    const price = priceInput ? parseInt(priceInput.value) : null;
+    const calculatedAmount = (qty !== null && price !== null) ? qty * price : (amountInput ? parseInt(amountInput.value) : 0);
+
+    const orderDto = {
+        id: orderId,
+        owner_id: currentUser.id,
+        order_date: orderDateInput ? orderDateInput.value || null : null,
+        project_code: projectCodeInput ? projectCodeInput.value.trim() || null : null,
+        category: categorySelect ? categorySelect.value || null : null,
+        client: client,
+        client_po_num: clientPoNumInput ? clientPoNumInput.value.trim() || null : null,
+        product_name: productNameInput ? productNameInput.value.trim() || null : null,
+        client_manager: clientManagerInput ? clientManagerInput.value.trim() || null : null,
+        sales_manager: salesManagerInput ? salesManagerInput.value.trim() || null : null,
+        request_date: requestDateInput ? requestDateInput.value || null : null,
+        purchase_place: purchasePlaceInput ? purchasePlaceInput.value.trim() || null : null,
+        qty: qty,
+        order_price: price,
+        order_amount: calculatedAmount,
+        estimate_delivery_date: estimateDeliveryInput ? estimateDeliveryInput.value || null : null,
+        actual_delivery_date: actualDeliveryInput ? actualDeliveryInput.value || null : null,
+        tax_invoice_1: taxInvoice1Input ? taxInvoice1Input.value || null : null,
+        tax_invoice_2: taxInvoice2Input ? taxInvoice2Input.value || null : null,
+        settlement_1: settlement1Input ? parseInt(settlement1Input.value) || null : null,
+        settlement_2: settlement2Input ? parseInt(settlement2Input.value) || null : null,
+        description: descTextarea ? descTextarea.value.trim() || null : null,
+        status: statusSelect ? statusSelect.value : '대기',
+        created_at: "", // Rust will fill if new
+        is_deleted: false
+    };
+
+    const btnSave = document.getElementById('btn-save-order');
+    let originalHtml = "";
+    if (btnSave) {
+        originalHtml = btnSave.innerHTML;
+        btnSave.disabled = true;
+        btnSave.innerHTML = "<span>⏳</span> 저장 중...";
+    }
+
+    try {
+        console.log("Saving order DTO to isolated SQLite...", orderDto);
+        await invoke('plugin:orders|save_order', { order: orderDto });
+        
+        cancelOrderEdit();
+        await refreshOrders();
+    } catch (err) {
+        console.error("Failed to save order in SQLite:", err);
+        alert("수주 정보를 저장하지 못했습니다: " + err);
+    } finally {
+        if (btnSave) {
+            btnSave.disabled = false;
+            btnSave.innerHTML = originalHtml;
+        }
+    }
+}
+
+// 기존 수주 정보 수정 모드 돌입
+function editOrder(orderId) {
+    const order = currentOrders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // Reset tabs back to "basic"
+    const basicTabBtn = document.querySelector('.form-tab[data-form-tab="basic"]');
+    if (basicTabBtn) basicTabBtn.click();
+
+    const idInput = document.getElementById('order-id-input');
+    const categorySelect = document.getElementById('order-category');
+    const orderDateInput = document.getElementById('order-date');
+    const projectCodeInput = document.getElementById('order-project-code');
+    const clientInput = document.getElementById('order-client');
+    const clientPoNumInput = document.getElementById('order-client-po-num');
+    const productNameInput = document.getElementById('order-product-name');
+    const clientManagerInput = document.getElementById('order-client-manager');
+    const salesManagerInput = document.getElementById('order-sales-manager');
+    const requestDateInput = document.getElementById('order-request-date');
+    const purchasePlaceInput = document.getElementById('order-purchase-place');
+    const qtyInput = document.getElementById('order-qty');
+    const priceInput = document.getElementById('order-price');
+    const amountInput = document.getElementById('order-amount');
+    const estimateDeliveryInput = document.getElementById('order-estimate-delivery-date');
+    const actualDeliveryInput = document.getElementById('order-actual-delivery-date');
+    const taxInvoice1Input = document.getElementById('order-tax-invoice-1');
+    const taxInvoice2Input = document.getElementById('order-tax-invoice-2');
+    const settlement1Input = document.getElementById('order-settlement-1');
+    const settlement2Input = document.getElementById('order-settlement-2');
+    const statusSelect = document.getElementById('order-status');
+    const descTextarea = document.getElementById('order-description');
+
+    const formTitle = document.getElementById('order-form-title');
+    const btnCancel = document.getElementById('btn-cancel-order-edit');
+
+    if (idInput) idInput.value = order.id;
+    if (categorySelect) categorySelect.value = order.category || '상품';
+    if (orderDateInput) orderDateInput.value = order.order_date || '';
+    if (projectCodeInput) projectCodeInput.value = order.project_code || '';
+    if (clientInput) clientInput.value = order.client || '';
+    if (clientPoNumInput) clientPoNumInput.value = order.client_po_num || '';
+    if (productNameInput) productNameInput.value = order.product_name || '';
+    if (clientManagerInput) clientManagerInput.value = order.client_manager || '';
+    if (salesManagerInput) salesManagerInput.value = order.sales_manager || '';
+    if (requestDateInput) requestDateInput.value = order.request_date || '';
+    if (purchasePlaceInput) purchasePlaceInput.value = order.purchase_place || '';
+    if (qtyInput) qtyInput.value = order.qty !== null ? order.qty : '';
+    if (priceInput) priceInput.value = order.order_price !== null ? order.order_price : '';
+    if (amountInput) amountInput.value = order.order_amount || 0;
+    if (estimateDeliveryInput) estimateDeliveryInput.value = order.estimate_delivery_date || '';
+    if (actualDeliveryInput) actualDeliveryInput.value = order.actual_delivery_date || '';
+    if (taxInvoice1Input) taxInvoice1Input.value = order.tax_invoice_1 || '';
+    if (taxInvoice2Input) taxInvoice2Input.value = order.tax_invoice_2 || '';
+    if (settlement1Input) settlement1Input.value = order.settlement_1 !== null ? order.settlement_1 : '';
+    if (settlement2Input) settlement2Input.value = order.settlement_2 !== null ? order.settlement_2 : '';
+    if (statusSelect) statusSelect.value = order.status || '대기';
+    if (descTextarea) descTextarea.value = order.description || '';
+
+    if (formTitle) formTitle.innerHTML = "✏️ 수주 정보 수정";
+    if (btnCancel) btnCancel.style.display = "inline-flex";
+
+    // 폼으로 스크롤 이동
+    const formElement = document.getElementById('order-form-title');
+    if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
+}
+
+// 수정 취소 및 폼 리셋
+function cancelOrderEdit() {
+    const basicTabBtn = document.querySelector('.form-tab[data-form-tab="basic"]');
+    if (basicTabBtn) basicTabBtn.click();
+
+    const idInput = document.getElementById('order-id-input');
+    const categorySelect = document.getElementById('order-category');
+    const orderDateInput = document.getElementById('order-date');
+    const projectCodeInput = document.getElementById('order-project-code');
+    const clientInput = document.getElementById('order-client');
+    const clientPoNumInput = document.getElementById('order-client-po-num');
+    const productNameInput = document.getElementById('order-product-name');
+    const clientManagerInput = document.getElementById('order-client-manager');
+    const salesManagerInput = document.getElementById('order-sales-manager');
+    const requestDateInput = document.getElementById('order-request-date');
+    const purchasePlaceInput = document.getElementById('order-purchase-place');
+    const qtyInput = document.getElementById('order-qty');
+    const priceInput = document.getElementById('order-price');
+    const amountInput = document.getElementById('order-amount');
+    const estimateDeliveryInput = document.getElementById('order-estimate-delivery-date');
+    const actualDeliveryInput = document.getElementById('order-actual-delivery-date');
+    const taxInvoice1Input = document.getElementById('order-tax-invoice-1');
+    const taxInvoice2Input = document.getElementById('order-tax-invoice-2');
+    const settlement1Input = document.getElementById('order-settlement-1');
+    const settlement2Input = document.getElementById('order-settlement-2');
+    const statusSelect = document.getElementById('order-status');
+    const descTextarea = document.getElementById('order-description');
+
+    const formTitle = document.getElementById('order-form-title');
+    const btnCancel = document.getElementById('btn-cancel-order-edit');
+
+    if (idInput) idInput.value = "";
+    if (categorySelect) categorySelect.value = "상품";
+    if (orderDateInput) orderDateInput.value = "";
+    if (projectCodeInput) projectCodeInput.value = "";
+    if (clientInput) clientInput.value = "";
+    if (clientPoNumInput) clientPoNumInput.value = "";
+    if (productNameInput) productNameInput.value = "";
+    if (clientManagerInput) clientManagerInput.value = "";
+    if (salesManagerInput) salesManagerInput.value = "";
+    if (requestDateInput) requestDateInput.value = "";
+    if (purchasePlaceInput) purchasePlaceInput.value = "";
+    if (qtyInput) qtyInput.value = "";
+    if (priceInput) priceInput.value = "";
+    if (amountInput) amountInput.value = "";
+    if (estimateDeliveryInput) estimateDeliveryInput.value = "";
+    if (actualDeliveryInput) actualDeliveryInput.value = "";
+    if (taxInvoice1Input) taxInvoice1Input.value = "";
+    if (taxInvoice2Input) taxInvoice2Input.value = "";
+    if (settlement1Input) settlement1Input.value = "";
+    if (settlement2Input) settlement2Input.value = "";
+    if (statusSelect) statusSelect.value = "대기";
+    if (descTextarea) descTextarea.value = "";
+
+    if (formTitle) formTitle.innerHTML = "✍️ 수주 등록";
+    if (btnCancel) btnCancel.style.display = "none";
+}
+
+// 수주 정보 소프트 삭제
+async function deleteOrder(orderId) {
+    const confirmDelete = await askConfirm("정말 이 수주 내역을 삭제하시겠습니까?", "수주 삭제");
+    if (!confirmDelete) return;
+
+    try {
+        console.log(`Soft deleting order id ${orderId} in SQLite...`);
+        await invoke('plugin:orders|delete_order', { orderId: orderId });
+        await refreshOrders();
+    } catch (err) {
+        console.error("Failed to delete order in SQLite:", err);
+        alert("수주 정보를 삭제하지 못했습니다: " + err);
+    }
+}
+
+// ==========================================
+// ⚙️ 모터사양 및 토크 계산기 기능 모듈 (Motor Calculator Module)
+// ==========================================
+
+let inertiaPoints = [
+    { mass: 0.6, radius: 0.7 },
+    { mass: 0.5, radius: 0.3 }
+];
+let rmsStages = [
+    { duration: 1.0, torque: 1.0, speedRpm: 4.77 },
+    { duration: 2.0, torque: 0.0, speedRpm: 9.55 },
+    { duration: 1.0, torque: -1.0, speedRpm: 4.77 }
+];
+
+async function refreshMotorCalc() {
+    console.log("Refreshing Motor Calculator...");
+    
+    // 1. Sub-tab click handler (Idempotency bound)
+    const tabs = document.querySelectorAll('#motor-calc-tabs .view-tab');
+    tabs.forEach(tab => {
+        tab.onclick = (e) => {
+            e.preventDefault();
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            const selectedTab = tab.getAttribute('data-motor-tab');
+            document.querySelectorAll('.motor-tab-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+            const targetPanel = document.getElementById(`panel-motor-${selectedTab}`);
+            if (targetPanel) targetPanel.style.display = 'block';
+            
+            // Adjust conditional parameter visibility
+            if (selectedTab === 'inertia') {
+                const shapeSel = document.getElementById('select-inertia-shape');
+                if (shapeSel) triggerInertiaShapeVisibility(shapeSel.value);
+            }
+        };
+    });
+
+    // 2. Shape Selector Visibility helper
+    const shapeSelector = document.getElementById('select-inertia-shape');
+    if (shapeSelector) {
+        shapeSelector.onchange = () => {
+            triggerInertiaShapeVisibility(shapeSelector.value);
+        };
+    }
+
+    // 3. Setup core calculators (onclick triggers)
+    
+    // Torque Calculator
+    const btnCalcTorque = document.getElementById('btn-calc-torque');
+    if (btnCalcTorque) {
+        btnCalcTorque.onclick = async () => {
+            const inertia = parseFloat(document.getElementById('input-torque-inertia').value) || 0;
+            const acceleration = parseFloat(document.getElementById('input-torque-accel').value) || 0;
+            
+            btnCalcTorque.disabled = true;
+            try {
+                const result = await invoke('plugin:motor|calculate_torque', { inertia, acceleration });
+                document.getElementById('output-torque-nm').textContent = `${result.torque_nm.toFixed(3)} Nm`;
+                document.getElementById('output-torque-ncm').textContent = `${result.torque_ncm.toFixed(1)} Ncm`;
+                document.getElementById('output-torque-kgfcm').textContent = `${result.torque_kgfcm.toFixed(3)} kgf·cm`;
+            } catch (err) {
+                console.error("Torque calculation failed:", err);
+                alert("토크 계산에 실패했습니다: " + err);
+            } finally {
+                btnCalcTorque.disabled = false;
+            }
+        };
+    }
+
+    // Inertia Calculator
+    const btnCalcInertia = document.getElementById('btn-calc-inertia');
+    if (btnCalcInertia) {
+        btnCalcInertia.onclick = async () => {
+            const shapeType = document.getElementById('select-inertia-shape').value;
+            
+            btnCalcInertia.disabled = true;
+            try {
+                let inertiaResult = 0.0;
+                
+                if (shapeType === 'multiple_points') {
+                    // Sum point masses directly
+                    for (const pt of inertiaPoints) {
+                        const ptInertia = await invoke('plugin:motor|calculate_inertia', {
+                            shapeType: 'point_mass',
+                            mass: pt.mass,
+                            radius: pt.radius,
+                            length: 0.0
+                        });
+                        inertiaResult += ptInertia;
+                    }
+                } else {
+                    let mass = parseFloat(document.getElementById('input-inertia-mass').value) || 0;
+                    let radius = parseFloat(document.getElementById('input-inertia-radius').value) || 0;
+                    let length = parseFloat(document.getElementById('input-inertia-length').value) || 0;
+                    
+                    const unitMass = document.getElementById('unit-inertia-mass').value;
+                    const unitRadius = document.getElementById('unit-inertia-radius').value;
+                    const unitLength = document.getElementById('unit-inertia-length').value;
+                    
+                    // Standardize units
+                    if (unitMass === 'g') mass /= 1000.0;
+                    if (unitRadius === 'cm') radius /= 100.0;
+                    else if (unitRadius === 'mm') radius /= 1000.0;
+                    if (unitLength === 'cm') length /= 100.0;
+                    else if (unitLength === 'mm') length /= 1000.0;
+                    
+                    inertiaResult = await invoke('plugin:motor|calculate_inertia', {
+                        shapeType,
+                        mass,
+                        radius,
+                        length
+                    });
+                }
+                
+                // Display results
+                document.getElementById('output-inertia-value').textContent = `${inertiaResult.toFixed(4)} kg·m²`;
+                document.getElementById('output-inertia-kgcm').textContent = `${(inertiaResult * 10000.0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} kg·cm²`;
+                document.getElementById('output-inertia-gcm').textContent = `${(inertiaResult * 10000000.0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} g·cm²`;
+                
+                // Set detail summary text
+                const shapeLabel = shapeType === 'point_mass' ? '1점/링 관성' :
+                                   shapeType === 'disc' ? '원판 관성' :
+                                   shapeType === 'cylinder_center' ? '원통 가로축(중심)' :
+                                   shapeType === 'cylinder_end' ? '원통 가로축(끝단)' : '다중 1점 관성 합산';
+                document.getElementById('output-inertia-detail').textContent = `형상: ${shapeLabel} | 계산치: ${inertiaResult.toFixed(5)} kg·m²`;
+                
+                // Save calculated inertia to memory for application
+                document.getElementById('btn-inertia-apply').onclick = () => {
+                    const torqueInertiaInput = document.getElementById('input-torque-inertia');
+                    if (torqueInertiaInput) {
+                        torqueInertiaInput.value = inertiaResult.toFixed(5);
+                        alert(`관성 모멘트치 [${inertiaResult.toFixed(5)} kg·m²]가 1번 탭 입력으로 적용되었습니다!`);
+                        // Auto-switch to torque tab
+                        const torqueTab = document.querySelector('#motor-calc-tabs [data-motor-tab="torque"]');
+                        if (torqueTab) torqueTab.click();
+                    }
+                };
+            } catch (err) {
+                console.error("Inertia calculation failed:", err);
+                alert("관성 모멘트 계산에 실패했습니다: " + err);
+            } finally {
+                btnCalcInertia.disabled = false;
+            }
+        };
+    }
+
+    // Speed Conversion Binders
+    const inputConvVal = document.getElementById('input-conv-val');
+    const selectConvFrom = document.getElementById('select-conv-from');
+    
+    const triggerSpeedConversion = async () => {
+        const value = parseFloat(inputConvVal.value) || 0;
+        const fromUnit = selectConvFrom.value;
+        try {
+            const rads = await invoke('plugin:motor|convert_speed', { value, fromUnit, toUnit: 'rads' });
+            const rpm = await invoke('plugin:motor|convert_speed', { value, fromUnit, toUnit: 'rpm' });
+            const degs = await invoke('plugin:motor|convert_speed', { value, fromUnit, toUnit: 'degs' });
+            
+            document.getElementById('output-speed-rads').textContent = `${rads.toFixed(3)} rad/sec`;
+            document.getElementById('output-speed-rpm').textContent = `${rpm.toFixed(1)} rpm`;
+            document.getElementById('output-speed-degs').textContent = `${degs.toFixed(3)} deg/sec`;
+        } catch (err) {
+            console.error("Speed conversion failed:", err);
+        }
+    };
+    
+    if (inputConvVal) inputConvVal.oninput = triggerSpeedConversion;
+    if (selectConvFrom) selectConvFrom.onchange = triggerSpeedConversion;
+
+    // Angular Acceleration Solver
+    const btnAccelApply = document.getElementById('btn-accelsolver-apply');
+    const inputSolverTime = document.getElementById('input-accelsolver-time');
+    const inputSolverV0 = document.getElementById('input-accelsolver-v0');
+    const inputSolverVt = document.getElementById('input-accelsolver-vt');
+    const selectSolverUnit = document.getElementById('select-accelsolver-unit');
+
+    const triggerAccelSolve = async () => {
+        const time = parseFloat(inputSolverTime.value) || 0;
+        const initialSpeed = parseFloat(inputSolverV0.value) || 0;
+        const finalSpeed = parseFloat(inputSolverVt.value) || 0;
+        const unit = selectSolverUnit.value;
+        
+        if (time <= 0) {
+            document.getElementById('output-accelsolver-val').textContent = "시간 오류 (Time > 0)";
+            return;
+        }
+        
+        try {
+            const alpha = await invoke('plugin:motor|calculate_angular_acceleration', {
+                initialSpeed,
+                finalSpeed,
+                time,
+                unit
+            });
+            document.getElementById('output-accelsolver-val').textContent = `${alpha.toFixed(3)} rad/s²`;
+            
+            btnAccelApply.onclick = () => {
+                const torqueAccelInput = document.getElementById('input-torque-accel');
+                if (torqueAccelInput) {
+                    torqueAccelInput.value = alpha.toFixed(3);
+                    alert(`도출된 각가속도 [${alpha.toFixed(3)} rad/s²]가 1번 탭 입력으로 적용되었습니다!`);
+                    // Switch tab
+                    const torqueTab = document.querySelector('#motor-calc-tabs [data-motor-tab="torque"]');
+                    if (torqueTab) torqueTab.click();
+                }
+            };
+        } catch (err) {
+            console.error("Acceleration solve failed:", err);
+            document.getElementById('output-accelsolver-val').textContent = "오류";
+        }
+    };
+
+    if (inputSolverTime) inputSolverTime.oninput = triggerAccelSolve;
+    if (inputSolverV0) inputSolverV0.oninput = triggerAccelSolve;
+    if (inputSolverVt) inputSolverVt.oninput = triggerAccelSolve;
+    if (selectSolverUnit) selectSolverUnit.onchange = triggerAccelSolve;
+
+    // Combined Torque Calculator
+    const btnCalcCombined = document.getElementById('btn-calc-combined');
+    if (btnCalcCombined) {
+        btnCalcCombined.onclick = async () => {
+            const mass = parseFloat(document.getElementById('input-comb-mass').value) || 0;
+            const armLength = parseFloat(document.getElementById('input-comb-length').value) || 0;
+            const angleDeg = parseFloat(document.getElementById('input-comb-angle').value) || 0;
+            const acceleration = parseFloat(document.getElementById('input-comb-accel').value) || 0;
+            
+            btnCalcCombined.disabled = true;
+            try {
+                const result = await invoke('plugin:motor|calculate_combined_torque', {
+                    mass,
+                    armLength,
+                    angleDeg,
+                    acceleration
+                });
+                
+                document.getElementById('output-comb-ta').textContent = `${result.torque_acceleration.toFixed(2)} Nm`;
+                document.getElementById('output-comb-tg').textContent = `${result.torque_gravity.toFixed(2)} Nm`;
+                document.getElementById('output-comb-total').textContent = `${result.torque_total.toFixed(2)} Nm`;
+            } catch (err) {
+                console.error("Combined torque failed:", err);
+                alert("가속+중력 합산 계산에 실패했습니다: " + err);
+            } finally {
+                btnCalcCombined.disabled = false;
+            }
+        };
+    }
+
+    // Motor Specs Calculator
+    const btnCalcSpecs = document.getElementById('btn-calc-specs');
+    if (btnCalcSpecs) {
+        btnCalcSpecs.onclick = async () => {
+            const voltageIn = parseFloat(document.getElementById('input-specs-vin').value) || 0;
+            const kbVKrpm = parseFloat(document.getElementById('input-specs-kb').value) || 0;
+            const torqueRequired = parseFloat(document.getElementById('input-specs-tr').value) || 0;
+            
+            btnCalcSpecs.disabled = true;
+            try {
+                const result = await invoke('plugin:motor|calculate_motor_specs', {
+                    voltageIn,
+                    kbVKrpm,
+                    torqueRequired
+                });
+                
+                document.getElementById('output-specs-kt').textContent = `${result.kt_nm_a.toFixed(3)} Nm/Amp`;
+                document.getElementById('output-specs-maxspd').textContent = `${Math.round(result.max_speed_rpm).toLocaleString()} rpm`;
+                document.getElementById('output-specs-safespd').textContent = `${Math.round(result.safe_speed_rpm).toLocaleString()} rpm`;
+                document.getElementById('output-specs-current').textContent = `${result.required_current_a.toFixed(2)} A`;
+            } catch (err) {
+                console.error("Motor specs failed:", err);
+                alert("모터 특성 및 필요 전류 연산에 실패했습니다: " + err);
+            } finally {
+                btnCalcSpecs.disabled = false;
+            }
+        };
+    }
+
+    // RMS Cycle Calculator
+    const btnCalcRms = document.getElementById('btn-calc-rms');
+    if (btnCalcRms) {
+        btnCalcRms.onclick = async () => {
+            if (rmsStages.length === 0) {
+                alert("최소 하나 이상의 구동 구간을 추가해 주세요.");
+                return;
+            }
+            
+            btnCalcRms.disabled = true;
+            try {
+                // Map local stage parameters to serde-friendly camelCase naming
+                const mappedStages = rmsStages.map(stage => ({
+                    duration: stage.duration,
+                    torque: stage.torque,
+                    speed_rpm: stage.speedRpm
+                }));
+                
+                const result = await invoke('plugin:motor|calculate_rms_cycle', { stages: mappedStages });
+                
+                document.getElementById('output-rms-time').textContent = `${result.total_time.toFixed(2)} 초`;
+                document.getElementById('output-rms-torque').textContent = `${result.rms_torque.toFixed(3)} Nm`;
+                document.getElementById('output-rms-speed').textContent = `${result.average_speed_rpm.toFixed(2)} rpm`;
+                document.getElementById('output-rms-power').textContent = `${result.continuous_power_w.toFixed(3)} W`;
+            } catch (err) {
+                console.error("RMS cycle calculation failed:", err);
+                alert("RMS 토크 및 연속 파워 연산에 실패했습니다: " + err);
+            } finally {
+                btnCalcRms.disabled = false;
+            }
+        };
+    }
+
+    // Add list items onclick triggers
+    const btnInertiaAddPoint = document.getElementById('btn-inertia-add-point');
+    if (btnInertiaAddPoint) {
+        btnInertiaAddPoint.onclick = () => {
+            inertiaPoints.push({ mass: 0.5, radius: 0.5 });
+            renderInertiaPointsTable();
+        };
+    }
+
+    const btnRmsAddStage = document.getElementById('btn-rms-add-stage');
+    if (btnRmsAddStage) {
+        btnRmsAddStage.onclick = () => {
+            rmsStages.push({ duration: 1.0, torque: 0.5, speedRpm: 10.0 });
+            renderRmsStagesTable();
+        };
+    }
+
+    // 4. Presets Buttons bindings
+    document.getElementById('btn-preset-torque').onclick = () => {
+        document.getElementById('input-torque-inertia').value = "0.5";
+        document.getElementById('input-torque-accel').value = "4";
+        const tabBtn = document.querySelector('#motor-calc-tabs [data-motor-tab="torque"]');
+        if (tabBtn) tabBtn.click();
+        btnCalcTorque.click();
+    };
+
+    document.getElementById('btn-preset-combined').onclick = () => {
+        document.getElementById('input-comb-mass').value = "1.0";
+        document.getElementById('input-comb-length').value = "1.0";
+        document.getElementById('input-comb-angle').value = "30";
+        document.getElementById('input-comb-accel').value = "1.0";
+        const tabBtn = document.querySelector('#motor-calc-tabs [data-motor-tab="combined"]');
+        if (tabBtn) tabBtn.click();
+        btnCalcCombined.click();
+    };
+
+    document.getElementById('btn-preset-motor').onclick = () => {
+        document.getElementById('input-specs-vin').value = "320";
+        document.getElementById('input-specs-kb').value = "90.9";
+        document.getElementById('input-specs-tr').value = "3.0";
+        const tabBtn = document.querySelector('#motor-calc-tabs [data-motor-tab="specs"]');
+        if (tabBtn) tabBtn.click();
+        btnCalcSpecs.click();
+    };
+
+    document.getElementById('btn-preset-rms').onclick = () => {
+        rmsStages = [
+            { duration: 1.0, torque: 1.0, speedRpm: 4.77 },
+            { duration: 2.0, torque: 0.0, speedRpm: 9.55 },
+            { duration: 1.0, torque: -1.0, speedRpm: 4.77 }
+        ];
+        renderRmsStagesTable();
+        const tabBtn = document.querySelector('#motor-calc-tabs [data-motor-tab="rms"]');
+        if (tabBtn) tabBtn.click();
+        btnCalcRms.click();
+    };
+
+    // 5. Run initial renderings
+    renderInertiaPointsTable();
+    renderRmsStagesTable();
+    triggerSpeedConversion();
+    triggerAccelSolve();
+    
+    // Auto-click first presets to populate values
+    btnCalcTorque.click();
+}
+
+function triggerInertiaShapeVisibility(shape) {
+    const basicParams = document.getElementById('inertia-params-basic');
+    const multipleParams = document.getElementById('inertia-params-multiple');
+    const lengthGroup = document.getElementById('group-inertia-length');
+    
+    if (shape === 'multiple_points') {
+        basicParams.style.display = 'none';
+        multipleParams.style.display = 'flex';
+    } else {
+        basicParams.style.display = 'flex';
+        multipleParams.style.display = 'none';
+        
+        if (shape.includes('cylinder_')) {
+            lengthGroup.style.display = 'block';
+        } else {
+            lengthGroup.style.display = 'none';
+        }
+    }
+}
+
+function renderInertiaPointsTable() {
+    const tbody = document.getElementById('tbody-inertia-points');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    inertiaPoints.forEach((pt, index) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+        
+        tr.innerHTML = `
+            <td style="padding: 4px 0;">
+                <input type="number" value="${pt.mass}" step="0.1" style="width: 70px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); color: #fff; padding: 4px; border-radius: 4px; font-size:12px;" id="input-pt-mass-${index}"> kg
+            </td>
+            <td style="padding: 4px 0;">
+                <input type="number" value="${pt.radius}" step="0.1" style="width: 70px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); color: #fff; padding: 4px; border-radius: 4px; font-size:12px;" id="input-pt-rad-${index}"> m
+            </td>
+            <td style="padding: 4px 0; text-align: right;">
+                <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 10px; color: #f87171;" id="btn-pt-del-${index}">삭제</button>
+            </td>
+        `;
+        
+        tbody.appendChild(tr);
+        
+        const massIn = document.getElementById(`input-pt-mass-${index}`);
+        const radIn = document.getElementById(`input-pt-rad-${index}`);
+        const delBtn = document.getElementById(`btn-pt-del-${index}`);
+        
+        if (massIn) {
+            massIn.oninput = () => {
+                inertiaPoints[index].mass = parseFloat(massIn.value) || 0.0;
+            };
+        }
+        if (radIn) {
+            radIn.oninput = () => {
+                inertiaPoints[index].radius = parseFloat(radIn.value) || 0.0;
+            };
+        }
+        if (delBtn) {
+            delBtn.onclick = () => {
+                inertiaPoints.splice(index, 1);
+                renderInertiaPointsTable();
+            };
+        }
+    });
+}
+
+function renderRmsStagesTable() {
+    const tbody = document.getElementById('tbody-rms-stages');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    rmsStages.forEach((stage, index) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+        
+        tr.innerHTML = `
+            <td style="padding: 6px 4px; color: var(--text-secondary);">${index + 1}</td>
+            <td style="padding: 4px;">
+                <input type="number" value="${stage.duration}" step="0.1" style="width: 60px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); color: #fff; padding: 4px; border-radius: 4px; font-size:12px;" id="input-rms-dur-${index}"> s
+            </td>
+            <td style="padding: 4px;">
+                <input type="number" value="${stage.torque}" step="0.1" style="width: 60px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); color: #fff; padding: 4px; border-radius: 4px; font-size:12px;" id="input-rms-tq-${index}"> Nm
+            </td>
+            <td style="padding: 4px;">
+                <input type="number" value="${stage.speedRpm}" step="1" style="width: 60px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); color: #fff; padding: 4px; border-radius: 4px; font-size:12px;" id="input-rms-spd-${index}"> rpm
+            </td>
+            <td style="padding: 4px; text-align: right;">
+                <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 10px; color: #f87171;" id="btn-rms-del-${index}">삭제</button>
+            </td>
+        `;
+        
+        tbody.appendChild(tr);
+        
+        const durIn = document.getElementById(`input-rms-dur-${index}`);
+        const tqIn = document.getElementById(`input-rms-tq-${index}`);
+        const spdIn = document.getElementById(`input-rms-spd-${index}`);
+        const delBtn = document.getElementById(`btn-rms-del-${index}`);
+        
+        if (durIn) {
+            durIn.oninput = () => {
+                rmsStages[index].duration = parseFloat(durIn.value) || 0.0;
+                updateRmsProfileGraph();
+            };
+        }
+        if (tqIn) {
+            tqIn.oninput = () => {
+                rmsStages[index].torque = parseFloat(tqIn.value) || 0.0;
+                updateRmsProfileGraph();
+            };
+        }
+        if (spdIn) {
+            spdIn.oninput = () => {
+                rmsStages[index].speedRpm = parseFloat(spdIn.value) || 0.0;
+                updateRmsProfileGraph();
+            };
+        }
+        if (delBtn) {
+            delBtn.onclick = () => {
+                rmsStages.splice(index, 1);
+                renderRmsStagesTable();
+            };
+        }
+    });
+
+    updateRmsProfileGraph();
+}
+
+function updateRmsProfileGraph() {
+    const svg = document.getElementById('svg-rms-profile');
+    if (!svg) return;
+    svg.innerHTML = '';
+    
+    if (!rmsStages || rmsStages.length === 0) {
+        svg.innerHTML = `<text x="225" y="80" fill="var(--text-secondary)" font-size="12" text-anchor="middle">구간을 추가해 주세요.</text>`;
+        return;
+    }
+    
+    let totalTime = 0;
+    let maxAbsSpeed = 0.1;
+    let maxAbsTorque = 0.1;
+    
+    rmsStages.forEach(stage => {
+        totalTime += Math.max(0, stage.duration);
+        if (Math.abs(stage.speedRpm) > maxAbsSpeed) maxAbsSpeed = Math.abs(stage.speedRpm);
+        if (Math.abs(stage.torque) > maxAbsTorque) maxAbsTorque = Math.abs(stage.torque);
+    });
+    
+    if (totalTime <= 0) totalTime = 1.0;
+    
+    const paddingLeft = 45;
+    const paddingRight = 45;
+    const paddingTop = 20;
+    const paddingBottom = 25;
+    const width = 450;
+    const height = 160;
+    
+    const plotWidth = width - paddingLeft - paddingRight;
+    const plotHeight = height - paddingTop - paddingBottom;
+    const centerY = paddingTop + plotHeight / 2; // Y=67.5 (0선)
+    
+    // Draw grid/axis lines
+    // Center reference line (0)
+    svg.innerHTML += `<line x1="${paddingLeft}" y1="${centerY}" x2="${width - paddingRight}" y2="${centerY}" stroke="rgba(255, 255, 255, 0.15)" stroke-dasharray="3,3" />`;
+    // Boundary vertical lines
+    svg.innerHTML += `<line x1="${paddingLeft}" y1="${paddingTop}" x2="${paddingLeft}" y2="${height - paddingBottom}" stroke="rgba(255, 255, 255, 0.1)" />`;
+    svg.innerHTML += `<line x1="${width - paddingRight}" y1="${paddingTop}" x2="${width - paddingRight}" y2="${height - paddingBottom}" stroke="rgba(255, 255, 255, 0.1)" />`;
+
+    let currentTime = 0;
+    let lastYSpeed = centerY;
+    let lastYTorque = centerY;
+    
+    rmsStages.forEach((stage, index) => {
+        const duration = Math.max(0, stage.duration);
+        const nextTime = currentTime + duration;
+        const startX = paddingLeft + (currentTime / totalTime) * plotWidth;
+        const endX = paddingLeft + (nextTime / totalTime) * plotWidth;
+        
+        // Speed line Y coord
+        const ySpeed = centerY - (stage.speedRpm / maxAbsSpeed) * (plotHeight / 2);
+        // Torque line Y coord
+        const yTorque = centerY - (stage.torque / maxAbsTorque) * (plotHeight / 2);
+        
+        // Vertical step connectors (if not the first stage)
+        if (index > 0) {
+            svg.innerHTML += `<line x1="${startX}" y1="${lastYSpeed}" x2="${startX}" y2="${ySpeed}" stroke="#89b4fa" stroke-width="1.2" stroke-dasharray="2,2" />`;
+            svg.innerHTML += `<line x1="${startX}" y1="${lastYTorque}" x2="${startX}" y2="${yTorque}" stroke="#ffaa40" stroke-width="1.2" stroke-dasharray="2,2" />`;
+        }
+        
+        // Horizontal segment lines
+        svg.innerHTML += `<line x1="${startX}" y1="${ySpeed}" x2="${endX}" y2="${ySpeed}" stroke="#89b4fa" stroke-width="2.5" stroke-linecap="round" />`;
+        svg.innerHTML += `<line x1="${startX}" y1="${yTorque}" x2="${endX}" y2="${yTorque}" stroke="#ffaa40" stroke-width="2.5" stroke-linecap="round" />`;
+        
+        // Add markers
+        svg.innerHTML += `<circle cx="${endX}" cy="${ySpeed}" r="2.5" fill="#89b4fa" />`;
+        svg.innerHTML += `<circle cx="${endX}" cy="${yTorque}" r="2.5" fill="#ffaa40" />`;
+
+        // Time labels at boundaries
+        if (index === 0) {
+            svg.innerHTML += `<text x="${startX}" y="${height - 8}" fill="var(--text-secondary)" font-size="8.5" text-anchor="middle">0s</text>`;
+        }
+        svg.innerHTML += `<text x="${endX}" y="${height - 8}" fill="var(--text-secondary)" font-size="8.5" text-anchor="middle">${nextTime.toFixed(1)}s</text>`;
+        
+        currentTime = nextTime;
+        lastYSpeed = ySpeed;
+        lastYTorque = yTorque;
+    });
+    
+    // Y-axis labels on left (Speed - blue)
+    svg.innerHTML += `<text x="${paddingLeft - 8}" y="${paddingTop + 3}" fill="#89b4fa" font-size="8.5" text-anchor="end">+${maxAbsSpeed.toFixed(0)}</text>`;
+    svg.innerHTML += `<text x="${paddingLeft - 8}" y="${centerY + 3}" fill="var(--text-secondary)" font-size="8.5" text-anchor="end">0 rpm</text>`;
+    svg.innerHTML += `<text x="${paddingLeft - 8}" y="${height - paddingBottom}" fill="#89b4fa" font-size="8.5" text-anchor="end">-${maxAbsSpeed.toFixed(0)}</text>`;
+    
+    // Y-axis labels on right (Torque - orange)
+    svg.innerHTML += `<text x="${width - paddingRight + 8}" y="${paddingTop + 3}" fill="#ffaa40" font-size="8.5" text-anchor="start">+${maxAbsTorque.toFixed(1)}</text>`;
+    svg.innerHTML += `<text x="${width - paddingRight + 8}" y="${centerY + 3}" fill="var(--text-secondary)" font-size="8.5" text-anchor="start">0 Nm</text>`;
+    svg.innerHTML += `<text x="${width - paddingRight + 8}" y="${height - paddingBottom}" fill="#ffaa40" font-size="8.5" text-anchor="start">-${maxAbsTorque.toFixed(1)}</text>`;
+}
+
+
