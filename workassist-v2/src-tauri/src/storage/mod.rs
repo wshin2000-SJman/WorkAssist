@@ -1,25 +1,34 @@
 pub mod schema;
-pub mod security;
 use rusqlite::{Connection, Result, params};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use crate::models::{Task, Meeting, Project, StatusLog};
-use crate::storage::security::SecurityEngine;
 
 pub struct Storage {
     pub conn: Mutex<Connection>,
+    #[cfg(feature = "orders")]
+    pub orders_conn: Mutex<Connection>,
     pub path: PathBuf,
 }
 
 impl Storage {
     pub fn new(path: PathBuf) -> Result<Self> {
         let conn = Connection::open(&path)?;
-        
-        // Use pragma_update instead of execute for journal_mode to avoid "ExecuteReturnedResults" error
         conn.pragma_update(None, "journal_mode", "WAL")?;
+
+        #[cfg(feature = "orders")]
+        let orders_conn = {
+            let mut orders_path = path.parent().unwrap().to_path_buf();
+            orders_path.push("sjworkassist_orders.db");
+            let oc = Connection::open(&orders_path)?;
+            oc.pragma_update(None, "journal_mode", "WAL")?;
+            oc
+        };
         
         let storage = Storage { 
             conn: Mutex::new(conn), 
+            #[cfg(feature = "orders")]
+            orders_conn: Mutex::new(orders_conn),
             path 
         };
         storage.initialize_tables()?;
@@ -30,6 +39,13 @@ impl Storage {
     pub fn initialize_tables(&self) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         Self::ensure_schema(&conn)?;
+        
+        // Ensure orders table is created in the isolated orders database
+        #[cfg(feature = "orders")]
+        {
+            let orders_conn = self.orders_conn.lock().unwrap();
+            orders_conn.execute(schema::CREATE_ORDERS_TABLE, [])?;
+        }
         
         // Seed default user
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM users", [], |r| r.get(0))?;
@@ -163,9 +179,6 @@ impl Storage {
                 let _p_count = new_conn.execute("UPDATE projects SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
                 let _s_count = new_conn.execute("UPDATE status_logs SET owner_id = ?", [final_id]).map_err(|e| e.to_string())?;
 
-                
-                // Also ensure shadow tables are correctly associated if needed 
-                // (Note: Shadow tables currently match by ID, so if main IDs are kept, they're fine)
             }
 
             *conn = new_conn;
@@ -176,19 +189,21 @@ impl Storage {
 
     /// Internal helper to ensure schema is up to date on any connection
     fn ensure_schema(conn: &Connection) -> Result<()> {
+        // Drop existing shadow and secure vault tables to clean up and lighten local database
+        let _ = conn.execute("DROP TABLE IF EXISTS shadow_meetings", []);
+        let _ = conn.execute("DROP TABLE IF EXISTS shadow_tasks", []);
+        let _ = conn.execute("DROP TABLE IF EXISTS shadow_projects", []);
+        let _ = conn.execute("DROP TABLE IF EXISTS shadow_status_logs", []);
+        let _ = conn.execute("DROP TABLE IF EXISTS shadow_meeting_categories", []);
+        let _ = conn.execute("DROP TABLE IF EXISTS secure_vault", []);
+
         conn.execute(schema::CREATE_USERS_TABLE, [])?;
         conn.execute(schema::CREATE_MEETINGS_TABLE, [])?;
         conn.execute(schema::CREATE_TASKS_TABLE, [])?;
         conn.execute(schema::CREATE_PROJECTS_TABLE, [])?;
         conn.execute(schema::CREATE_MILESTONES_TABLE, [])?;
         conn.execute(schema::CREATE_STATUS_LOGS_TABLE, [])?;
-        conn.execute(schema::CREATE_SECURE_VAULT_TABLE, [])?;
-        conn.execute(schema::CREATE_SHADOW_TASKS_TABLE, [])?;
-        conn.execute(schema::CREATE_SHADOW_MEETINGS_TABLE, [])?;
-        conn.execute(schema::CREATE_SHADOW_PROJECTS_TABLE, [])?;
-        conn.execute(schema::CREATE_SHADOW_STATUS_LOGS_TABLE, [])?;
         conn.execute(schema::CREATE_MEETING_CATEGORIES_TABLE, [])?;
-        conn.execute(schema::CREATE_SHADOW_MEETING_CATEGORIES_TABLE, [])?;
         conn.execute(schema::CREATE_SPECS_TABLE, [])?;
 
         // Column Migrations
@@ -199,15 +214,6 @@ impl Storage {
         };
         if !tasks_info.contains(&"is_deleted".to_string()) {
             conn.execute("ALTER TABLE tasks ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT 0", [])?;
-        }
-
-        let shadow_tasks_info: Vec<String> = {
-            let mut stmt = conn.prepare("PRAGMA table_info(shadow_tasks)")?;
-            let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
-            rows.map(|r| r.unwrap()).collect()
-        };
-        if !shadow_tasks_info.contains(&"task_tag".to_string()) {
-            conn.execute("ALTER TABLE shadow_tasks ADD COLUMN task_tag TEXT", [])?;
         }
         
         let meetings_info: Vec<String> = {
@@ -223,18 +229,6 @@ impl Storage {
         }
         if !meetings_info.contains(&"category_id".to_string()) {
             conn.execute("ALTER TABLE meetings ADD COLUMN category_id INTEGER REFERENCES meeting_categories(id) ON DELETE SET NULL", [])?;
-        }
-
-        let shadow_meetings_info: Vec<String> = {
-            let mut stmt = conn.prepare("PRAGMA table_info(shadow_meetings)")?;
-            let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
-            rows.map(|r| r.unwrap()).collect()
-        };
-        if !shadow_meetings_info.contains(&"meeting_tag".to_string()) {
-            conn.execute("ALTER TABLE shadow_meetings ADD COLUMN meeting_tag TEXT", [])?;
-        }
-        if !shadow_meetings_info.contains(&"category_id".to_string()) {
-            conn.execute("ALTER TABLE shadow_meetings ADD COLUMN category_id INTEGER", [])?;
         }
 
         let logs_info: Vec<String> = {
@@ -270,24 +264,6 @@ impl Storage {
             conn.execute("ALTER TABLE projects ADD COLUMN completion_memo TEXT", [])?;
         }
 
-        let shadow_projects_info: Vec<String> = {
-            let mut stmt = conn.prepare("PRAGMA table_info(shadow_projects)")?;
-            let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
-            rows.map(|r| r.unwrap()).collect()
-        };
-        if !shadow_projects_info.contains(&"project_tag".to_string()) {
-            conn.execute("ALTER TABLE shadow_projects ADD COLUMN project_tag TEXT", [])?;
-        }
-        if !shadow_projects_info.contains(&"status".to_string()) {
-            conn.execute("ALTER TABLE shadow_projects ADD COLUMN status TEXT", [])?;
-        }
-        if !shadow_projects_info.contains(&"completion_date".to_string()) {
-            conn.execute("ALTER TABLE shadow_projects ADD COLUMN completion_date TEXT", [])?;
-        }
-        if !shadow_projects_info.contains(&"completion_memo".to_string()) {
-            conn.execute("ALTER TABLE shadow_projects ADD COLUMN completion_memo TEXT", [])?;
-        }
-
         Ok(())
     }
 
@@ -298,7 +274,6 @@ impl Storage {
         conn.execute("DELETE FROM projects WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM tasks WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM meetings WHERE owner_id = ?", [owner_id])?;
-        self.clear_shadow_tables(&conn)?;
         Ok(())
     }
 
@@ -309,7 +284,6 @@ impl Storage {
         conn.execute("DELETE FROM projects", [])?;
         conn.execute("DELETE FROM tasks", [])?;
         conn.execute("DELETE FROM meetings", [])?;
-        self.clear_shadow_tables(&conn)?;
 
         // Preserve current user so they can still login after wipe
         if let Some(user) = current_user {
@@ -323,15 +297,6 @@ impl Storage {
             )?;
         }
 
-        Ok(())
-    }
-
-    fn clear_shadow_tables(&self, conn: &rusqlite::Connection) -> Result<()> {
-        conn.execute("DELETE FROM shadow_tasks", [])?;
-        conn.execute("DELETE FROM shadow_meetings", [])?;
-        conn.execute("DELETE FROM shadow_projects", [])?;
-        conn.execute("DELETE FROM shadow_status_logs", [])?;
-        conn.execute("DELETE FROM secure_vault", [])?;
         Ok(())
     }
 
@@ -358,116 +323,7 @@ impl Storage {
     }
 
 
-    pub fn save_task_dual(&self, conn: &rusqlite::Connection, task: &Task, task_id: i64) -> Result<()> {
-        // 1. Tokenize content
-        let shadow_title = SecurityEngine::tokenize(conn, &task.title);
-        let shadow_content = SecurityEngine::tokenize(conn, task.content.as_deref().unwrap_or(""));
-        let shadow_comment = SecurityEngine::tokenize(conn, task.review_comment.as_deref().unwrap_or(""));
 
-        // 2. Write to shadow table
-        conn.execute(
-            "INSERT OR REPLACE INTO shadow_tasks (id, title, content, review_comment, task_tag) VALUES (?, ?, ?, ?, ?)",
-            params![task_id, shadow_title, shadow_content, shadow_comment, task.task_tag],
-        )?;
-
-        Ok(())
-    }
-
-    pub fn save_meeting_dual(&self, conn: &rusqlite::Connection, meeting: &Meeting, meeting_id: i64) -> Result<()> {
-        // 1. Tokenize fields
-        let s_title = SecurityEngine::tokenize(conn, &meeting.title);
-        let s_participants = SecurityEngine::tokenize(conn, meeting.participants.as_deref().unwrap_or(""));
-        let s_location = SecurityEngine::tokenize(conn, meeting.location.as_deref().unwrap_or(""));
-        let s_decisions = SecurityEngine::tokenize(conn, meeting.decisions.as_deref().unwrap_or(""));
-        let s_action = SecurityEngine::tokenize(conn, meeting.action_items.as_deref().unwrap_or(""));
-        let s_memo = SecurityEngine::tokenize(conn, meeting.memo.as_deref().unwrap_or(""));
-
-        // 2. Write to shadow
-        conn.execute(
-            "INSERT OR REPLACE INTO shadow_meetings (id, title, participants, location, decisions, action_items, memo, meeting_tag, category_id) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            params![meeting_id, s_title, s_participants, s_location, s_decisions, s_action, s_memo, meeting.meeting_tag, meeting.category_id],
-        )?;
-
-        Ok(())
-    }
-
-    pub fn save_project_dual(&self, conn: &rusqlite::Connection, project: &Project, project_id: i64) -> Result<()> {
-        let s_name = SecurityEngine::tokenize(conn, &project.name);
-        let s_desc = SecurityEngine::tokenize(conn, project.description.as_deref().unwrap_or(""));
-        let s_comp_memo = SecurityEngine::tokenize(conn, project.completion_memo.as_deref().unwrap_or(""));
-
-        conn.execute(
-            "INSERT OR REPLACE INTO shadow_projects (id, name, description, project_tag, status, completion_date, completion_memo) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
-            params![
-                project_id, 
-                s_name, 
-                s_desc, 
-                project.project_tag, 
-                project.status, 
-                project.completion_date, 
-                s_comp_memo
-            ],
-        )?;
-
-        Ok(())
-    }
-
-    pub fn save_status_log_dual(&self, conn: &rusqlite::Connection, log: &StatusLog, log_id: i64) -> Result<()> {
-        let s_title = SecurityEngine::tokenize(conn, log.title.as_deref().unwrap_or(""));
-        let s_content = SecurityEngine::tokenize(conn, log.text_content.as_deref().unwrap_or(""));
-        let s_manager = SecurityEngine::tokenize(conn, log.manager.as_deref().unwrap_or(""));
-
-        conn.execute(
-            "INSERT OR REPLACE INTO shadow_status_logs (id, title, text_content, manager) VALUES (?, ?, ?, ?)",
-            params![log_id, s_title, s_content, s_manager],
-        )?;
-
-        Ok(())
-    }
-
-    pub fn delete_task_dual(&self, conn: &rusqlite::Connection, task_id: i64) -> Result<()> {
-        conn.execute("DELETE FROM tasks WHERE id = ?", params![task_id])?;
-        conn.execute("DELETE FROM shadow_tasks WHERE id = ?", params![task_id])?;
-        Ok(())
-    }
-
-    pub fn delete_meeting_dual(&self, conn: &rusqlite::Connection, meeting_id: i64) -> Result<()> {
-        conn.execute("DELETE FROM meetings WHERE id = ?", params![meeting_id])?;
-        conn.execute("DELETE FROM shadow_meetings WHERE id = ?", params![meeting_id])?;
-        Ok(())
-    }
-
-    pub fn delete_project_dual(&self, conn: &rusqlite::Connection, project_id: i64) -> Result<()> {
-        let _ = conn.execute("DELETE FROM shadow_status_logs WHERE id IN (SELECT id FROM status_logs WHERE project_id = ?)", params![project_id]);
-        let _ = conn.execute("DELETE FROM status_logs WHERE project_id = ?", params![project_id]);
-        let _ = conn.execute("DELETE FROM milestones WHERE project_id = ?", params![project_id]);
-        let _ = conn.execute("DELETE FROM shadow_projects WHERE id = ?", params![project_id]);
-        conn.execute("DELETE FROM projects WHERE id = ?", params![project_id])?;
-        Ok(())
-    }
-
-    pub fn delete_status_log_dual(&self, conn: &rusqlite::Connection, log_id: i64) -> Result<()> {
-        let _ = conn.execute("DELETE FROM shadow_status_logs WHERE id = ?", params![log_id]);
-        conn.execute("DELETE FROM status_logs WHERE id = ?", params![log_id])?;
-        Ok(())
-    }
-
-    pub fn save_category_dual(&self, conn: &rusqlite::Connection, name: &str, category_id: i64) -> Result<()> {
-        let s_name = SecurityEngine::tokenize(conn, name);
-        conn.execute(
-            "INSERT OR REPLACE INTO shadow_meeting_categories (id, name) VALUES (?, ?)",
-            params![category_id, s_name],
-        )?;
-        Ok(())
-    }
-
-    pub fn delete_category_dual(&self, conn: &rusqlite::Connection, category_id: i64) -> Result<()> {
-        conn.execute("DELETE FROM shadow_meeting_categories WHERE id = ?", params![category_id])?;
-        conn.execute("DELETE FROM meeting_categories WHERE id = ?", params![category_id])?;
-        Ok(())
-    }
 
     pub fn seed_demo_data(&self) -> Result<()> {
         let owner_id = 999;
@@ -488,12 +344,6 @@ impl Storage {
         let conn = self.conn.lock().unwrap();
 
         // Clear existing demo data first to ensure idempotency and prevent duplicates
-        conn.execute("DELETE FROM shadow_tasks WHERE id IN (SELECT id FROM tasks WHERE owner_id = ?)", [owner_id])?;
-        conn.execute("DELETE FROM shadow_meetings WHERE id IN (SELECT id FROM meetings WHERE owner_id = ?)", [owner_id])?;
-        conn.execute("DELETE FROM shadow_projects WHERE id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
-        conn.execute("DELETE FROM shadow_status_logs WHERE id IN (SELECT id FROM status_logs WHERE owner_id = ?)", [owner_id])?;
-        conn.execute("DELETE FROM shadow_meeting_categories WHERE id IN (SELECT id FROM meeting_categories WHERE owner_id = ?)", [owner_id])?;
-
         conn.execute("DELETE FROM status_logs WHERE owner_id = ?", [owner_id])?;
         conn.execute("DELETE FROM milestones WHERE project_id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
         conn.execute("DELETE FROM projects WHERE owner_id = ?", [owner_id])?;
@@ -522,7 +372,6 @@ impl Storage {
                 params![owner_id, name, color, seq, now],
             )?;
             let cid = conn.last_insert_rowid();
-            self.save_category_dual(&conn, name, cid)?;
             cat_ids.push(cid);
         }
 
@@ -608,7 +457,6 @@ impl Storage {
             )?;
             let pid = conn.last_insert_rowid();
             p.id = Some(pid);
-            self.save_project_dual(&conn, &p, pid)?;
 
             // Add some status logs for the project
             let log = StatusLog {
@@ -624,8 +472,6 @@ impl Storage {
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 params![log.project_id, owner_id, log.department, log.text_content, log.timestamp, log.status, log.tag, log.title, log.manager, log.is_deleted],
             )?;
-            let lid = conn.last_insert_rowid();
-            self.save_status_log_dual(&conn, &log, lid)?;
         }
 
         // 2. Demo Tasks
@@ -660,7 +506,7 @@ impl Storage {
             Task {
                 id: None, owner_id: Some(owner_id),
                 title: "Performance Profiling".to_string(),
-                content: Some("Analyze SQLite query latency for the new shadow DB sync logic.".to_string()),
+                content: Some("Analyze SQLite query latency for the database sync logic.".to_string()),
                 manager: Some("Perf Lead".to_string()),
                 start_date: Some(d_p1.clone()), due_date: Some(d_p3.clone()),
                 status: "To-do".to_string(), is_urgent: true, created_at: now.clone(),
@@ -674,9 +520,6 @@ impl Storage {
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 params![t.owner_id, t.title, t.content, t.manager, t.start_date, t.due_date, t.status, t.is_urgent, t.created_at, t.task_tag],
             )?;
-            let tid = conn.last_insert_rowid();
-            t.id = Some(tid);
-            self.save_task_dual(&conn, &t, tid)?;
         }
 
         // 3. Demo Meetings
@@ -717,9 +560,6 @@ impl Storage {
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 params![m.owner_id, m.title, m.date, m.participants, m.location, m.decisions, m.action_items, m.memo, m.created_at, m.meeting_tag, m.category_id],
             )?;
-            let mid = conn.last_insert_rowid();
-            m.id = Some(mid);
-            self.save_meeting_dual(&conn, &m, mid)?;
         }
 
         Ok(())
@@ -728,13 +568,6 @@ impl Storage {
     pub fn clear_demo_data(&self) -> Result<()> {
         let owner_id = 999;
         let conn = self.conn.lock().unwrap();
-
-        // Delete from shadow tables using subqueries
-        conn.execute("DELETE FROM shadow_tasks WHERE id IN (SELECT id FROM tasks WHERE owner_id = ?)", [owner_id])?;
-        conn.execute("DELETE FROM shadow_meetings WHERE id IN (SELECT id FROM meetings WHERE owner_id = ?)", [owner_id])?;
-        conn.execute("DELETE FROM shadow_projects WHERE id IN (SELECT id FROM projects WHERE owner_id = ?)", [owner_id])?;
-        conn.execute("DELETE FROM shadow_status_logs WHERE id IN (SELECT id FROM status_logs WHERE owner_id = ?)", [owner_id])?;
-        conn.execute("DELETE FROM shadow_meeting_categories WHERE id IN (SELECT id FROM meeting_categories WHERE owner_id = ?)", [owner_id])?;
 
         // Delete from primary tables (Referencing tables first to prevent foreign key errors)
         conn.execute("DELETE FROM status_logs WHERE owner_id = ?", [owner_id])?;
@@ -773,10 +606,6 @@ mod tests {
         let mut stmt = conn.prepare("PRAGMA table_info(projects)").unwrap();
         let columns: Vec<String> = stmt.query_map([], |row| row.get::<_, String>(1)).unwrap().map(|r| r.unwrap()).collect();
         assert!(columns.contains(&"project_tag".to_string()), "projects table should contain project_tag column");
-
-        let mut stmt_s = conn.prepare("PRAGMA table_info(shadow_projects)").unwrap();
-        let s_columns: Vec<String> = stmt_s.query_map([], |row| row.get::<_, String>(1)).unwrap().map(|r| r.unwrap()).collect();
-        assert!(s_columns.contains(&"project_tag".to_string()), "shadow_projects table should contain project_tag column");
 
         // 2. Seed demo data and verify tagged projects
         storage.seed_demo_data().expect("Failed to seed demo data");

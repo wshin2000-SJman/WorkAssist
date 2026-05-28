@@ -115,8 +115,6 @@ impl PmModule {
                     conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept4_name, id, o4])?;
                 }
             }
-
-            let _ = self.storage.save_project_dual(&conn, &project, id);
             Ok(id)
         } else {
             project.created_at = now_rfc;
@@ -147,7 +145,6 @@ impl PmModule {
                 ],
             )?;
             let project_id = conn.last_insert_rowid();
-            let _ = self.storage.save_project_dual(&conn, &project, project_id);
             Ok(project_id)
         }
     }
@@ -212,8 +209,6 @@ impl PmModule {
             ],
         )?;
         let log_id = conn.last_insert_rowid();
-        let _ = self.storage.save_status_log_dual(&conn, &log, log_id);
-
         Ok(log_id)
     }
 
@@ -231,14 +226,13 @@ impl PmModule {
                     id
                 ],
             )?;
-            let _ = self.storage.save_status_log_dual(&conn, &log, id);
         }
         Ok(())
     }
 
     pub fn delete_status_log_permanent(&self, log_id: i64) -> Result<()> {
         let conn = self.storage.conn.lock().unwrap();
-        self.storage.delete_status_log_dual(&conn, log_id)?;
+        conn.execute("DELETE FROM status_logs WHERE id = ?", params![log_id])?;
         Ok(())
     }
 
@@ -350,7 +344,9 @@ impl PmModule {
 
     pub fn hard_delete_project(&self, project_id: i64) -> Result<()> {
         let conn = self.storage.conn.lock().unwrap();
-        self.storage.delete_project_dual(&conn, project_id)?;
+        let _ = conn.execute("DELETE FROM status_logs WHERE project_id = ?", params![project_id]);
+        let _ = conn.execute("DELETE FROM milestones WHERE project_id = ?", params![project_id]);
+        conn.execute("DELETE FROM projects WHERE id = ?", params![project_id])?;
         Ok(())
     }
 
@@ -361,14 +357,6 @@ impl PmModule {
             "UPDATE projects SET status = 'done', completion_date = ?, completion_memo = ? WHERE id = ?",
             params![completion_date, completion_memo, project_id]
         )?;
-
-        // 2. Update Shadow DB (De-identified)
-        let s_comp_memo = crate::storage::security::SecurityEngine::tokenize(&conn, &completion_memo);
-        conn.execute(
-            "UPDATE shadow_projects SET status = 'done', completion_date = ?, completion_memo = ? WHERE id = ?",
-            params![completion_date, s_comp_memo, project_id]
-        )?;
-
         Ok(())
     }
 
@@ -415,13 +403,6 @@ impl PmModule {
             "UPDATE projects SET status = 'active', completion_date = NULL, completion_memo = NULL WHERE id = ?",
             params![project_id]
         )?;
-
-        // 2. Update Shadow DB
-        conn.execute(
-            "UPDATE shadow_projects SET status = 'active', completion_date = NULL, completion_memo = NULL WHERE id = ?",
-            params![project_id]
-        )?;
-
         Ok(())
     }
 
@@ -557,7 +538,9 @@ impl PmModule {
         let mut trash_deleted_msg = None;
         if !trash_projects.is_empty() {
             for p_id in &trash_projects {
-                let _ = self.storage.delete_project_dual(&conn, *p_id);
+                let _ = conn.execute("DELETE FROM status_logs WHERE project_id = ?", params![p_id]);
+                let _ = conn.execute("DELETE FROM milestones WHERE project_id = ?", params![p_id]);
+                let _ = conn.execute("DELETE FROM projects WHERE id = ?", params![p_id]);
             }
             trash_deleted_msg = Some(format!(
                 "An identical project with tag '{}' in the Trash Bin has been permanently deleted.",
@@ -587,11 +570,9 @@ impl PmModule {
             conn.execute("DELETE FROM milestones WHERE project_id = ?", params![target_id])
                 .map_err(|e| format!("Failed to delete existing milestones: {}", e))?;
                 
-            // 2. Delete existing status logs (raw & shadow)
+            // 2. Delete existing status logs
             conn.execute("DELETE FROM status_logs WHERE project_id = ?", params![target_id])
                 .map_err(|e| format!("Failed to delete existing status logs: {}", e))?;
-            conn.execute("DELETE FROM shadow_status_logs WHERE project_id = ?", params![target_id])
-                .map_err(|e| format!("Failed to delete existing shadow status logs: {}", e))?;
                 
             // 3. Update existing project
             imported_proj.owner_id = Some(owner_id);
@@ -626,9 +607,6 @@ impl PmModule {
                 ],
             ).map_err(|e| format!("Failed to update existing project: {}", e))?;
             
-            // Sync shadow project (Overwrite)
-            let _ = self.storage.save_project_dual(&conn, &imported_proj, target_id);
-            
             // 4. Re-insert milestones
             for milestone in export_data.milestones {
                 let mut ms = milestone;
@@ -650,7 +628,7 @@ impl PmModule {
                 ).map_err(|e| format!("Failed to insert milestone: {}", e))?;
             }
             
-            // 5. Re-insert status logs (raw & shadow)
+            // 5. Re-insert status logs
             for log in export_data.status_logs {
                 let mut l = log;
                 l.id = None;
@@ -681,8 +659,6 @@ impl PmModule {
                 
                 let new_log_id = conn.last_insert_rowid();
                 l.id = Some(new_log_id);
-                
-                let _ = self.storage.save_status_log_dual(&conn, &l, new_log_id);
             }
             
             let success_msg = if let Some(ref t_msg) = trash_deleted_msg {
@@ -734,8 +710,6 @@ impl PmModule {
         let new_project_id = conn.last_insert_rowid();
         imported_proj.id = Some(new_project_id);
         
-        let _ = self.storage.save_project_dual(&conn, &imported_proj, new_project_id);
-        
         for milestone in export_data.milestones {
             let mut ms = milestone;
             ms.id = None;
@@ -786,8 +760,6 @@ impl PmModule {
             
             let new_log_id = conn.last_insert_rowid();
             l.id = Some(new_log_id);
-            
-            let _ = self.storage.save_status_log_dual(&conn, &l, new_log_id);
         }
         
         let success_msg = if let Some(ref t_msg) = trash_deleted_msg {
@@ -803,6 +775,7 @@ impl PmModule {
             message: success_msg,
         })
     }
+
 }
 
 // --- PM Plugin Commands ---
@@ -907,6 +880,8 @@ pub async fn import_project_db(api: tauri::State<'_, crate::api::Api>, owner_id:
     api.pm().import_project_db(owner_id, file_path, overwrite)
 }
 
+
+
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("pm")
         .invoke_handler(tauri::generate_handler![
@@ -929,7 +904,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             get_completed_projects,
             reactivate_project,
             export_project_db,
-            import_project_db
+            import_project_db,
+
         ])
         .build()
 }

@@ -1466,6 +1466,135 @@ async fn get_unique_metadata(
     })
 }
 
+#[tauri::command]
+async fn rebuild_lancedb_index<R: Runtime>(
+    app: AppHandle<R>,
+    storage: tauri::State<'_, Arc<Storage>>,
+) -> Result<Value, String> {
+    let mut db_path = if cfg!(windows) {
+        PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_else(|_| ".".into()))
+    } else {
+        PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
+    };
+    db_path.push("SJ_WorkAssist");
+    db_path.push("lancedb_data");
+    let db_dir = db_path.to_string_lossy().to_string();
+
+    // 1. Delete and recreate LanceDB folder to fully wipe prior index
+    if db_path.exists() {
+        let _ = std::fs::remove_dir_all(&db_path);
+    }
+    std::fs::create_dir_all(&db_path)
+        .map_err(|e| format!("Failed to create clean LanceDB directory: {}", e))?;
+
+    // 2. Resolve embedding model and initialize engine
+    let model_path = resolve_model_path(&app)?;
+    let vocab_path = resolve_vocab_path(&app)?;
+    let engine = super::embedding::EmbeddingEngine::new(model_path, vocab_path)?;
+
+    // 3. Connect to LanceDB and create empty table with specs schema
+    let lancedb_conn = connect(&db_dir)
+        .execute()
+        .await
+        .map_err(|e| format!("Failed to connect to LanceDB: {}", e))?;
+
+    let table_name = "specs_vectors";
+    let schema = Arc::new(arrow_schema::Schema::new(vec![
+        arrow_schema::Field::new("id", arrow_schema::DataType::Utf8, false),
+        arrow_schema::Field::new("part_number", arrow_schema::DataType::Utf8, false),
+        arrow_schema::Field::new("chunk_text", arrow_schema::DataType::Utf8, false),
+        arrow_schema::Field::new(
+            "vector",
+            arrow_schema::DataType::FixedSizeList(
+                Arc::new(arrow_schema::Field::new("item", arrow_schema::DataType::Float32, true)),
+                384
+            ),
+            false
+        ),
+    ]));
+
+    let batch = arrow_array::RecordBatch::new_empty(schema.clone());
+    let table = lancedb_conn
+        .create_table(table_name, vec![batch])
+        .execute()
+        .await
+        .map_err(|e| format!("Failed to create LanceDB table: {}", e))?;
+
+    // 4. Retrieve all products from SQLite specs table
+    let specs: Vec<(String, String, String, String, String)> = {
+        let sqlite_conn = storage.conn.lock().unwrap();
+        let mut stmt = sqlite_conn
+            .prepare("SELECT part_number, category, manufacturer, description, spec_data FROM specs")
+            .map_err(|e| format!("Failed to prepare specs query: {}", e))?;
+        
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, Option<String>>(3)?.unwrap_or_default(),
+                row.get::<_, String>(4)?,
+            ))
+        }).map_err(|e| format!("Failed to run specs query: {}", e))?;
+
+        let mut list = Vec::new();
+        for r in rows {
+            if let Ok(item) = r {
+                list.push(item);
+            }
+        }
+        list
+    };
+
+    let mut indexed_count = 0;
+
+    // 5. Generate descriptive text chunks, compute embeddings, and insert to LanceDB
+    for (idx, (part_number, category, manufacturer, description, spec_data_str)) in specs.into_iter().enumerate() {
+        let spec_data: Value = serde_json::from_str(&spec_data_str).unwrap_or(serde_json::Value::Null);
+        let chunk_text = generate_spec_chunk_text(&part_number, &category, &manufacturer, &description, &spec_data);
+        
+        let vector = engine.embed_sentence(&chunk_text)?;
+
+        let mut id_builder = StringBuilder::new();
+        let mut part_number_builder = StringBuilder::new();
+        let mut chunk_text_builder = StringBuilder::new();
+        let mut vector_builder = FixedSizeListBuilder::new(Float32Builder::new(), 384);
+
+        let chunk_id = format!("{}_{}", part_number, idx);
+        id_builder.append_value(&chunk_id);
+        part_number_builder.append_value(&part_number);
+        chunk_text_builder.append_value(&chunk_text);
+        
+        for &val in &vector {
+            vector_builder.values().append_value(val);
+        }
+        vector_builder.append(true);
+
+        let batch = RecordBatch::try_new(
+            schema.clone(),
+            vec![
+                Arc::new(id_builder.finish()),
+                Arc::new(part_number_builder.finish()),
+                Arc::new(chunk_text_builder.finish()),
+                Arc::new(vector_builder.finish()),
+            ]
+        ).map_err(|e| format!("Failed to build Arrow RecordBatch: {}", e))?;
+
+        table.add(vec![batch])
+            .execute()
+            .await
+            .map_err(|e| format!("Failed to insert embedding to LanceDB: {}", e))?;
+
+        indexed_count += 1;
+    }
+
+    Ok(serde_json::json!({
+        "status": "success",
+        "indexed_count": indexed_count,
+        "message": format!("Successfully rebuilt LanceDB index with {} items.", indexed_count)
+    }))
+}
+
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("rag")
         .invoke_handler(tauri::generate_handler![
@@ -1478,7 +1607,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             preview_json_folder,
             ingest_reviewed_specs,
             search_hybrid_specs,
-            get_unique_metadata
+            get_unique_metadata,
+            rebuild_lancedb_index
         ])
         .build()
 }

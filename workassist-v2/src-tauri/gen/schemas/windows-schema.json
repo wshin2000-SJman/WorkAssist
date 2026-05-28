@@ -6645,6 +6645,150 @@
           "markdownDescription": "Denies the save_text_file command without any pre-configured scope."
         },
         {
+          "description": "Enables the calculate_angular_acceleration command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:allow-calculate-angular-acceleration",
+          "markdownDescription": "Enables the calculate_angular_acceleration command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the calculate_combined_torque command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:allow-calculate-combined-torque",
+          "markdownDescription": "Enables the calculate_combined_torque command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the calculate_inertia command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:allow-calculate-inertia",
+          "markdownDescription": "Enables the calculate_inertia command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the calculate_motor_specs command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:allow-calculate-motor-specs",
+          "markdownDescription": "Enables the calculate_motor_specs command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the calculate_rms_cycle command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:allow-calculate-rms-cycle",
+          "markdownDescription": "Enables the calculate_rms_cycle command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the calculate_torque command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:allow-calculate-torque",
+          "markdownDescription": "Enables the calculate_torque command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the convert_speed command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:allow-convert-speed",
+          "markdownDescription": "Enables the convert_speed command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the calculate_angular_acceleration command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:deny-calculate-angular-acceleration",
+          "markdownDescription": "Denies the calculate_angular_acceleration command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the calculate_combined_torque command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:deny-calculate-combined-torque",
+          "markdownDescription": "Denies the calculate_combined_torque command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the calculate_inertia command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:deny-calculate-inertia",
+          "markdownDescription": "Denies the calculate_inertia command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the calculate_motor_specs command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:deny-calculate-motor-specs",
+          "markdownDescription": "Denies the calculate_motor_specs command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the calculate_rms_cycle command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:deny-calculate-rms-cycle",
+          "markdownDescription": "Denies the calculate_rms_cycle command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the calculate_torque command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:deny-calculate-torque",
+          "markdownDescription": "Denies the calculate_torque command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the convert_speed command without any pre-configured scope.",
+          "type": "string",
+          "const": "motor:deny-convert-speed",
+          "markdownDescription": "Denies the convert_speed command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the delete_order command without any pre-configured scope.",
+          "type": "string",
+          "const": "orders:allow-delete-order",
+          "markdownDescription": "Enables the delete_order command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the export_excel_template command without any pre-configured scope.",
+          "type": "string",
+          "const": "orders:allow-export-excel-template",
+          "markdownDescription": "Enables the export_excel_template command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_orders command without any pre-configured scope.",
+          "type": "string",
+          "const": "orders:allow-get-orders",
+          "markdownDescription": "Enables the get_orders command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the import_excel_orders command without any pre-configured scope.",
+          "type": "string",
+          "const": "orders:allow-import-excel-orders",
+          "markdownDescription": "Enables the import_excel_orders command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save_order command without any pre-configured scope.",
+          "type": "string",
+          "const": "orders:allow-save-order",
+          "markdownDescription": "Enables the save_order command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the delete_order command without any pre-configured scope.",
+          "type": "string",
+          "const": "orders:deny-delete-order",
+          "markdownDescription": "Denies the delete_order command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the export_excel_template command without any pre-configured scope.",
+          "type": "string",
+          "const": "orders:deny-export-excel-template",
+          "markdownDescription": "Denies the export_excel_template command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_orders command without any pre-configured scope.",
+          "type": "string",
+          "const": "orders:deny-get-orders",
+          "markdownDescription": "Denies the get_orders command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the import_excel_orders command without any pre-configured scope.",
+          "type": "string",
+          "const": "orders:deny-import-excel-orders",
+          "markdownDescription": "Denies the import_excel_orders command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_order command without any pre-configured scope.",
+          "type": "string",
+          "const": "orders:deny-save-order",
+          "markdownDescription": "Denies the save_order command without any pre-configured scope."
+        },
+        {
           "description": "Enables the add_project command without any pre-configured scope.",
           "type": "string",
           "const": "pm:allow-add-project",

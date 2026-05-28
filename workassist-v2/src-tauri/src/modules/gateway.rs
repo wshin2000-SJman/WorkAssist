@@ -1,5 +1,4 @@
 use crate::storage::Storage;
-use crate::storage::security::SecurityEngine;
 use rusqlite::Result;
 use std::sync::Arc;
 use serde::{Serialize, Deserialize};
@@ -23,7 +22,7 @@ impl GatewayModule {
 
     pub fn get_all_shadow_tasks(&self) -> Result<Vec<ShadowData>> {
         let conn = self.storage.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT id, title, content, review_comment FROM shadow_tasks")?;
+        let mut stmt = conn.prepare("SELECT id, title, content, review_comment FROM tasks WHERE is_deleted = 0")?;
         let rows = stmt.query_map([], |row| {
             Ok(ShadowData {
                 id: row.get(0)?,
@@ -39,8 +38,7 @@ impl GatewayModule {
     }
 
     pub fn detokenize(&self, text: &str) -> String {
-        let conn = self.storage.conn.lock().unwrap();
-        SecurityEngine::detokenize(&conn, text)
+        text.to_string()
     }
 }
 

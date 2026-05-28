@@ -102,58 +102,7 @@ pub const CREATE_STATUS_LOGS_TABLE: &str = "
     );
 ";
 
-pub const CREATE_SECURE_VAULT_TABLE: &str = "
-    CREATE TABLE IF NOT EXISTS secure_vault (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        original_text TEXT UNIQUE NOT NULL,
-        token_id TEXT NOT NULL,
-        entity_type TEXT NOT NULL
-    );
-";
 
-pub const CREATE_SHADOW_MEETINGS_TABLE: &str = "
-    CREATE TABLE IF NOT EXISTS shadow_meetings (
-        id INTEGER PRIMARY KEY, -- Matches original meeting ID
-        title TEXT,
-        participants TEXT,
-        location TEXT,
-        decisions TEXT,
-        action_items TEXT,
-        memo TEXT,
-        meeting_tag TEXT
-    );
-";
-
-pub const CREATE_SHADOW_TASKS_TABLE: &str = "
-    CREATE TABLE IF NOT EXISTS shadow_tasks (
-        id INTEGER PRIMARY KEY, -- Matches original task ID
-        title TEXT,
-        content TEXT,
-        review_comment TEXT,
-        task_tag TEXT
-    );
-";
-
-pub const CREATE_SHADOW_PROJECTS_TABLE: &str = "
-    CREATE TABLE IF NOT EXISTS shadow_projects (
-        id INTEGER PRIMARY KEY, -- Matches original project ID
-        name TEXT,
-        description TEXT,
-        project_tag TEXT,
-        status TEXT,
-        completion_date TEXT,
-        completion_memo TEXT
-    );
-";
-
-pub const CREATE_SHADOW_STATUS_LOGS_TABLE: &str = "
-    CREATE TABLE IF NOT EXISTS shadow_status_logs (
-        id INTEGER PRIMARY KEY, -- Matches original status_log ID
-        title TEXT,
-        text_content TEXT,
-        manager TEXT
-    );
-";
 
 pub const CREATE_MEETING_CATEGORIES_TABLE: &str = "
     CREATE TABLE IF NOT EXISTS meeting_categories (
@@ -168,12 +117,7 @@ pub const CREATE_MEETING_CATEGORIES_TABLE: &str = "
     );
 ";
 
-pub const CREATE_SHADOW_MEETING_CATEGORIES_TABLE: &str = "
-    CREATE TABLE IF NOT EXISTS shadow_meeting_categories (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL
-    );
-";
+
 
 pub const CREATE_SPECS_TABLE: &str = "
     CREATE TABLE IF NOT EXISTS specs (
@@ -187,4 +131,39 @@ pub const CREATE_SPECS_TABLE: &str = "
         created_at TEXT NOT NULL
     );
 ";
+
+#[cfg(feature = "orders")]
+pub const CREATE_ORDERS_TABLE: &str = "
+    CREATE TABLE IF NOT EXISTS orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner_id INTEGER,
+        
+        -- 수주매출 현황 (21개 컬럼 1-to-1 매칭)
+        order_date TEXT,                    -- 수주일자 (Col 2, B)
+        project_code TEXT,                  -- 프로젝트코드 (Col 3, C)
+        category TEXT,                      -- 구분 (Col 4, D) (상품 / 제품)
+        client TEXT NOT NULL,               -- 고객사 (Col 5, E)
+        client_po_num TEXT,                 -- 고객 발주번호 (Col 6, F)
+        product_name TEXT,                  -- 제품명 (Col 7, G)
+        client_manager TEXT,                -- 고객 담당자 (Col 8, H)
+        sales_manager TEXT,                 -- 영업담당자 (Col 9, I)
+        request_date TEXT,                  -- 납품요청일 (Col 10, J)
+        purchase_place TEXT,                -- 매입처 (Col 11, K)
+        qty INTEGER,                        -- 수량 (Col 12, L)
+        order_price INTEGER,                -- 수주단가 (Col 13, M)
+        order_amount INTEGER,               -- 수주금액 (Col 14, N)
+        estimate_delivery_date TEXT,        -- 납품 예정일 (Col 15, O)
+        actual_delivery_date TEXT,          -- 실제 납품일 (Col 16, P)
+        tax_invoice_1 TEXT,                 -- 1차 계산서 (Col 17, Q)
+        tax_invoice_2 TEXT,                 -- 2차 계산서 (Col 18, R)
+        settlement_1 INTEGER,               -- 1차 정산금 (Col 19, S)
+        settlement_2 INTEGER,               -- 2차 정산금 (Col 20, T)
+        description TEXT,                   -- 비고 (Col 21, U)
+        
+        status TEXT NOT NULL DEFAULT '대기', -- 진행상태
+        created_at TEXT NOT NULL,
+        is_deleted BOOLEAN NOT NULL DEFAULT 0
+    );
+";
+
 

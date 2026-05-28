@@ -86,7 +86,6 @@ impl KanbanModule {
         ).map_err(|e| e.to_string())?;
 
         let task_id = conn.last_insert_rowid();
-        let _ = self.storage.save_task_dual(&conn, &task, task_id);
 
         Ok(task_id)
     }
@@ -129,8 +128,6 @@ impl KanbanModule {
                 task.id,
             ],
         )?;
-
-        let _ = self.storage.save_task_dual(&conn, &task, task.id.unwrap_or(0));
 
         Ok(())
     }
@@ -176,7 +173,7 @@ impl KanbanModule {
 
     pub fn hard_delete_task(&self, task_id: i64) -> Result<()> {
         let conn = self.storage.conn.lock().unwrap();
-        self.storage.delete_task_dual(&conn, task_id)?;
+        conn.execute("DELETE FROM tasks WHERE id = ?", params![task_id])?;
         Ok(())
     }
 }

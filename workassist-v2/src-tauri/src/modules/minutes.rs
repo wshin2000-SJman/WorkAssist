@@ -92,7 +92,7 @@ impl MinutesModule {
 
     pub fn hard_delete_meeting(&self, meeting_id: i64) -> Result<()> {
         let conn = self.storage.conn.lock().unwrap();
-        self.storage.delete_meeting_dual(&conn, meeting_id)?;
+        conn.execute("DELETE FROM meetings WHERE id = ?", params![meeting_id])?;
         Ok(())
     }
 
@@ -138,7 +138,6 @@ impl MinutesModule {
                     id
                 ],
             )?;
-            let _ = self.storage.save_meeting_dual(&conn, &meeting, id);
             Ok(id)
         } else {
             // Generate Tag: MYYMMDD-HHMM-## (SSOT) if not already present
@@ -165,7 +164,6 @@ impl MinutesModule {
                 ],
             )?;
             let meeting_id = conn.last_insert_rowid();
-            let _ = self.storage.save_meeting_dual(&conn, &meeting, meeting_id);
             Ok(meeting_id)
         }
     }
@@ -255,7 +253,6 @@ impl MinutesModule {
                 "UPDATE meeting_categories SET name = ?, color = ?, order_seq = ? WHERE id = ?",
                 params![category.name, category.color, category.order_seq, id],
             ).map_err(|e| e.to_string())?;
-            let _ = self.storage.save_category_dual(&conn, &category.name, id);
             Ok(id)
         } else {
             category.created_at = now;
@@ -264,7 +261,6 @@ impl MinutesModule {
                 params![owner_id, category.name, category.color, category.order_seq, category.created_at],
             ).map_err(|e| e.to_string())?;
             let category_id = conn.last_insert_rowid();
-            let _ = self.storage.save_category_dual(&conn, &category.name, category_id);
             Ok(category_id)
         }
     }
@@ -272,8 +268,7 @@ impl MinutesModule {
     pub fn delete_category(&self, category_id: i64) -> std::result::Result<(), String> {
         let conn = self.storage.conn.lock().unwrap();
         conn.execute("UPDATE meetings SET category_id = NULL WHERE category_id = ?", params![category_id]).map_err(|e| e.to_string())?;
-        conn.execute("UPDATE shadow_meetings SET category_id = NULL WHERE category_id = ?", params![category_id]).map_err(|e| e.to_string())?;
-        let _ = self.storage.delete_category_dual(&conn, category_id);
+        conn.execute("DELETE FROM meeting_categories WHERE id = ?", params![category_id]).map_err(|e| e.to_string())?;
         Ok(())
     }
 }
@@ -499,7 +494,7 @@ pub async fn import_minutes_md_bulk(api: tauri::State<'_, crate::api::Api>, dir_
             
             if !trash_meetings.is_empty() {
                 for m_id in &trash_meetings {
-                    let _ = minutes.storage.delete_meeting_dual(&conn, *m_id);
+                    let _ = conn.execute("DELETE FROM meetings WHERE id = ?", params![m_id]);
                 }
                 warnings.push(format!(
                     "File {:?}: An identical meeting with tag '{}' in the Trash Bin has been permanently deleted.",
@@ -673,7 +668,7 @@ pub async fn import_minutes_md_single(api: tauri::State<'_, crate::api::Api>, fi
         
         if !trash_meetings.is_empty() {
             for m_id in &trash_meetings {
-                let _ = minutes.storage.delete_meeting_dual(&conn, *m_id);
+                let _ = conn.execute("DELETE FROM meetings WHERE id = ?", params![m_id]);
             }
             trash_deleted_msg = Some(format!(
                 "An identical meeting with tag '{}' in the Trash Bin has been permanently deleted.",
