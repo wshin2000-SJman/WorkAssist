@@ -99,6 +99,7 @@ textarea::-webkit-scrollbar {
 
 :root {
   --bg-color: #0b0e14;
+  --bg-dark: #070a0f;
   --sidebar-bg: rgba(11, 14, 20, 0.9);
   --card-bg: rgba(255, 255, 255, 0.03);
   --card-border: rgba(255, 255, 255, 0.08);
@@ -106,6 +107,7 @@ textarea::-webkit-scrollbar {
   --accent-glow: rgba(243, 141, 33, 0.3);
   --text-primary: #fefce8;
   --text-secondary: #94a3b8;
+  --text-color: var(--text-primary);
   --glass-effect: blur(25px) saturate(160%);
   --brand-blue: #60c5ea;
   --brand-green: #a6e069;
@@ -867,6 +869,14 @@ body {
   margin-bottom: 8px;
 }
 
+/* Global Form Controls & Inputs Styling to prevent WebView2 default white box styling */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea,
 .form-group input[type="text"],
 .form-group input[type="password"],
 .form-group textarea,
@@ -875,15 +885,22 @@ body {
 .modal-content input[type="text"],
 .modal-content textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  padding: 10px 14px;
-  height: 44px;
-  color: var(--text-primary);
-  font-family: inherit;
-  transition: border-color 0.2s;
-  color-scheme: dark;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  height: 44px !important;
+  color: var(--text-primary) !important;
+  font-family: inherit !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+  color-scheme: dark !important;
+  box-sizing: border-box !important;
+}
+
+/* Specific styling for readonly inputs like paths */
+input[readonly] {
+  background: rgba(255, 255, 255, 0.03) !important;
+  cursor: pointer !important;
 }
 
 .form-group textarea {
@@ -906,13 +923,16 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   transform: scale(1.1);
 }
 
+input:focus,
+select:focus,
+textarea:focus,
 .form-group input:focus,
 .form-group textarea:focus,
 .modal-content input:focus,
 .modal-content textarea:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  outline: none !important;
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow) !important;
 }
 
 .form-row {
