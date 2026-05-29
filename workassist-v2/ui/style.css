@@ -177,19 +177,29 @@ textarea::-webkit-scrollbar {
   }
 }
 
+html {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
 body {
   font-family: 'Outfit', 'Inter', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
-  height: 100vh;
+  height: 100%;
+  width: 100%;
   overflow-x: hidden;
   overflow-y: hidden;
+  /* Prevent WebView2 DPI scaling double-rendering */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 .app-container {
   display: flex;
-  height: 100vh;
-  background: transparent;
+  height: 100%;
+  background: var(--bg-color);
   width: 100%;
 }
 
@@ -520,6 +530,7 @@ body {
   display: flex;
   gap: 20px;
   height: calc(100vh - 200px);
+  max-height: calc(100vh - 200px);
   overflow-x: auto;
   padding-bottom: 20px;
 }
@@ -1308,6 +1319,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   display: flex;
   gap: 32px;
   height: calc(100vh - 160px);
+  max-height: calc(100vh - 160px);
 }
 
 .pm-sidebar {
@@ -2548,6 +2560,7 @@ tr:has(.status-review) {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 200px);
+  max-height: calc(100vh - 200px);
 }
 
 .schedule-nav-header {
@@ -2700,6 +2713,7 @@ tr:has(.status-review) {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 200px);
+  max-height: calc(100vh - 200px);
 }
 
 .calendar-header {

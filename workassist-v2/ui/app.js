@@ -706,10 +706,32 @@ function closeAllModals() {
     });
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
+async function initAndShow() {
     init();
+    // Show the window after UI is fully initialized.
+    // The window starts hidden (visible: false in tauri.conf.json) to prevent
+    // layout flash/broken UI in production builds.
+    try {
+        if (window.__TAURI__) {
+            // Small delay to ensure CSS paint + fonts are ready
+            await new Promise(resolve => setTimeout(resolve, 150));
+            const currentWindow = window.__TAURI__.window;
+            if (currentWindow && currentWindow.getCurrentWindow) {
+                await currentWindow.getCurrentWindow().show();
+            } else if (currentWindow && currentWindow.appWindow) {
+                await currentWindow.appWindow.show();
+            }
+            console.log("Window shown after UI init.");
+        }
+    } catch (e) {
+        console.warn("Could not show window via Tauri API:", e);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAndShow);
+} else {
+    initAndShow();
 }
 
 function setupModals() {
