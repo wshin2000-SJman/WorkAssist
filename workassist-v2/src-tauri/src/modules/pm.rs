@@ -34,7 +34,7 @@ impl PmModule {
     pub fn get_active_projects(&self, owner_id: i64) -> Result<Vec<Project>> {
         let conn = self.storage.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo 
+            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, dept5_name, dept6_name, dept7_name, dept8_name, dept9_name, dept10_name, project_tag, is_deleted, completion_date, completion_memo 
              FROM projects WHERE (owner_id = ? OR owner_id = 999) AND status = 'active' AND is_deleted = 0 ORDER BY created_at DESC"
         )?;
         
@@ -53,10 +53,16 @@ impl PmModule {
                 dept2_name: row.get(10)?,
                 dept3_name: row.get(11)?,
                 dept4_name: row.get(12)?,
-                project_tag: row.get(13)?,
-                is_deleted: row.get(14)?,
-                completion_date: row.get(15)?,
-                completion_memo: row.get(16)?,
+                dept5_name: row.get(13)?,
+                dept6_name: row.get(14)?,
+                dept7_name: row.get(15)?,
+                dept8_name: row.get(16)?,
+                dept9_name: row.get(17)?,
+                dept10_name: row.get(18)?,
+                project_tag: row.get(19)?,
+                is_deleted: row.get(20)?,
+                completion_date: row.get(21)?,
+                completion_memo: row.get(22)?,
             })
         })?;
 
@@ -75,13 +81,13 @@ impl PmModule {
 
         if let Some(id) = project.id {
             // Fetch old department names before updating the project
-            let mut stmt = conn.prepare("SELECT dept1_name, dept2_name, dept3_name, dept4_name FROM projects WHERE id = ?")?;
-            let old_depts: Option<(String, String, String, String)> = stmt.query_row(params![id], |row| {
-                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+            let mut stmt = conn.prepare("SELECT dept1_name, dept2_name, dept3_name, dept4_name, dept5_name, dept6_name, dept7_name, dept8_name, dept9_name, dept10_name FROM projects WHERE id = ?")?;
+            let old_depts: Option<(String, String, String, String, String, String, String, String, String, String)> = stmt.query_row(params![id], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?, row.get(6)?, row.get(7)?, row.get(8)?, row.get(9)?))
             }).ok();
 
             conn.execute(
-                "UPDATE projects SET name = ?, description = ?, manager = ?, client = ?, start_date = ?, dept1_name = ?, dept2_name = ?, dept3_name = ?, dept4_name = ?, project_tag = ?, is_deleted = ?, completion_date = ?, completion_memo = ? WHERE id = ?",
+                "UPDATE projects SET name = ?, description = ?, manager = ?, client = ?, start_date = ?, dept1_name = ?, dept2_name = ?, dept3_name = ?, dept4_name = ?, dept5_name = ?, dept6_name = ?, dept7_name = ?, dept8_name = ?, dept9_name = ?, dept10_name = ?, project_tag = ?, is_deleted = ?, completion_date = ?, completion_memo = ? WHERE id = ?",
                 params![
                     project.name,
                     project.description,
@@ -92,6 +98,12 @@ impl PmModule {
                     project.dept2_name,
                     project.dept3_name,
                     project.dept4_name,
+                    project.dept5_name,
+                    project.dept6_name,
+                    project.dept7_name,
+                    project.dept8_name,
+                    project.dept9_name,
+                    project.dept10_name,
                     project.project_tag,
                     project.is_deleted,
                     project.completion_date,
@@ -101,7 +113,7 @@ impl PmModule {
             )?;
 
             // Cascade update status logs if department names were modified
-            if let Some((o1, o2, o3, o4)) = old_depts {
+            if let Some((o1, o2, o3, o4, o5, o6, o7, o8, o9, o10)) = old_depts {
                 if o1 != project.dept1_name {
                     conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept1_name, id, o1])?;
                 }
@@ -114,6 +126,24 @@ impl PmModule {
                 if o4 != project.dept4_name {
                     conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept4_name, id, o4])?;
                 }
+                if o5 != project.dept5_name {
+                    conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept5_name, id, o5])?;
+                }
+                if o6 != project.dept6_name {
+                    conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept6_name, id, o6])?;
+                }
+                if o7 != project.dept7_name {
+                    conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept7_name, id, o7])?;
+                }
+                if o8 != project.dept8_name {
+                    conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept8_name, id, o8])?;
+                }
+                if o9 != project.dept9_name {
+                    conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept9_name, id, o9])?;
+                }
+                if o10 != project.dept10_name {
+                    conn.execute("UPDATE status_logs SET department = ? WHERE project_id = ? AND department = ?", params![project.dept10_name, id, o10])?;
+                }
             }
             Ok(id)
         } else {
@@ -123,8 +153,8 @@ impl PmModule {
             project.project_tag = Some(crate::storage::Storage::generate_sequential_tag(&conn, "projects", "P", &now_local));
 
             conn.execute(
-                "INSERT INTO projects (owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO projects (owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, dept5_name, dept6_name, dept7_name, dept8_name, dept9_name, dept10_name, project_tag, is_deleted, completion_date, completion_memo)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 params![
                     project.owner_id,
                     project.name,
@@ -138,6 +168,12 @@ impl PmModule {
                     project.dept2_name,
                     project.dept3_name,
                     project.dept4_name,
+                    project.dept5_name,
+                    project.dept6_name,
+                    project.dept7_name,
+                    project.dept8_name,
+                    project.dept9_name,
+                    project.dept10_name,
                     project.project_tag,
                     project.is_deleted,
                     project.completion_date,
@@ -303,7 +339,7 @@ impl PmModule {
     pub fn get_deleted_projects(&self, owner_id: i64) -> Result<Vec<Project>> {
         let conn = self.storage.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo 
+            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, dept5_name, dept6_name, dept7_name, dept8_name, dept9_name, dept10_name, project_tag, is_deleted, completion_date, completion_memo 
              FROM projects WHERE (owner_id = ? OR owner_id = 999) AND is_deleted = 1 ORDER BY created_at DESC"
         )?;
         
@@ -322,10 +358,16 @@ impl PmModule {
                 dept2_name: row.get(10)?,
                 dept3_name: row.get(11)?,
                 dept4_name: row.get(12)?,
-                project_tag: row.get(13)?,
-                is_deleted: row.get(14)?,
-                completion_date: row.get(15)?,
-                completion_memo: row.get(16)?,
+                dept5_name: row.get(13)?,
+                dept6_name: row.get(14)?,
+                dept7_name: row.get(15)?,
+                dept8_name: row.get(16)?,
+                dept9_name: row.get(17)?,
+                dept10_name: row.get(18)?,
+                project_tag: row.get(19)?,
+                is_deleted: row.get(20)?,
+                completion_date: row.get(21)?,
+                completion_memo: row.get(22)?,
             })
         })?;
 
@@ -363,7 +405,7 @@ impl PmModule {
     pub fn get_completed_projects(&self, owner_id: i64) -> Result<Vec<Project>> {
         let conn = self.storage.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo 
+            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, dept5_name, dept6_name, dept7_name, dept8_name, dept9_name, dept10_name, project_tag, is_deleted, completion_date, completion_memo 
              FROM projects WHERE (owner_id = ? OR owner_id = 999) AND status = 'done' AND is_deleted = 0 ORDER BY completion_date DESC"
         )?;
         
@@ -382,10 +424,16 @@ impl PmModule {
                 dept2_name: row.get(10)?,
                 dept3_name: row.get(11)?,
                 dept4_name: row.get(12)?,
-                project_tag: row.get(13)?,
-                is_deleted: row.get(14)?,
-                completion_date: row.get(15)?,
-                completion_memo: row.get(16)?,
+                dept5_name: row.get(13)?,
+                dept6_name: row.get(14)?,
+                dept7_name: row.get(15)?,
+                dept8_name: row.get(16)?,
+                dept9_name: row.get(17)?,
+                dept10_name: row.get(18)?,
+                project_tag: row.get(19)?,
+                is_deleted: row.get(20)?,
+                completion_date: row.get(21)?,
+                completion_memo: row.get(22)?,
             })
         })?;
 
@@ -411,7 +459,7 @@ impl PmModule {
         
         // 1. Fetch project
         let mut stmt = conn.prepare(
-            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo 
+            "SELECT id, owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, dept5_name, dept6_name, dept7_name, dept8_name, dept9_name, dept10_name, project_tag, is_deleted, completion_date, completion_memo 
              FROM projects WHERE id = ?"
         ).map_err(|e| e.to_string())?;
         
@@ -430,10 +478,16 @@ impl PmModule {
                 dept2_name: row.get(10)?,
                 dept3_name: row.get(11)?,
                 dept4_name: row.get(12)?,
-                project_tag: row.get(13)?,
-                is_deleted: row.get(14)?,
-                completion_date: row.get(15)?,
-                completion_memo: row.get(16)?,
+                dept5_name: row.get(13)?,
+                dept6_name: row.get(14)?,
+                dept7_name: row.get(15)?,
+                dept8_name: row.get(16)?,
+                dept9_name: row.get(17)?,
+                dept10_name: row.get(18)?,
+                project_tag: row.get(19)?,
+                is_deleted: row.get(20)?,
+                completion_date: row.get(21)?,
+                completion_memo: row.get(22)?,
             })
         }).map_err(|e| format!("Project not found: {}", e))?;
         
@@ -584,8 +638,9 @@ impl PmModule {
                 "UPDATE projects SET 
                     owner_id = ?, name = ?, description = ?, manager = ?, client = ?, 
                     start_date = ?, status = ?, dept1_name = ?, dept2_name = ?, 
-                    dept3_name = ?, dept4_name = ?, project_tag = ?, is_deleted = ?, 
-                    completion_date = ?, completion_memo = ? 
+                    dept3_name = ?, dept4_name = ?, dept5_name = ?, dept6_name = ?, 
+                    dept7_name = ?, dept8_name = ?, dept9_name = ?, dept10_name = ?, 
+                    project_tag = ?, is_deleted = ?, completion_date = ?, completion_memo = ? 
                  WHERE id = ?",
                 params![
                     imported_proj.owner_id,
@@ -599,6 +654,12 @@ impl PmModule {
                     imported_proj.dept2_name,
                     imported_proj.dept3_name,
                     imported_proj.dept4_name,
+                    imported_proj.dept5_name,
+                    imported_proj.dept6_name,
+                    imported_proj.dept7_name,
+                    imported_proj.dept8_name,
+                    imported_proj.dept9_name,
+                    imported_proj.dept10_name,
                     imported_proj.project_tag,
                     imported_proj.is_deleted,
                     imported_proj.completion_date,
@@ -685,8 +746,8 @@ impl PmModule {
         imported_proj.is_deleted = false;
         
         conn.execute(
-            "INSERT INTO projects (owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO projects (owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, dept5_name, dept6_name, dept7_name, dept8_name, dept9_name, dept10_name, project_tag, is_deleted, completion_date, completion_memo)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             params![
                 imported_proj.owner_id,
                 imported_proj.name,
@@ -700,6 +761,12 @@ impl PmModule {
                 imported_proj.dept2_name,
                 imported_proj.dept3_name,
                 imported_proj.dept4_name,
+                imported_proj.dept5_name,
+                imported_proj.dept6_name,
+                imported_proj.dept7_name,
+                imported_proj.dept8_name,
+                imported_proj.dept9_name,
+                imported_proj.dept10_name,
                 imported_proj.project_tag,
                 imported_proj.is_deleted,
                 imported_proj.completion_date,

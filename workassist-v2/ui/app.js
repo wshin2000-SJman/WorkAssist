@@ -1278,6 +1278,12 @@ function setupModals() {
         document.getElementById('project-dept2').value = p.dept2_name || 'DESIGN';
         document.getElementById('project-dept3').value = p.dept3_name || 'PROCUREMENT';
         document.getElementById('project-dept4').value = p.dept4_name || 'ASSEMBLY';
+        document.getElementById('project-dept5').value = p.dept5_name || 'R&D';
+        document.getElementById('project-dept6').value = p.dept6_name || 'DESIGN';
+        document.getElementById('project-dept7').value = p.dept7_name || 'PRODUCTION';
+        document.getElementById('project-dept8').value = p.dept8_name || 'QC';
+        document.getElementById('project-dept9').value = p.dept9_name || 'PURCHASING';
+        document.getElementById('project-dept10').value = p.dept10_name || 'SUPPORT';
 
         const titleEl = document.getElementById('project-modal-title');
         if (titleEl) {
@@ -1372,6 +1378,12 @@ function setupModals() {
                     dept2_name: document.getElementById('project-dept2').value,
                     dept3_name: document.getElementById('project-dept3').value,
                     dept4_name: document.getElementById('project-dept4').value,
+                    dept5_name: document.getElementById('project-dept5').value,
+                    dept6_name: document.getElementById('project-dept6').value,
+                    dept7_name: document.getElementById('project-dept7').value,
+                    dept8_name: document.getElementById('project-dept8').value,
+                    dept9_name: document.getElementById('project-dept9').value,
+                    dept10_name: document.getElementById('project-dept10').value,
                     project_tag: idVal ? (currentProjects.find(p => p.id === parseInt(idVal))?.project_tag || null) : null
                 };
                 
@@ -1631,7 +1643,7 @@ function setupModals() {
     });
 
     // Real-time Department Slot Configuration change listeners
-    ['project-dept1-name', 'project-dept2-name', 'project-dept3-name', 'project-dept4-name'].forEach(id => {
+    ['project-dept1-name', 'project-dept2-name', 'project-dept3-name', 'project-dept4-name', 'project-dept5-name', 'project-dept6-name', 'project-dept7-name', 'project-dept8-name', 'project-dept9-name', 'project-dept10-name'].forEach(id => {
         const input = document.getElementById(id);
         if (input) {
             input.addEventListener('change', saveProjectSlotsDirectly);
@@ -2151,9 +2163,23 @@ async function loadView(viewId) {
     else if (viewId === 'nav-pm') await refreshProjects();
     else if (viewId === 'nav-dashboard') await refreshStats();
     else if (viewId === 'nav-history') await refreshHistory();
-    else if (viewId === 'nav-db-manager') await refreshDbSearchFilters();
+    else if (viewId === 'nav-db-manager') {
+        const dbIngestLoading = document.getElementById('db-ingest-loading');
+        if (dbIngestLoading) dbIngestLoading.style.display = 'none';
+        const dbIngestResultSection = document.getElementById('db-ingest-result-section');
+        if (dbIngestResultSection) dbIngestResultSection.style.display = 'none';
+        await refreshDbSearchFilters();
+    }
     else if (viewId === 'nav-order-db') await refreshOrders();
     else if (viewId === 'nav-motor-calc') await refreshMotorCalc();
+    else if (viewId === 'nav-rag') {
+        const ragLoader = document.getElementById('rag-loader');
+        if (ragLoader) ragLoader.style.display = 'none';
+        const progressGifContainer = document.getElementById('rag-folder-progress-gif-container');
+        if (progressGifContainer) progressGifContainer.style.display = 'none';
+        const progressContainer = document.getElementById('rag-folder-progress-container');
+        if (progressContainer) progressContainer.style.display = 'none';
+    }
 }
 
 async function refreshStats() {
@@ -2454,6 +2480,12 @@ function drawDepartmentWorkload(containerId, selectedProjItem) {
     const d2 = (proj.dept2_name || 'Control').trim();
     const d3 = (proj.dept3_name || 'Elec').trim();
     const d4 = (proj.dept4_name || 'Sales').trim();
+    const d5 = (proj.dept5_name || 'R&D').trim();
+    const d6 = (proj.dept6_name || 'Design').trim();
+    const d7 = (proj.dept7_name || 'Production').trim();
+    const d8 = (proj.dept8_name || 'QC').trim();
+    const d9 = (proj.dept9_name || 'Purchasing').trim();
+    const d10 = (proj.dept10_name || 'Support').trim();
 
     // Read the active metric from the DOM
     const metricSelect = document.getElementById('dashboard-workload-metric-select');
@@ -2464,7 +2496,13 @@ function drawDepartmentWorkload(containerId, selectedProjItem) {
         'Mech': { value: 0, color: '#3b82f6', label: d1 },
         'Control': { value: 0, color: '#f59e0b', label: d2 },
         'Elec': { value: 0, color: '#10b981', label: d3 },
-        'Sales': { value: 0, color: '#ec4899', label: d4 }
+        'Sales': { value: 0, color: '#ef4444', label: d4 },
+        'Dept5': { value: 0, color: '#8b5cf6', label: d5 },
+        'Dept6': { value: 0, color: '#ec4899', label: d6 },
+        'Dept7': { value: 0, color: '#06b6d4', label: d7 },
+        'Dept8': { value: 0, color: '#eab308', label: d8 },
+        'Dept9': { value: 0, color: '#14b8a6', label: d9 },
+        'Dept10': { value: 0, color: '#a855f7', label: d10 }
     };
 
     logs.forEach(log => {
@@ -2480,6 +2518,12 @@ function drawDepartmentWorkload(containerId, selectedProjItem) {
         else if (logDept === d2 || logDept === 'Control') depts['Control'].value += increment;
         else if (logDept === d3 || logDept === 'Elec') depts['Elec'].value += increment;
         else if (logDept === d4 || logDept === 'Sales') depts['Sales'].value += increment;
+        else if (logDept === d5 || logDept === 'R&D') depts['Dept5'].value += increment;
+        else if (logDept === d6 || logDept === 'Design') depts['Dept6'].value += increment;
+        else if (logDept === d7 || logDept === 'Production') depts['Dept7'].value += increment;
+        else if (logDept === d8 || logDept === 'QC') depts['Dept8'].value += increment;
+        else if (logDept === d9 || logDept === 'Purchasing') depts['Dept9'].value += increment;
+        else if (logDept === d10 || logDept === 'Support') depts['Dept10'].value += increment;
     });
 
     const totalVal = Object.values(depts).reduce((sum, d) => sum + d.value, 0);
@@ -3605,13 +3649,25 @@ async function saveProjectSlotsDirectly() {
     const newDept2 = document.getElementById('project-dept2-name').value.trim();
     const newDept3 = document.getElementById('project-dept3-name').value.trim();
     const newDept4 = document.getElementById('project-dept4-name').value.trim();
+    const newDept5 = document.getElementById('project-dept5-name').value.trim();
+    const newDept6 = document.getElementById('project-dept6-name').value.trim();
+    const newDept7 = document.getElementById('project-dept7-name').value.trim();
+    const newDept8 = document.getElementById('project-dept8-name').value.trim();
+    const newDept9 = document.getElementById('project-dept9-name').value.trim();
+    const newDept10 = document.getElementById('project-dept10-name').value.trim();
 
     const updatedProject = {
         ...project,
         dept1_name: newDept1 || 'Mech',
         dept2_name: newDept2 || 'Control',
         dept3_name: newDept3 || 'Elec',
-        dept4_name: newDept4 || 'Sales'
+        dept4_name: newDept4 || 'Sales',
+        dept5_name: newDept5 || 'R&D',
+        dept6_name: newDept6 || 'Design',
+        dept7_name: newDept7 || 'Production',
+        dept8_name: newDept8 || 'QC',
+        dept9_name: newDept9 || 'Purchasing',
+        dept10_name: newDept10 || 'Support'
     };
 
     try {
@@ -3765,84 +3821,59 @@ async function loadProjectDetails(projectId) {
     // Update Status Tab
     document.getElementById('detail-project-desc').textContent = project.description || 'No description available.';
     
-    // Fill Department Slot Configuration Inputs
-    const dept1Input = document.getElementById('project-dept1-name');
-    const dept2Input = document.getElementById('project-dept2-name');
-    const dept3Input = document.getElementById('project-dept3-name');
-    const dept4Input = document.getElementById('project-dept4-name');
-    if (dept1Input) dept1Input.value = project.dept1_name || 'Mech';
-    if (dept2Input) dept2Input.value = project.dept2_name || 'Control';
-    if (dept3Input) dept3Input.value = project.dept3_name || 'Elec';
-    if (dept4Input) dept4Input.value = project.dept4_name || 'Sales';
+    // Fill Department Slot Configuration Inputs and style Kanban columns
+    const deptsInfo = [
+        { id: 1, key: 'dept1_name', def: 'Mech', color: '#3b82f6' },
+        { id: 2, key: 'dept2_name', def: 'Control', color: '#f59e0b' },
+        { id: 3, key: 'dept3_name', def: 'Elec', color: '#10b981' },
+        { id: 4, key: 'dept4_name', def: 'Sales', color: '#ef4444' },
+        { id: 5, key: 'dept5_name', def: 'R&D', color: '#8b5cf6' },
+        { id: 6, key: 'dept6_name', def: 'Design', color: '#ec4899' },
+        { id: 7, key: 'dept7_name', def: 'Production', color: '#06b6d4' },
+        { id: 8, key: 'dept8_name', def: 'QC', color: '#eab308' },
+        { id: 9, key: 'dept9_name', def: 'Purchasing', color: '#14b8a6' },
+        { id: 10, key: 'dept10_name', def: 'Support', color: '#a855f7' }
+    ];
 
-    // Rename and Style Columns on Kanban Board to match Timetable department colors
-    const col1 = document.getElementById('col-header-dept1');
-    const col2 = document.getElementById('col-header-dept2');
-    const col3 = document.getElementById('col-header-dept3');
-    const col4 = document.getElementById('col-header-dept4');
-    
-    if (col1) {
-        col1.textContent = project.dept1_name || 'Mech';
-        col1.style.color = '#3b82f6';
-        col1.style.borderBottom = '1px solid rgba(59, 130, 246, 0.25)';
-        if (col1.parentElement) {
-            col1.parentElement.style.border = '1px solid rgba(59, 130, 246, 0.2)';
-            col1.parentElement.style.background = 'rgba(59, 130, 246, 0.015)';
-            const btn1 = col1.parentElement.querySelector('.btn-add-log-col');
-            if (btn1) {
-                btn1.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-                btn1.style.color = 'rgba(59, 130, 246, 0.8)';
+    deptsInfo.forEach(d => {
+        const input = document.getElementById(`project-dept${d.id}-name`);
+        if (input) {
+            input.value = project[d.key] || d.def;
+        }
+
+        const col = document.getElementById(`col-header-dept${d.id}`);
+        if (col) {
+            col.textContent = project[d.key] || d.def;
+            col.style.color = d.color;
+            col.style.borderBottom = `1px solid ${d.color}40`; // 25% opacity
+            if (col.parentElement) {
+                col.parentElement.style.border = `1px solid ${d.color}33`; // 20% opacity
+                col.parentElement.style.background = `${d.color}04`; // 1.5% opacity
+                const btn = col.parentElement.querySelector('.btn-add-log-col');
+                if (btn) {
+                    btn.style.borderColor = `${d.color}4D`; // 30% opacity
+                    btn.style.color = `${d.color}CC`; // 80% opacity
+                }
             }
         }
-    }
-    if (col2) {
-        col2.textContent = project.dept2_name || 'Control';
-        col2.style.color = '#f59e0b';
-        col2.style.borderBottom = '1px solid rgba(245, 158, 11, 0.25)';
-        if (col2.parentElement) {
-            col2.parentElement.style.border = '1px solid rgba(245, 158, 11, 0.2)';
-            col2.parentElement.style.background = 'rgba(245, 158, 11, 0.015)';
-            const btn2 = col2.parentElement.querySelector('.btn-add-log-col');
-            if (btn2) {
-                btn2.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                btn2.style.color = 'rgba(245, 158, 11, 0.8)';
-            }
-        }
-    }
-    if (col3) {
-        col3.textContent = project.dept3_name || 'Elec';
-        col3.style.color = '#10b981';
-        col3.style.borderBottom = '1px solid rgba(16, 185, 129, 0.25)';
-        if (col3.parentElement) {
-            col3.parentElement.style.border = '1px solid rgba(16, 185, 129, 0.2)';
-            col3.parentElement.style.background = 'rgba(16, 185, 129, 0.015)';
-            const btn3 = col3.parentElement.querySelector('.btn-add-log-col');
-            if (btn3) {
-                btn3.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-                btn3.style.color = 'rgba(16, 185, 129, 0.8)';
-            }
-        }
-    }
-    if (col4) {
-        col4.textContent = project.dept4_name || 'Sales';
-        col4.style.color = '#ef4444';
-        col4.style.borderBottom = '1px solid rgba(239, 68, 68, 0.25)';
-        if (col4.parentElement) {
-            col4.parentElement.style.border = '1px solid rgba(239, 68, 68, 0.2)';
-            col4.parentElement.style.background = 'rgba(239, 68, 68, 0.015)';
-            const btn4 = col4.parentElement.querySelector('.btn-add-log-col');
-            if (btn4) {
-                btn4.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-                btn4.style.color = 'rgba(239, 68, 68, 0.8)';
-            }
-        }
-    }
+    });
 
     // Update Log Modal Department Select
     const logDeptSelect = document.getElementById('log-department');
     if (logDeptSelect) {
         logDeptSelect.innerHTML = '';
-        [project.dept1_name, project.dept2_name, project.dept3_name, project.dept4_name].forEach(name => {
+        [
+            project.dept1_name || 'Mech',
+            project.dept2_name || 'Control',
+            project.dept3_name || 'Elec',
+            project.dept4_name || 'Sales',
+            project.dept5_name || 'R&D',
+            project.dept6_name || 'Design',
+            project.dept7_name || 'Production',
+            project.dept8_name || 'QC',
+            project.dept9_name || 'Purchasing',
+            project.dept10_name || 'Support'
+        ].forEach(name => {
             if (name) {
                 const opt = document.createElement('option');
                 opt.value = name;
@@ -3859,7 +3890,13 @@ async function loadProjectDetails(projectId) {
         project.dept1_name || 'Mech',
         project.dept2_name || 'Control',
         project.dept3_name || 'Elec',
-        project.dept4_name || 'Sales'
+        project.dept4_name || 'Sales',
+        project.dept5_name || 'R&D',
+        project.dept6_name || 'Design',
+        project.dept7_name || 'Production',
+        project.dept8_name || 'QC',
+        project.dept9_name || 'Purchasing',
+        project.dept10_name || 'Support'
     ];
 
     [filterDoneDept, filterDeletedDept].forEach(select => {
@@ -3912,6 +3949,12 @@ async function loadProjectDetails(projectId) {
                 else if (rawDept === 'Control') customDeptName = project.dept2_name || 'Control';
                 else if (rawDept === 'Elec') customDeptName = project.dept3_name || 'Elec';
                 else if (rawDept === 'Sales') customDeptName = project.dept4_name || 'Sales';
+                else if (rawDept === 'Dept5') customDeptName = project.dept5_name || 'R&D';
+                else if (rawDept === 'Dept6') customDeptName = project.dept6_name || 'Design';
+                else if (rawDept === 'Dept7') customDeptName = project.dept7_name || 'Production';
+                else if (rawDept === 'Dept8') customDeptName = project.dept8_name || 'QC';
+                else if (rawDept === 'Dept9') customDeptName = project.dept9_name || 'Purchasing';
+                else if (rawDept === 'Dept10') customDeptName = project.dept10_name || 'Support';
                 
                 const logDeptSelect = document.getElementById('log-department');
                 if (logDeptSelect && customDeptName) {
@@ -4254,11 +4297,17 @@ async function renderTimeTable() {
     if (!project) return;
 
     const depts = [
-        { key: 'Slot 1', name: project.dept1_name || 'Mech', color: 'rgba(59, 130, 246, 0.45)' },
-        { key: 'Slot 2', name: project.dept2_name || 'Control', color: 'rgba(245, 158, 11, 0.45)' },
-        { key: 'Slot 3', name: project.dept3_name || 'Elec', color: 'rgba(16, 185, 129, 0.45)' },
-        { key: 'Slot 4', name: project.dept4_name || 'Sales', color: 'rgba(239, 68, 68, 0.45)' },
-        { key: 'Milestone', name: 'Mile stone', color: 'rgba(168, 85, 247, 0.65)' }
+        { key: 'Slot 1', name: project.dept1_name || 'Mech', color: 'rgba(59, 130, 246, 0.55)' },
+        { key: 'Slot 2', name: project.dept2_name || 'Control', color: 'rgba(245, 158, 11, 0.55)' },
+        { key: 'Slot 3', name: project.dept3_name || 'Elec', color: 'rgba(16, 185, 129, 0.55)' },
+        { key: 'Slot 4', name: project.dept4_name || 'Sales', color: 'rgba(239, 68, 68, 0.55)' },
+        { key: 'Slot 5', name: project.dept5_name || 'R&D', color: 'rgba(139, 92, 246, 0.55)' },
+        { key: 'Slot 6', name: project.dept6_name || 'Design', color: 'rgba(236, 72, 153, 0.55)' },
+        { key: 'Slot 7', name: project.dept7_name || 'Production', color: 'rgba(6, 182, 212, 0.55)' },
+        { key: 'Slot 8', name: project.dept8_name || 'QC', color: 'rgba(234, 179, 8, 0.55)' },
+        { key: 'Slot 9', name: project.dept9_name || 'Purchasing', color: 'rgba(20, 184, 166, 0.55)' },
+        { key: 'Slot 10', name: project.dept10_name || 'Support', color: 'rgba(168, 85, 247, 0.55)' },
+        { key: 'Milestone', name: 'Mile stone', color: 'rgba(168, 85, 247, 0.75)' }
     ];
 
     depts.forEach(dept => {
@@ -4847,26 +4896,45 @@ function renderStatusGrid(project) {
     const colListControl = document.getElementById('log-list-Control');
     const colListElec = document.getElementById('log-list-Elec');
     const colListSales = document.getElementById('log-list-Sales');
+    const colListDept5 = document.getElementById('log-list-Dept5');
+    const colListDept6 = document.getElementById('log-list-Dept6');
+    const colListDept7 = document.getElementById('log-list-Dept7');
+    const colListDept8 = document.getElementById('log-list-Dept8');
+    const colListDept9 = document.getElementById('log-list-Dept9');
+    const colListDept10 = document.getElementById('log-list-Dept10');
 
-    if (!colListMech || !colListControl || !colListElec || !colListSales) return;
+    if (!colListMech || !colListControl || !colListElec || !colListSales || !colListDept5 || !colListDept6 || !colListDept7 || !colListDept8 || !colListDept9 || !colListDept10) return;
 
     // Clear lists
-    [colListMech, colListControl, colListElec, colListSales].forEach(el => el.innerHTML = '');
+    [colListMech, colListControl, colListElec, colListSales, colListDept5, colListDept6, colListDept7, colListDept8, colListDept9, colListDept10].forEach(el => el.innerHTML = '');
 
     const slot1 = project.dept1_name || 'Mech';
     const slot2 = project.dept2_name || 'Control';
     const slot3 = project.dept3_name || 'Elec';
     const slot4 = project.dept4_name || 'Sales';
+    const slot5 = project.dept5_name || 'R&D';
+    const slot6 = project.dept6_name || 'Design';
+    const slot7 = project.dept7_name || 'Production';
+    const slot8 = project.dept8_name || 'QC';
+    const slot9 = project.dept9_name || 'Purchasing';
+    const slot10 = project.dept10_name || 'Support';
 
     // Group logs by department slot
     currentStatusLogs.forEach(log => {
         if (log.is_deleted || log.status === 'done') return;
 
         let targetEl = null;
-        if (log.department === slot1) targetEl = colListMech;
-        else if (log.department === slot2) targetEl = colListControl;
-        else if (log.department === slot3) targetEl = colListElec;
-        else if (log.department === slot4) targetEl = colListSales;
+        let slotColor = '#3b82f6';
+        if (log.department === slot1) { targetEl = colListMech; slotColor = '#3b82f6'; }
+        else if (log.department === slot2) { targetEl = colListControl; slotColor = '#f59e0b'; }
+        else if (log.department === slot3) { targetEl = colListElec; slotColor = '#10b981'; }
+        else if (log.department === slot4) { targetEl = colListSales; slotColor = '#ef4444'; }
+        else if (log.department === slot5) { targetEl = colListDept5; slotColor = '#8b5cf6'; }
+        else if (log.department === slot6) { targetEl = colListDept6; slotColor = '#ec4899'; }
+        else if (log.department === slot7) { targetEl = colListDept7; slotColor = '#06b6d4'; }
+        else if (log.department === slot8) { targetEl = colListDept8; slotColor = '#eab308'; }
+        else if (log.department === slot9) { targetEl = colListDept9; slotColor = '#14b8a6'; }
+        else if (log.department === slot10) { targetEl = colListDept10; slotColor = '#a855f7'; }
 
         if (!targetEl) return;
 
@@ -4874,7 +4942,7 @@ function renderStatusGrid(project) {
         const card = document.createElement('div');
         card.className = 'status-log-card';
         card.style.background = 'rgba(255, 255, 255, 0.03)';
-        card.style.border = '1px solid var(--card-border)';
+        card.style.border = `1px solid ${slotColor}26`;
         card.style.borderRadius = '12px';
         card.style.padding = '12px';
         card.style.cursor = 'pointer';
@@ -4885,18 +4953,18 @@ function renderStatusGrid(project) {
 
         card.onmouseenter = () => {
             card.style.background = 'rgba(255, 255, 255, 0.06)';
-            card.style.borderColor = 'var(--accent-color)';
+            card.style.borderColor = slotColor;
             card.style.transform = 'translateY(-2px)';
         };
         card.onmouseleave = () => {
             card.style.background = 'rgba(255, 255, 255, 0.03)';
-            card.style.borderColor = 'var(--card-border)';
+            card.style.borderColor = `${slotColor}26`;
             card.style.transform = 'none';
         };
 
         card.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="tag-badge-mini" style="font-size: 10px; margin: 0; background: rgba(249, 115, 22, 0.15); color: var(--accent-color); border: 1px solid rgba(249, 115, 22, 0.3); padding: 2px 6px; border-radius: 4px;">${log.tag || 'LOG'}</span>
+                <span class="tag-badge-mini" style="font-size: 10px; margin: 0; background: ${slotColor}26; color: ${slotColor}; border: 1px solid ${slotColor}4D; padding: 2px 6px; border-radius: 4px;">${log.tag || 'LOG'}</span>
                 <span style="font-size: 11px; color: #888; font-weight: 600;">${formatLogTimeOnly(log.timestamp)}</span>
             </div>
             
@@ -4910,7 +4978,7 @@ function renderStatusGrid(project) {
             ${log.text_content ? `<div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${log.text_content}</div>` : ''}
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 11px; color: #aaa;">
                 <span><strong>PIC:</strong> ${log.manager || '-'}</span>
-                ${log.due_date ? `<span style="color: var(--accent-color); font-weight: 600;">📅 ${log.due_date}</span>` : ''}
+                ${log.due_date ? `<span style="color: ${slotColor}; font-weight: 600;">📅 ${log.due_date}</span>` : ''}
             </div>
         `;
 
@@ -5049,6 +5117,12 @@ function generateProjectHtml(project, milestones, logs) {
     const dept2Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept2_name || 'Control').toLowerCase());
     const dept3Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept3_name || 'Elec').toLowerCase());
     const dept4Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept4_name || 'Sales').toLowerCase());
+    const dept5Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept5_name || 'R&D').toLowerCase());
+    const dept6Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept6_name || 'Design').toLowerCase());
+    const dept7Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept7_name || 'Production').toLowerCase());
+    const dept8Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept8_name || 'QC').toLowerCase());
+    const dept9Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept9_name || 'Purchasing').toLowerCase());
+    const dept10Logs = activeLogs.filter(l => l.department.toLowerCase() === (project.dept10_name || 'Support').toLowerCase());
 
     const renderDeptCards = (deptLogs, signatureColor) => {
         if (deptLogs.length === 0) {
@@ -5067,22 +5141,46 @@ function generateProjectHtml(project, milestones, logs) {
     };
 
     const deptColumnsHtml = `
-        <div class="dept-kanban-print" style="display: flex; gap: 16px; margin-bottom: 35px; width: 100%; flex-wrap: nowrap;">
-            <div style="flex: 1; min-width: 0; background: rgba(59, 130, 246, 0.015); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+        <div class="dept-kanban-print" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 35px; width: 100%;">
+            <div style="flex: 1 1 180px; min-width: 180px; background: rgba(59, 130, 246, 0.015); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
                 <div style="text-align: center; font-weight: 800; font-size: 14px; color: #3b82f6; text-transform: uppercase; border-bottom: 2px solid rgba(59, 130, 246, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept1_name || 'Mech').toUpperCase()}</div>
                 <div>${renderDeptCards(dept1Logs, '#3b82f6')}</div>
             </div>
-            <div style="flex: 1; min-width: 0; background: rgba(245, 158, 11, 0.015); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+            <div style="flex: 1 1 180px; min-width: 180px; background: rgba(245, 158, 11, 0.015); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
                 <div style="text-align: center; font-weight: 800; font-size: 14px; color: #f59e0b; text-transform: uppercase; border-bottom: 2px solid rgba(245, 158, 11, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept2_name || 'Control').toUpperCase()}</div>
                 <div>${renderDeptCards(dept2Logs, '#f59e0b')}</div>
             </div>
-            <div style="flex: 1; min-width: 0; background: rgba(16, 185, 129, 0.015); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+            <div style="flex: 1 1 180px; min-width: 180px; background: rgba(16, 185, 129, 0.015); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
                 <div style="text-align: center; font-weight: 800; font-size: 14px; color: #10b981; text-transform: uppercase; border-bottom: 2px solid rgba(16, 185, 129, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept3_name || 'Elec').toUpperCase()}</div>
                 <div>${renderDeptCards(dept3Logs, '#10b981')}</div>
             </div>
-            <div style="flex: 1; min-width: 0; background: rgba(239, 68, 68, 0.015); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+            <div style="flex: 1 1 180px; min-width: 180px; background: rgba(239, 68, 68, 0.015); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
                 <div style="text-align: center; font-weight: 800; font-size: 14px; color: #ef4444; text-transform: uppercase; border-bottom: 2px solid rgba(239, 68, 68, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept4_name || 'Sales').toUpperCase()}</div>
                 <div>${renderDeptCards(dept4Logs, '#ef4444')}</div>
+            </div>
+            <div style="flex: 1 1 180px; min-width: 180px; background: rgba(139, 92, 246, 0.015); border: 1px solid rgba(139, 92, 246, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+                <div style="text-align: center; font-weight: 800; font-size: 14px; color: #8b5cf6; text-transform: uppercase; border-bottom: 2px solid rgba(139, 92, 246, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept5_name || 'R&D').toUpperCase()}</div>
+                <div>${renderDeptCards(dept5Logs, '#8b5cf6')}</div>
+            </div>
+            <div style="flex: 1 1 180px; min-width: 180px; background: rgba(236, 72, 153, 0.015); border: 1px solid rgba(236, 72, 153, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+                <div style="text-align: center; font-weight: 800; font-size: 14px; color: #ec4899; text-transform: uppercase; border-bottom: 2px solid rgba(236, 72, 153, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept6_name || 'Design').toUpperCase()}</div>
+                <div>${renderDeptCards(dept6Logs, '#ec4899')}</div>
+            </div>
+            <div style="flex: 1 1 180px; min-width: 180px; background: rgba(6, 182, 212, 0.015); border: 1px solid rgba(6, 182, 212, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+                <div style="text-align: center; font-weight: 800; font-size: 14px; color: #06b6d4; text-transform: uppercase; border-bottom: 2px solid rgba(6, 182, 212, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept7_name || 'Production').toUpperCase()}</div>
+                <div>${renderDeptCards(dept7Logs, '#06b6d4')}</div>
+            </div>
+            <div style="flex: 1 1 180px; min-width: 180px; background: rgba(234, 179, 8, 0.015); border: 1px solid rgba(234, 179, 8, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+                <div style="text-align: center; font-weight: 800; font-size: 14px; color: #eab308; text-transform: uppercase; border-bottom: 2px solid rgba(234, 179, 8, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept8_name || 'QC').toUpperCase()}</div>
+                <div>${renderDeptCards(dept8Logs, '#eab308')}</div>
+            </div>
+            <div style="flex: 1 1 180px; min-width: 180px; background: rgba(20, 184, 166, 0.015); border: 1px solid rgba(20, 184, 166, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+                <div style="text-align: center; font-weight: 800; font-size: 14px; color: #14b8a6; text-transform: uppercase; border-bottom: 2px solid rgba(20, 184, 166, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept9_name || 'Purchasing').toUpperCase()}</div>
+                <div>${renderDeptCards(dept9Logs, '#14b8a6')}</div>
+            </div>
+            <div style="flex: 1 1 180px; min-width: 180px; background: rgba(168, 85, 247, 0.015); border: 1px solid rgba(168, 85, 247, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column;">
+                <div style="text-align: center; font-weight: 800; font-size: 14px; color: #a855f7; text-transform: uppercase; border-bottom: 2px solid rgba(168, 85, 247, 0.2); padding-bottom: 8px; margin-bottom: 12px;">${(project.dept10_name || 'Support').toUpperCase()}</div>
+                <div>${renderDeptCards(dept10Logs, '#a855f7')}</div>
             </div>
         </div>
     `;
@@ -5792,10 +5890,16 @@ function generateProjectHtml(project, milestones, logs) {
             }
 
             const depts = [
-                { key: 'Slot 1', name: project.dept1_name || 'Mech', color: '#2563eb' },
-                { key: 'Slot 2', name: project.dept2_name || 'Control', color: '#ea580c' },
-                { key: 'Slot 3', name: project.dept3_name || 'Elec', color: '#16a34a' },
-                { key: 'Slot 4', name: project.dept4_name || 'Sales', color: '#dc2626' },
+                { key: 'Slot 1', name: project.dept1_name || 'Mech', color: '#3b82f6' },
+                { key: 'Slot 2', name: project.dept2_name || 'Control', color: '#f59e0b' },
+                { key: 'Slot 3', name: project.dept3_name || 'Elec', color: '#10b981' },
+                { key: 'Slot 4', name: project.dept4_name || 'Sales', color: '#ef4444' },
+                { key: 'Slot 5', name: project.dept5_name || 'R&D', color: '#8b5cf6' },
+                { key: 'Slot 6', name: project.dept6_name || 'Design', color: '#ec4899' },
+                { key: 'Slot 7', name: project.dept7_name || 'Production', color: '#06b6d4' },
+                { key: 'Slot 8', name: project.dept8_name || 'QC', color: '#eab308' },
+                { key: 'Slot 9', name: project.dept9_name || 'Purchasing', color: '#14b8a6' },
+                { key: 'Slot 10', name: project.dept10_name || 'Support', color: '#a855f7' },
                 { key: 'Milestone', name: 'Mile stone', color: '#7c3aed' }
             ];
 
@@ -6069,7 +6173,13 @@ function generateProjectMd(project, milestones, logs) {
         { name: project.dept1_name || 'Mech', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept1_name || 'Mech').toLowerCase()) },
         { name: project.dept2_name || 'Control', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept2_name || 'Control').toLowerCase()) },
         { name: project.dept3_name || 'Elec', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept3_name || 'Elec').toLowerCase()) },
-        { name: project.dept4_name || 'Sales', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept4_name || 'Sales').toLowerCase()) }
+        { name: project.dept4_name || 'Sales', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept4_name || 'Sales').toLowerCase()) },
+        { name: project.dept5_name || 'R&D', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept5_name || 'R&D').toLowerCase()) },
+        { name: project.dept6_name || 'Design', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept6_name || 'Design').toLowerCase()) },
+        { name: project.dept7_name || 'Production', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept7_name || 'Production').toLowerCase()) },
+        { name: project.dept8_name || 'QC', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept8_name || 'QC').toLowerCase()) },
+        { name: project.dept9_name || 'Purchasing', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept9_name || 'Purchasing').toLowerCase()) },
+        { name: project.dept10_name || 'Support', logs: activeLogs.filter(l => l.department.toLowerCase() === (project.dept10_name || 'Support').toLowerCase()) }
     ];
 
     depts.forEach(dept => {
@@ -8434,6 +8544,8 @@ async function setupDbManager() {
                 return;
             }
 
+            btnConfirmIngest.disabled = true;
+
             try {
                 // UI 로딩 표시
                 document.getElementById('db-ingest-result-section').style.display = 'flex';
@@ -8498,6 +8610,9 @@ async function setupDbManager() {
                 document.getElementById('db-ingest-loading').style.display = 'none';
                 writeDbLog(`2단계 인입 처리 에러: ${err}`, true);
                 alert("인입 실행 중 오류가 발생했습니다: " + err);
+            } finally {
+                btnConfirmIngest.disabled = false;
+                document.getElementById('db-ingest-loading').style.display = 'none';
             }
         });
     }

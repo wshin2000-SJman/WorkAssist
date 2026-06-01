@@ -4207,4 +4207,49 @@ tr:has(.status-review) {
     background: #121620 !important;
     border-color: rgba(255, 255, 255, 0.15) !important;
   }
+}
+
+/* Loader GIF image size containment */
+#rag-folder-progress-gif-container img,
+#db-ingest-loading img {
+  height: 90px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+  display: block;
+  margin: 0 auto;
+}
+
+#rag-loader img {
+  width: 160px !important;
+  height: auto !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Premium scrollbar styling for status-grid board and col-list-wrapper */
+.status-grid::-webkit-scrollbar,
+.col-list-wrapper::-webkit-scrollbar {
+  height: 8px;
+  width: 6px;
+}
+
+.status-grid::-webkit-scrollbar-track,
+.col-list-wrapper::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.status-grid::-webkit-scrollbar-thumb,
+.col-list-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.status-grid::-webkit-scrollbar-thumb:hover,
+.col-list-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }

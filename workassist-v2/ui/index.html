@@ -436,24 +436,42 @@
 
                 <div class="slot-config-container" style="margin-bottom: 24px;">
                   <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px; letter-spacing: 1px;">Department Slot Configuration</h4>
-                  <div class="slot-config-bar" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
-                    <div class="form-group" style="margin-bottom: 0;">
+                  <div class="slot-config-bar" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin;">
+                    <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
                       <input type="text" id="project-dept1-name" placeholder="[Slot 1: Mech]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
+                    <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
                       <input type="text" id="project-dept2-name" placeholder="[Slot 2: Control]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
+                    <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
                       <input type="text" id="project-dept3-name" placeholder="[Slot 3: Elec]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
+                    <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
                       <input type="text" id="project-dept4-name" placeholder="[Slot 4: Sales]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
+                      <input type="text" id="project-dept5-name" placeholder="[Slot 5: R&D]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
+                      <input type="text" id="project-dept6-name" placeholder="[Slot 6: Design]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
+                      <input type="text" id="project-dept7-name" placeholder="[Slot 7: Prodt]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
+                      <input type="text" id="project-dept8-name" placeholder="[Slot 8: QC]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
+                      <input type="text" id="project-dept9-name" placeholder="[Slot 9: Purch]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
+                      <input type="text" id="project-dept10-name" placeholder="[Slot 10: Supp]" class="slot-rename-input" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-size: 13px;" maxlength="30">
                     </div>
                   </div>
                 </div>
 
-                <div class="status-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; min-height: 450px;">
-                  <div class="status-col mech" data-dept="Mech" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                <div class="status-grid" style="display: flex; gap: 16px; overflow-x: auto; min-height: 450px; padding-bottom: 12px; scrollbar-width: thin;">
+                  <div class="status-col dept1" data-dept="Mech" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
                     <div class="col-header" id="col-header-dept1" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Mech</div>
                     <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
                       <div class="log-list" id="log-list-Mech" style="display: flex; flex-direction: column; gap: 12px;"></div>
@@ -461,7 +479,7 @@
                     <button class="btn-add-log-col" data-dept="Mech" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
                   </div>
 
-                  <div class="status-col control" data-dept="Control" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                  <div class="status-col dept2" data-dept="Control" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
                     <div class="col-header" id="col-header-dept2" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Control</div>
                     <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
                       <div class="log-list" id="log-list-Control" style="display: flex; flex-direction: column; gap: 12px;"></div>
@@ -469,7 +487,7 @@
                     <button class="btn-add-log-col" data-dept="Control" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
                   </div>
 
-                  <div class="status-col elec" data-dept="Elec" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                  <div class="status-col dept3" data-dept="Elec" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
                     <div class="col-header" id="col-header-dept3" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Elec</div>
                     <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
                       <div class="log-list" id="log-list-Elec" style="display: flex; flex-direction: column; gap: 12px;"></div>
@@ -477,12 +495,60 @@
                     <button class="btn-add-log-col" data-dept="Elec" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
                   </div>
 
-                  <div class="status-col sales" data-dept="Sales" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                  <div class="status-col dept4" data-dept="Sales" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
                     <div class="col-header" id="col-header-dept4" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Sales</div>
                     <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
                       <div class="log-list" id="log-list-Sales" style="display: flex; flex-direction: column; gap: 12px;"></div>
                     </div>
                     <button class="btn-add-log-col" data-dept="Sales" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept5" data-dept="Dept5" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept5" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">R&D</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept5" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept5" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept6" data-dept="Dept6" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept6" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Design</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept6" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept6" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept7" data-dept="Dept7" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept7" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Production</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept7" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept7" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept8" data-dept="Dept8" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept8" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">QC</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept8" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept8" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept9" data-dept="Dept9" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept9" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Purchasing</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept9" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept9" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept10" data-dept="Dept10" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept10" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Support</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept10" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept10" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
                   </div>
                 </div>
               </div>
@@ -2506,7 +2572,7 @@
         </div>
         <div class="settings-section">
           <h3>부서 / 슬롯명 설정 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(각 최대 30자)</span></h3>
-          <div class="settings-actions-grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="settings-actions-grid" style="grid-template-columns: 1fr 1fr; gap: 16px; max-height: 250px; overflow-y: auto; padding-right: 8px;">
             <div class="form-group" style="margin-bottom: 0;">
               <input type="text" id="project-dept1" placeholder="슬롯 1 (예: 기계)" value="SALES" maxlength="30">
             </div>
@@ -2518,6 +2584,24 @@
             </div>
             <div class="form-group" style="margin-bottom: 0;">
               <input type="text" id="project-dept4" placeholder="슬롯 4 (예: 영업)" value="ASSEMBLY" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept5" placeholder="슬롯 5 (예: R&D)" value="R&D" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept6" placeholder="슬롯 6 (예: 디자인)" value="DESIGN" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept7" placeholder="슬롯 7 (예: 생산)" value="PRODUCTION" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept8" placeholder="슬롯 8 (예: 품질)" value="QC" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept9" placeholder="슬롯 9 (예: 구매)" value="PURCHASING" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept10" placeholder="슬롯 10 (예: 지원)" value="SUPPORT" maxlength="30">
             </div>
           </div>
         </div>

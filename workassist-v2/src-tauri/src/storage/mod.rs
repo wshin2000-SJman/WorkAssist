@@ -263,6 +263,24 @@ impl Storage {
         if !projects_info.contains(&"completion_memo".to_string()) {
             conn.execute("ALTER TABLE projects ADD COLUMN completion_memo TEXT", [])?;
         }
+        if !projects_info.contains(&"dept5_name".to_string()) {
+            conn.execute("ALTER TABLE projects ADD COLUMN dept5_name TEXT DEFAULT '[DPT. 5]'", [])?;
+        }
+        if !projects_info.contains(&"dept6_name".to_string()) {
+            conn.execute("ALTER TABLE projects ADD COLUMN dept6_name TEXT DEFAULT '[DPT. 6]'", [])?;
+        }
+        if !projects_info.contains(&"dept7_name".to_string()) {
+            conn.execute("ALTER TABLE projects ADD COLUMN dept7_name TEXT DEFAULT '[DPT. 7]'", [])?;
+        }
+        if !projects_info.contains(&"dept8_name".to_string()) {
+            conn.execute("ALTER TABLE projects ADD COLUMN dept8_name TEXT DEFAULT '[DPT. 8]'", [])?;
+        }
+        if !projects_info.contains(&"dept9_name".to_string()) {
+            conn.execute("ALTER TABLE projects ADD COLUMN dept9_name TEXT DEFAULT '[DPT. 9]'", [])?;
+        }
+        if !projects_info.contains(&"dept10_name".to_string()) {
+            conn.execute("ALTER TABLE projects ADD COLUMN dept10_name TEXT DEFAULT '[DPT. 10]'", [])?;
+        }
 
         Ok(())
     }
@@ -386,6 +404,9 @@ impl Storage {
                 created_at: format!("{}T09:00:00Z", d_m10), status: "active".to_string(),
                 dept1_name: "Control".to_string(), dept2_name: "Hardware".to_string(),
                 dept3_name: "Software".to_string(), dept4_name: "Testing".to_string(),
+                dept5_name: "QA".to_string(), dept6_name: "R&D".to_string(),
+                dept7_name: "PM".to_string(), dept8_name: "Purchase".to_string(),
+                dept9_name: "Sales".to_string(), dept10_name: "Support".to_string(),
                 project_tag: Some(format!("P{}-0900-01", &d_m10.replace("-", "")[2..])),
                 is_deleted: false,
                 completion_date: None, completion_memo: None,
@@ -400,6 +421,9 @@ impl Storage {
                 created_at: format!("{}T10:00:00Z", d_m5), status: "active".to_string(),
                 dept1_name: "Design".to_string(), dept2_name: "Frontend".to_string(),
                 dept3_name: "Backend".to_string(), dept4_name: "QA".to_string(),
+                dept5_name: "DevOps".to_string(), dept6_name: "Planning".to_string(),
+                dept7_name: "Marketing".to_string(), dept8_name: "Sales".to_string(),
+                dept9_name: "HR".to_string(), dept10_name: "Finance".to_string(),
                 project_tag: Some(format!("P{}-1000-02", &d_m5.replace("-", "")[2..])),
                 is_deleted: false,
                 completion_date: None, completion_memo: None,
@@ -414,6 +438,9 @@ impl Storage {
                 created_at: format!("{}T11:00:00Z", d_today), status: "active".to_string(),
                 dept1_name: "Algorithm".to_string(), dept2_name: "Vision".to_string(),
                 dept3_name: "Control".to_string(), dept4_name: "Integration".to_string(),
+                dept5_name: "Simul".to_string(), dept6_name: "Hardware".to_string(),
+                dept7_name: "QA".to_string(), dept8_name: "FieldTest".to_string(),
+                dept9_name: "PM".to_string(), dept10_name: "Admin".to_string(),
                 project_tag: Some(format!("P{}-1100-03", &d_today.replace("-", "")[2..])),
                 is_deleted: false,
                 completion_date: None, completion_memo: None,
@@ -428,6 +455,9 @@ impl Storage {
                 created_at: format!("{}T14:00:00Z", d_today), status: "active".to_string(),
                 dept1_name: "API".to_string(), dept2_name: "Security".to_string(),
                 dept3_name: "DevOps".to_string(), dept4_name: "Monitoring".to_string(),
+                dept5_name: "Frontend".to_string(), dept6_name: "Database".to_string(),
+                dept7_name: "QA".to_string(), dept8_name: "Infra".to_string(),
+                dept9_name: "Billing".to_string(), dept10_name: "Support".to_string(),
                 project_tag: Some(format!("P{}-1400-04", &d_today.replace("-", "")[2..])),
                 is_deleted: false,
                 completion_date: None, completion_memo: None,
@@ -442,6 +472,9 @@ impl Storage {
                 created_at: format!("{}T08:00:00Z", d_m10), status: "done".to_string(),
                 dept1_name: "Control".to_string(), dept2_name: "Hardware".to_string(),
                 dept3_name: "Software".to_string(), dept4_name: "Testing".to_string(),
+                dept5_name: "QA".to_string(), dept6_name: "R&D".to_string(),
+                dept7_name: "PM".to_string(), dept8_name: "Purchase".to_string(),
+                dept9_name: "Sales".to_string(), dept10_name: "Support".to_string(),
                 project_tag: Some(format!("P{}-0800-05", &d_m10.replace("-", "")[2..])),
                 is_deleted: false,
                 completion_date: Some(d_m2.clone()),
@@ -451,9 +484,9 @@ impl Storage {
 
         for mut p in projects {
             conn.execute(
-                "INSERT INTO projects (owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, project_tag, is_deleted, completion_date, completion_memo) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                params![p.owner_id, p.name, p.description, p.manager, p.client, p.start_date, p.created_at, p.status, p.dept1_name, p.dept2_name, p.dept3_name, p.dept4_name, p.project_tag, p.is_deleted, p.completion_date, p.completion_memo],
+                "INSERT INTO projects (owner_id, name, description, manager, client, start_date, created_at, status, dept1_name, dept2_name, dept3_name, dept4_name, dept5_name, dept6_name, dept7_name, dept8_name, dept9_name, dept10_name, project_tag, is_deleted, completion_date, completion_memo) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![p.owner_id, p.name, p.description, p.manager, p.client, p.start_date, p.created_at, p.status, p.dept1_name, p.dept2_name, p.dept3_name, p.dept4_name, p.dept5_name, p.dept6_name, p.dept7_name, p.dept8_name, p.dept9_name, p.dept10_name, p.project_tag, p.is_deleted, p.completion_date, p.completion_memo],
             )?;
             let pid = conn.last_insert_rowid();
             p.id = Some(pid);

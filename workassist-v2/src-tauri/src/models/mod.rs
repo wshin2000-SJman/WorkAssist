@@ -69,6 +69,12 @@ pub struct Project {
     pub dept2_name: String,
     pub dept3_name: String,
     pub dept4_name: String,
+    pub dept5_name: String,
+    pub dept6_name: String,
+    pub dept7_name: String,
+    pub dept8_name: String,
+    pub dept9_name: String,
+    pub dept10_name: String,
     pub project_tag: Option<String>,
     #[serde(default)]
     pub is_deleted: bool,
