@@ -1,0 +1,111 @@
+Sheet Name: 입력표
+Max Row: 866
+Max Column: 36
+
+=== Headers (Row 4, Column 1 to 34) ===
+Col 1 (A): 구분
+Col 2 (B): 일자
+Col 3 (C): None
+Col 4 (D): 삼정수주번호
+Col 5 (E): None
+Col 6 (F): None
+Col 7 (G): None
+Col 8 (H): 업체발주번호
+Col 9 (I): 삼정발주번호
+Col 10 (J):    업체명
+Col 11 (K): 모델명
+Col 12 (L): SHIP DATE
+Col 13 (M): 매입처
+Col 14 (N): 수량
+Col 15 (O): 매입단가
+Col 16 (P): 매입금액
+Col 17 (Q): 수량
+Col 18 (R): 수주단가
+Col 19 (S): 수주금액
+Col 20 (T): 외자
+Col 21 (U): 이익액
+Col 22 (V): 이익율
+Col 23 (W): 요청일
+Col 24 (X): 실납품일
+Col 25 (Y):  1차계산서
+Col 26 (Z): 2차계산서
+Col 27 (AA): 3차계산서
+Col 28 (AB): 수금
+Col 29 (AC): 납품여부
+Col 30 (AD): 발주담당
+Col 31 (AE): 인수자
+Col 32 (AF): 영업담당
+Col 33 (AG): 프로젝트명
+Col 34 (AH): Application
+
+=== Data Row 5 ===
+Col 1 (구분): O (Type: str)
+Col 2 (일자): 1 (Type: int)
+Col 3 (None): 2 (Type: int)
+Col 4 (삼정수주번호): FGM (Type: str)
+Col 5 (None): 24 (Type: str)
+Col 6 (None): 376 (Type: str)
+Col 7 (None): None (Type: NoneType)
+Col 8 (업체발주번호): 견적서 대체 (Type: str)
+Col 9 (삼정발주번호): FGM-24376FF1 (Type: str)
+Col 10 (   업체명): 삼성전기㈜ (Type: str)
+Col 11 (모델명): 솔밸브 [SY3220-5LZ-M5] (Type: str)
+Col 12 (SHIP DATE): ? (Type: str)
+Col 13 (매입처): 페스트 (Type: str)
+Col 14 (수량): 1 (Type: int)
+Col 15 (매입단가): 42820 (Type: int)
+Col 16 (매입금액): 42820 (Type: int)
+Col 17 (수량): 1 (Type: int)
+Col 18 (수주단가): 65000 (Type: int)
+Col 19 (수주금액): 65000 (Type: int)
+Col 20 (외자): None (Type: NoneType)
+Col 21 (이익액): 22180 (Type: int)
+Col 22 (이익율): 0.3412307692307692 (Type: float)
+Col 23 (요청일): 2025-01-16 00:00:00 (Type: datetime)
+Col 24 (실납품일): 2025-01-16 00:00:00 (Type: datetime)
+Col 25 ( 1차계산서): 2025-01-14 00:00:00 (Type: datetime)
+Col 26 (2차계산서): None (Type: NoneType)
+Col 27 (3차계산서): None (Type: NoneType)
+Col 28 (수금): 미수금 (Type: str)
+Col 29 (납품여부): None (Type: NoneType)
+Col 30 (발주담당): 박건우 (Type: str)
+Col 31 (인수자): None (Type: NoneType)
+Col 32 (영업담당): 황을하 (Type: str)
+Col 33 (프로젝트명): None (Type: NoneType)
+Col 34 (Application): None (Type: NoneType)
+
+=== Data Row 7 ===
+Col 1 (구분): K (Type: str)
+Col 2 (일자): 1 (Type: int)
+Col 3 (None): 3 (Type: int)
+Col 4 (삼정수주번호): FGM (Type: str)
+Col 5 (None): 25 (Type: str)
+Col 6 (None): 001 (Type: str)
+Col 7 (None): None (Type: NoneType)
+Col 8 (업체발주번호): 발주서 (Type: str)
+Col 9 (삼정발주번호): SJFA25001S07001 (Type: str)
+Col 10 (   업체명): 국민대학교 (Type: str)
+Col 11 (모델명): TBM2G-07613D-NHAA-00 (Type: str)
+Col 12 (SHIP DATE): 2025-03-03 00:00:00 (Type: datetime)
+Col 13 (매입처): Kollmorgen (Type: str)
+Col 14 (수량): 4 (Type: int)
+Col 15 (매입단가): 577071 (Type: int)
+Col 16 (매입금액): 2308284 (Type: int)
+Col 17 (수량): 4 (Type: int)
+Col 18 (수주단가): 850000 (Type: int)
+Col 19 (수주금액): 3400000 (Type: int)
+Col 20 (외자): 과제오픈시 (Type: str)
+Col 21 (이익액): 1091716 (Type: int)
+Col 22 (이익율): 0.3210929411764706 (Type: float)
+Col 23 (요청일): 2024-12-27 00:00:00 (Type: datetime)
+Col 24 (실납품일): 2025-06-11 00:00:00 (Type: datetime)
+Col 25 ( 1차계산서): 2025-06-12 00:00:00 (Type: datetime)
+Col 26 (2차계산서): None (Type: NoneType)
+Col 27 (3차계산서): None (Type: NoneType)
+Col 28 (수금): None (Type: NoneType)
+Col 29 (납품여부): 직납 (Type: str)
+Col 30 (발주담당): 윤석민 (Type: str)
+Col 31 (인수자): 강수원 (Type: str)
+Col 32 (영업담당): 정영화 (Type: str)
+Col 33 (프로젝트명): None (Type: NoneType)
+Col 34 (Application): 웨어러블 로봇 (Type: str)

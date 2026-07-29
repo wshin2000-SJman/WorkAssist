@@ -1,0 +1,30 @@
+=== Sheet: 수주매출 현황 (Rows: 844, Cols: 21) ===
+Row 1: [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+Row 2: [None, '(MS사업부) 2026년 수주/ 매출 현황', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+Row 3: [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+Row 4: ['열1', '수주일자', '프로젝트코드', '구분', '고객사', '고객 발주번호', '제품명', '고객 담당자', '영업담당자', '납품요청일', '매입처', '수량', '수주단가', '수주금액', '납품 예정일', '실제 납품일', '1차 계산서', '2차 계산서', '1차 정산금', '2차 정산금', '비고', None, None, None]
+Row 5: [None, datetime.datetime(2022, 11, 16, 0, 0), 'DGD-22370', '상품', '베큠월드(영천엔지니어링)', 'SJPS22010', 'M21NRXB-LSS-NS-08', '장장철', '방산', datetime.datetime(2023, 6, 30, 0, 0), 'Kollmorgen', 50, 215000, 10750000, datetime.datetime(2025, 2, 13, 0, 0), None, datetime.datetime(2025, 2, 12, 0, 0), datetime.datetime(2025, 2, 13, 0, 0), 5375000, 5375000, None, None, None, None]
+
+=== Data Rows Sample ===
+Row 6: [None, datetime.datetime(2022, 11, 16, 0, 0), 'DGD-22370', '상품', '베큠월드(영천엔지니어링)', 'SJPS22010', 'M21NRXB-LSS-NS-08', '장장철', '방산', datetime.datetime(2023, 6, 30, 0, 0), 'Kollmorgen', 50, 215000, 10750000, datetime.datetime(2025, 3, 19, 0, 0), None, datetime.datetime(2025, 3, 12, 0, 0), datetime.datetime(2025, 3, 19, 0, 0), 5375000, 5375000, None, None, None, None]
+Row 7: [None, datetime.datetime(2022, 12, 20, 0, 0), 'DGD-22415', '상품', '베큠월드(영천엔지니어링)', 'SJPS22011_SJPS25003', 'M21NRXB-LSS-NS-08', '장장철', '방산', datetime.datetime(2023, 6, 30, 0, 0), 'Kollmorgen', 50, 215000, 10750000, datetime.datetime(2025, 7, 17, 0, 0), None, datetime.datetime(2025, 7, 16, 0, 0), datetime.datetime(2025, 7, 17, 0, 0), 5375000, 5375000, None, None, None, None]
+Row 8: [None, datetime.datetime(2023, 2, 6, 0, 0), 'SGM-23032', '상품', '베큠월드(영천엔지니어링)', 'SJPS22001', 'M21NRXB-LSS-NS-08', '장장철', '정영화', None, 'Kollmorgen', 50, 215000, 10750000, datetime.datetime(2025, 9, 1, 0, 0), None, datetime.datetime(2025, 8, 26, 0, 0), datetime.datetime(2025, 9, 1, 0, 0), 5375000, 5375000, None, None, None, None]
+Row 9: [None, datetime.datetime(2023, 8, 21, 0, 0), 'FGM-23177', '상품', '한국원자력연구원', '2023-3987', 'M093-TF06C2006 (PACKING SLIP 품질서명 필요)', '이창동', '정영화', datetime.datetime(2025, 3, 3, 0, 0), 'Kollmorgen', 10, 4940000, 49400000, datetime.datetime(2025, 1, 20, 0, 0), None, datetime.datetime(2025, 2, 11, 0, 0), None, 49400000, None, None, None, None, None]
+Row 10: [None, datetime.datetime(2024, 5, 8, 0, 0), 'FGM-24116', '상품', '엘지종합산전', 45373, 'IL06100A1 TRC1', '손정애', '정영화', datetime.datetime(2024, 7, 31, 0, 0), 'Kollmorgen', 2, 2780000, 5560000, datetime.datetime(2025, 1, 3, 0, 0), None, datetime.datetime(2025, 1, 3, 0, 0), None, 5560000, None, None, None, None, None]
+Row 11: [None, datetime.datetime(2024, 6, 24, 0, 0), 'FSD-24162', '제품', '삼성전기㈜-수원', 4505648822, 'MLCC 실장기_장착기(Chip)_E2302040507', '임주연', '주성철', datetime.datetime(2024, 11, 25, 0, 0), '가온솔루션_삼정오토메이션', 1, 200000000, 200000000, datetime.datetime(2025, 2, 21, 0, 0), None, datetime.datetime(2025, 3, 5, 0, 0), datetime.datetime(2025, 4, 21, 0, 0), 160000000, 40000000, None, None, None, None]
+
+=== Sheet: 차트 (Rows: 31, Cols: 17) ===
+Row 2: [None, '수주 매출 현황', None, None, None, None, None, None, None, None, None, None, None, None]
+Row 4: [None, '년도', 2026, None, None, None, None, None, None, None, None, None, None, None]
+Row 14: [None, '구분', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+Row 15: [None, '수주금액', 570450200, 344500000, 589047933.9, 188390800, 312133789, 0, 0, 0, 0, 0, 0, 0]
+Row 16: [None, '매출금액', 205760000, 267683375, 198336745, 941205500, 133340789, 0, 0, 0, 0, 0, 0, 0]
+Row 18: [None, '년도', 2026, None, None, None, None, None, None, None, None, None, None, None]
+
+=== Sheet: 25년 차트 (Rows: 31, Cols: 17) ===
+Row 2: [None, '수주 매출 현황', None, None, None, None, None, None, None, None, None, None, None, None]
+Row 4: [None, '년도', 2025, None, None, None, None, None, None, None, None, None, None, None]
+Row 14: [None, '구분', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+Row 15: [None, '수주금액', 151116000, 118050300, 240537899.8, 364429480, 204311600, 179601775, 167560000, 107646782, 784872381, 1192400941, 199979845, 410243268]
+Row 16: [None, '매출금액', 275647717.5, 204802324.09, 403540300, 439882271.2, 215957599.8, 197700000, 184486775, 219330000, 367204332, 185797100, 333351570, 582929295]
+Row 18: [None, '년도', 2025, None, None, None, None, None, None, None, None, None, None, None]

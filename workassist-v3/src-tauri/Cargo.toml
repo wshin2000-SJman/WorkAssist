@@ -1,0 +1,46 @@
+[package]
+name = "workassist"
+version = "3.0.0"
+edition = "2021"
+
+[dependencies]
+# DB Interaction
+rusqlite = { version = "0.31.0", features = ["bundled"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# DateTime & UUID
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+rand = "0.8"
+regex = "1.10"
+futures = "0.3"
+
+# Tauri v2 Core
+tauri = { version = "2.0.0", features = ["devtools"] }
+tauri-plugin-shell = "2.3.5"
+tauri-plugin-dialog = "2.7.1"
+tauri-plugin-fs = "2.5.1"
+open = "5.1"
+tokio = { version = "1.37.0", features = ["full"] }
+
+[build-dependencies]
+tauri-build = { version = "2.0.0", features = [] }
+
+[dev-dependencies]
+tempfile = "3.10"
+
+[features]
+default = ["kanban", "minutes", "pm"]
+kanban = []
+minutes = []
+pm = []
+
+[profile.release]
+opt-level = "z"       # 크기 및 용량 중심 압축 최적화
+lto = true            # Link-Time Optimization 활성화 (미사용 백엔드 코드 제거)
+codegen-units = 1     # 코드 생성 단위를 1로 제한하여 LTO 성능 시너지 극대화
+panic = "abort"       # 패닉 언와인딩 정보 스택 제거 (크기 감축)
+strip = true          # 심볼 정보 및 디버그 메타데이터 완전 제거

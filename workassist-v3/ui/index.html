@@ -1,0 +1,2521 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WorkAssist v3.0</title>
+  <link rel="preload" href="assets/fonts/Outfit-400.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="assets/fonts/Outfit-700.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="assets/fonts/Inter-400.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="assets/fonts/Inter-600.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Login View -->
+  <div id="view-login" class="login-overlay">
+    <div class="rainbow-bars">
+      <!-- Group 1 -->
+      <div class="bar" style="--color: var(--brand-blue); --delay: 0s; --left: 3%;"></div>
+      <div class="bar" style="--color: var(--brand-green); --delay: 2s; --left: 13%;"></div>
+      <div class="bar" style="--color: var(--brand-yellow); --delay: 4s; --left: 23%;"></div>
+      <div class="bar" style="--color: var(--brand-orange); --delay: 6s; --left: 33%;"></div>
+      <div class="bar" style="--color: var(--brand-red); --delay: 8s; --left: 43%;"></div>
+      <div class="bar" style="--color: var(--brand-blue); --delay: 10s; --left: 53%;"></div>
+      <div class="bar" style="--color: var(--brand-green); --delay: 12s; --left: 63%;"></div>
+      <div class="bar" style="--color: var(--brand-yellow); --delay: 14s; --left: 73%;"></div>
+      <div class="bar" style="--color: var(--brand-orange); --delay: 16s; --left: 83%;"></div>
+      <div class="bar" style="--color: var(--brand-red); --delay: 18s; --left: 93%;"></div>
+      <!-- Group 2 -->
+      <div class="bar" style="--color: var(--brand-blue); --delay: 1s; --left: 8%;"></div>
+      <div class="bar" style="--color: var(--brand-green); --delay: 3s; --left: 18%;"></div>
+      <div class="bar" style="--color: var(--brand-yellow); --delay: 5s; --left: 28%;"></div>
+      <div class="bar" style="--color: var(--brand-orange); --delay: 7s; --left: 38%;"></div>
+      <div class="bar" style="--color: var(--brand-red); --delay: 9s; --left: 48%;"></div>
+      <div class="bar" style="--color: var(--brand-blue); --delay: 11s; --left: 58%;"></div>
+      <div class="bar" style="--color: var(--brand-green); --delay: 13s; --left: 68%;"></div>
+      <div class="bar" style="--color: var(--brand-yellow); --delay: 15s; --left: 78%;"></div>
+      <div class="bar" style="--color: var(--brand-orange); --delay: 17s; --left: 88%;"></div>
+      <div class="bar" style="--color: var(--brand-red); --delay: 19s; --left: 98%;"></div>
+      <!-- Group 3 -->
+      <div class="bar" style="--color: var(--brand-blue); --delay: 0.5s; --left: -2%;"></div>
+      <div class="bar" style="--color: var(--brand-green); --delay: 2.5s; --left: 38%;"></div>
+      <div class="bar" style="--color: var(--brand-yellow); --delay: 4.5s; --left: 18%;"></div>
+      <div class="bar" style="--color: var(--brand-orange); --delay: 6.5s; --left: 58%;"></div>
+      <div class="bar" style="--color: var(--brand-red); --delay: 8.5s; --left: 28%;"></div>
+      <div class="bar" style="--color: var(--brand-blue); --delay: 10.5s; --left: 68%;"></div>
+      <div class="bar" style="--color: var(--brand-green); --delay: 12.5s; --left: 48%;"></div>
+      <div class="bar" style="--color: var(--brand-yellow); --delay: 14.5s; --left: 88%;"></div>
+      <div class="bar" style="--color: var(--brand-orange); --delay: 16.5s; --left: 78%;"></div>
+      <div class="bar" style="--color: var(--brand-red); --delay: 18.5s; --left: 108%;"></div>
+    </div>
+    <div class="login-card">
+      <div class="login-header">
+        <img src="assets/icon_3.png" class="login-logo" alt="Logo">
+        <h1>WorkAssist</h1>
+        <p>업무 보조 시스템 로그인</p>
+      </div>
+      <form id="form-login" autocomplete="off">
+        <div class="form-group">
+          <input type="text" id="login-id" placeholder="사용자명" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <input type="password" id="login-pw" placeholder="비밀번호" required autocomplete="off">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">로그인</button>
+      </form>
+      <div class="login-footer">
+        <div class="footer-links-main">
+          <button id="btn-show-signup" class="btn-link">아이디 생성</button>
+          <button id="btn-show-hint" class="btn-link">비밀번호 힌트</button>
+          <button id="btn-show-change-pw" class="btn-link">비밀번호 변경</button>
+        </div>
+        <div class="footer-bottom-section">
+          <div class="footer-legal-links">
+            <a href="#" class="legal-link" id="link-privacy">개인정보 처리방침</a>
+            <a href="#" class="legal-link" id="link-terms">이용 약관</a>
+            <a href="#" class="legal-link" id="link-contact">문의하기</a>
+          </div>
+          <div class="footer-copyright">
+            <span>© 2026 Wonseup Shin. All rights reserved.</span>
+            <span class="version-tag">v3.0.0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="logo">
+        <div class="logo-brand">
+          <img src="assets/icon_3.png" class="logo-icon" alt="Logo">
+          <span class="logo-text">WorkAssist</span>
+        </div>
+        <button id="btn-toggle-sidebar" class="btn-toggle-sidebar" title="사이드메뉴 접기">
+          <span id="sidebar-toggle-icon">◀</span>
+        </button>
+      </div>
+      <nav class="nav-menu">
+        <a href="#" class="nav-item active" id="nav-dashboard" title="대시보드">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">대시보드</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-kanban" title="업무 관리자">
+          <span class="nav-icon">📋</span>
+          <span class="nav-text">업무 관리자</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-minutes" title="회의록 관리자">
+          <span class="nav-icon">📝</span>
+          <span class="nav-text">회의록 관리자</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-pm" title="프로젝트 관리자">
+          <span class="nav-icon">🏗️</span>
+          <span class="nav-text">프로젝트 관리자</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-motor-calc" title="모터사양 계산기">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-text">모터사양 계산기</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-actions">
+          <a href="#" class="nav-item" id="nav-settings" title="설정">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">설정</span>
+          </a>
+          <button class="btn-logout" id="btn-logout" title="로그아웃">
+            <span class="nav-icon">🚪</span>
+            <span class="nav-text">로그아웃</span>
+          </button>
+        </div>
+        <div class="user-profile">
+          <div class="avatar">AD</div>
+          <div class="user-info">
+            <div class="user-name" id="sidebar-user-name">관리자 사용자</div>
+            <div class="user-status" id="sidebar-status-info">v3.0.0 | 0개 업무</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-bar">
+        <h1 id="page-title">대시보드</h1>
+        <div class="top-actions">
+          <button class="btn btn-primary" id="btn-sync">데이터 동기화</button>
+          <div class="status-indicator">
+            <img src="assets/typing_2.gif" class="typing-status" alt="Status">
+          </div>
+        </div>
+      </header>
+
+      <section class="content-area" id="main-view">
+        <!-- Dashboard View -->
+        <div class="view" id="view-dashboard">
+          <div class="welcome-card">
+            <h2>WorkAssist <span class="app-version-text">v3.0.0</span>에 오신 것을 환영합니다</h2>
+            <p>체계적인 업무는 마음에 평온을 줍니다.</p>
+            <div class="stats-grid">
+              <div class="stat-card" id="card-tasks">
+                <span class="stat-label">진행 중인 업무</span>
+                <span class="stat-value" id="stat-tasks">0</span>
+              </div>
+              <div class="stat-card" id="card-meetings">
+                <span class="stat-label">회의 일정</span>
+                <span class="stat-value" id="stat-meetings">0</span>
+              </div>
+              <div class="stat-card" id="card-projects">
+                <span class="stat-label">참여 프로젝트</span>
+                <span class="stat-value" id="stat-projects">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Premium Dashboard Charts Grid -->
+          <div class="dashboard-charts-grid">
+            <!-- 1. Task Status Donut Chart Card -->
+            <div class="chart-card" id="chart-card-tasks">
+              <h3>🎯 업무 진행 파이프라인</h3>
+              <div class="donut-chart-wrapper">
+                <div class="svg-container">
+                  <svg id="svg-task-donut" viewBox="0 0 160 160" width="160" height="160"></svg>
+                </div>
+                <div class="chart-legend" id="legend-task-donut"></div>
+              </div>
+              
+              <!-- Imminent Tasks list -->
+              <div class="imminent-tasks-section" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                  <span>⏳</span> 마감 임박 및 기한 초과 업무
+                </h4>
+                <div id="imminent-tasks-list" class="imminent-tasks-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right side column for Workload and Category Charts -->
+            <div class="dashboard-right-charts">
+              <!-- 2. Departmental Workload Card -->
+              <div class="chart-card" id="chart-card-workload">
+                <div class="chart-card-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                  <h3 style="margin-bottom: 0;">⚡ 부서별 담당 업무 현황</h3>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <!-- Metric Select (Logs vs Planned Days) -->
+                    <select id="dashboard-workload-metric-select" class="form-select project-dropdown-compact" style="max-width: 120px; height: 32px; padding: 4px 28px 4px 10px; font-size: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); color: var(--text-primary); cursor: pointer; font-family: inherit; font-weight: 500; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'10\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'3\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 10px center; transition: all 0.2s ease;">
+                      <option value="logs" selected>로그 개수</option>
+                      <option value="days">계획 일수</option>
+                    </select>
+
+                    <select id="dashboard-workload-project-select" class="form-select project-dropdown-compact" style="max-width: 180px; height: 32px; padding: 4px 28px 4px 10px; font-size: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); color: var(--text-primary); cursor: pointer; font-family: inherit; font-weight: 500; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'10\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'3\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 10px center; transition: all 0.2s ease;">
+                      <!-- Populated dynamically via JS -->
+                    </select>
+                  </div>
+                </div>
+                <div class="workload-list" id="workload-bar-list">
+                  <!-- Generated dynamically in JS -->
+                </div>
+              </div>
+              
+              <!-- 3. Meeting Categories Card -->
+              <div class="chart-card" id="chart-card-categories">
+                <h3>📅 회의 성격별 분류</h3>
+                <div class="categories-workload-list" id="categories-chart-list">
+                  <!-- Generated dynamically in JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kanban View (Initially Hidden) -->
+        <div class="view hidden" id="view-kanban">
+          <div class="view-header">
+            <div class="header-left">
+              <button id="btn-new-task" class="btn btn-primary"><span>+</span> 새 업무 추가</button>
+              <button id="btn-trash-bin" class="btn btn-secondary"><span>🗑️</span> 휴지통</button>
+            </div>
+            <div class="view-tabs">
+              <button class="view-tab active" data-view="board">보드</button>
+              <button class="view-tab" data-view="schedule">스케줄</button>
+              <button class="view-tab" data-view="calendar">캘린더</button>
+            </div>
+            <div class="header-search">
+              <select id="kanban-search-type" class="search-type-select">
+                <option value="all">전체</option>
+                <option value="title">제목</option>
+                <option value="content">내용</option>
+                <option value="manager">담당자</option>
+              </select>
+              <input type="text" id="kanban-search" placeholder="업무 검색...">
+              <span class="search-icon">🔍</span>
+            </div>
+          </div>
+
+          <!-- Board View -->
+          <div id="kanban-content-board" class="kanban-tab-content active">
+            <div class="kanban-board">
+              <div class="kanban-column" data-status="Note">
+                <div class="column-header">
+                  <h3>노트 (Note)</h3>
+                  <span class="count">0</span>
+                </div>
+                <div class="task-list"></div>
+              </div>
+              <div class="kanban-column" data-status="To-do">
+                <div class="column-header">
+                  <h3>할 일 (To-do)</h3>
+                  <span class="count">0</span>
+                </div>
+                <div class="task-list"></div>
+              </div>
+              <div class="kanban-column" data-status="Doing">
+                <div class="column-header">
+                  <h3>진행 중 (Doing)</h3>
+                  <span class="count">0</span>
+                </div>
+                <div class="task-list"></div>
+              </div>
+              <div class="kanban-column" data-status="Done">
+                <div class="column-header">
+                  <h3>완료 (Done)</h3>
+                  <span class="count">0</span>
+                </div>
+                <div class="task-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schedule View -->
+          <div id="kanban-content-schedule" class="kanban-tab-content">
+            <div class="schedule-container">
+              <div class="schedule-nav-header">
+                <div class="calendar-nav">
+                  <button id="schedule-prev" class="btn-icon">◀</button>
+                  <h3 id="schedule-month-year">May 2026</h3>
+                  <button id="schedule-next" class="btn-icon">▶</button>
+                </div>
+              </div>
+              <div class="schedule-header">
+                <div class="schedule-sidebar-header">업무 설명</div>
+                <div class="schedule-timeline-header" id="schedule-timeline-days">
+                  <!-- Day numbers will be rendered here -->
+                </div>
+              </div>
+              <div class="schedule-body" id="schedule-body">
+                <!-- Task rows with timeline bars will be rendered here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendar View -->
+          <div id="kanban-content-calendar" class="kanban-tab-content">
+            <div class="calendar-container">
+              <div class="calendar-header">
+                <div class="calendar-nav">
+                  <button id="calendar-prev" class="btn-icon">◀</button>
+                  <h3 id="calendar-month-year">May 2026</h3>
+                  <button id="calendar-next" class="btn-icon">▶</button>
+                </div>
+              </div>
+              <div class="calendar-grid-header">
+                <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+              </div>
+              <div class="calendar-grid" id="calendar-grid">
+                <!-- Calendar cells will be rendered here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Minutes View -->
+        <div class="view hidden" id="view-minutes">
+          <div class="view-header">
+            <div class="header-left">
+              <button class="btn btn-primary" id="btn-new-meeting"><span>+</span> 새 회의록</button>
+              <button id="btn-manage-categories" class="btn btn-secondary"><span>🏷️</span> 카테고리 관리</button>
+              <button id="btn-minutes-trash" class="btn btn-secondary"><span>🗑️</span> 휴지통</button>
+              <button id="btn-export-minutes-md" class="btn btn-outline-accent btn-import-export-md" style="margin-left: 8px;">전체 MD<br>내보내기</button>
+            </div>
+            <div class="view-tabs">
+              <button class="view-tab active" data-view="board">보드</button>
+              <button class="view-tab" data-view="calendar">캘린더</button>
+            </div>
+            <div class="header-search">
+              <select id="minutes-category-filter" class="search-type-select">
+                <option value="all">전체 카테고리</option>
+                <option value="none">미분류</option>
+                <!-- Dynamically populated -->
+              </select>
+              <select id="minutes-search-type" class="search-type-select">
+                <option value="all">전체</option>
+                <option value="title">제목</option>
+                <option value="content">내용</option>
+                <option value="participants">참석자</option>
+              </select>
+              <input type="text" id="minutes-search" placeholder="회의록 검색...">
+              <span class="search-icon">🔍</span>
+            </div>
+          </div>
+          
+          <div id="minutes-content-board" class="minutes-tab-content active">
+            <div class="minutes-list" id="minutes-list">
+              <!-- Meeting cards will be rendered here -->
+            </div>
+          </div>
+
+          <div id="minutes-content-calendar" class="minutes-tab-content">
+            <div class="calendar-container">
+              <div class="calendar-header">
+                <div class="calendar-nav">
+                  <button id="minutes-calendar-prev" class="btn-icon">◀</button>
+                  <h3 id="minutes-calendar-month-year">May 2026</h3>
+                  <button id="minutes-calendar-next" class="btn-icon">▶</button>
+                </div>
+              </div>
+              <div class="calendar-grid-header">
+                <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+              </div>
+              <div class="calendar-grid" id="minutes-calendar-grid">
+                <!-- Calendar cells will be rendered here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PM View -->
+        <div class="view hidden" id="view-pm">
+          <div class="view-header">
+            <div class="header-left">
+              <button class="btn btn-primary" id="btn-new-project"><span>+</span> 새 프로젝트</button>
+              <button id="btn-active-projects-modal" class="btn btn-secondary"><span>📁</span> 진행 중인 프로젝트 (<span id="btn-active-projects-count">0</span>)</button>
+              <button id="btn-project-completed" class="btn btn-secondary"><span>✅</span> 완료된 프로젝트</button>
+              <button id="btn-project-import" class="btn btn-secondary"><span>📥</span> DB 가져오기</button>
+              <button id="btn-project-trash" class="btn btn-secondary"><span>🗑️</span> 휴지통</button>
+            </div>
+          </div>
+          <div class="pm-container">
+            <div class="pm-details" id="pm-details">
+              <div class="pm-details-header">
+                <div class="pm-details-header-top">
+                  <div class="project-title-row">
+                    <h2 id="detail-project-name" style="margin: 0; font-size: 26px; font-weight: 800; color: var(--accent-color); overflow-wrap: break-word; word-break: keep-all; min-width: 200px;">프로젝트를 선택하세요</h2>
+                    <div class="project-title-actions" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                      <button id="btn-edit-project" class="btn btn-secondary btn-sm hidden" style="padding: 6px 12px; font-size: 12px; height: 32px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">✏️ 수정</button>
+                      <button id="pm-timetable-export-html" class="btn btn-outline-accent btn-sm hidden" style="padding: 6px 12px; font-size: 12px; height: 32px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">HTML 내보내기</button>
+                      <button id="pm-export-db" class="btn btn-outline-accent btn-sm hidden" style="padding: 6px 12px; font-size: 12px; height: 32px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">💾 DB 내보내기</button>
+                    </div>
+                  </div>
+                  <div class="pm-tabs">
+                    <button class="pm-tab active" data-tab="status">진행 상태</button>
+                    <button class="pm-tab" data-tab="timetable">타임테이블 (Gantt)</button>
+                    <button class="pm-tab" data-tab="done-logs">완료된 로그</button>
+                    <button class="pm-tab" data-tab="deleted-logs">삭제된 로그</button>
+                  </div>
+                </div>
+                <div class="pm-details-header-bottom" style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span id="detail-project-tag" class="tag-badge hidden"></span>
+                    <p id="detail-project-meta" style="margin: 0;">고객사: - | 담당자: -</p>
+                  </div>
+                  <button id="btn-view-project-overview" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; font-size: 12px; height: 32px; border-radius: 8px; flex-shrink: 0;">
+                    <span>📄</span> 프로젝트 개요 보기
+                  </button>
+                </div>
+              </div>
+
+              <div class="pm-tab-content active" id="tab-status">
+
+                <!-- Milestones Container Row -->
+                <div style="display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px;">
+                  <!-- Milestones Container -->
+                  <div class="milestones-container" style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 20px; padding: 20px;">
+                    <div class="section-title" style="margin-bottom: 16px;">
+                      <h4>마일스톤</h4>
+                      <span class="hint">클릭하여 슬롯 편집</span>
+                    </div>
+                    <div class="milestones-grid" id="milestones-grid">
+                      <!-- Populated dynamically via JS up to 20 slots -->
+                    </div>
+                  </div>
+                </div>
+
+                <div class="status-grid" style="display: flex; gap: 16px; overflow-x: auto; min-height: 450px; padding-bottom: 12px; scrollbar-width: thin;">
+                  <div class="status-col dept1" data-dept="Mech" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept1" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Mech</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Mech" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Mech" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept2" data-dept="Control" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept2" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Control</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Control" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Control" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept3" data-dept="Elec" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept3" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Elec</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Elec" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Elec" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept4" data-dept="Sales" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept4" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Sales</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Sales" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Sales" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept5" data-dept="Dept5" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept5" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">R&D</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept5" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept5" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept6" data-dept="Dept6" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept6" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Design</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept6" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept6" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept7" data-dept="Dept7" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept7" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Production</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept7" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept7" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept8" data-dept="Dept8" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept8" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">QC</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept8" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept8" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept9" data-dept="Dept9" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept9" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Purchasing</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept9" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept9" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+
+                  <div class="status-col dept10" data-dept="Dept10" style="flex: 0 0 280px; width: 280px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="col-header" id="col-header-dept10" style="padding: 12px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--card-border); font-size: 14px; text-transform: uppercase; color: var(--accent-color);">Support</div>
+                    <div class="col-list-wrapper" style="flex: 1; overflow-y: auto; padding: 12px; max-height: 400px;">
+                      <div class="log-list" id="log-list-Dept10" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                    <button class="btn-add-log-col" data-dept="Dept10" style="margin: 12px; padding: 8px; background: transparent; border: 1px dashed var(--card-border); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">+ Add Log</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pm-tab-content" id="tab-done-logs">
+                <div class="table-search-header" style="display: flex; gap: 16px; margin-bottom: 20px;">
+                  <input type="text" id="search-done-logs" placeholder="완료된 상태 로그 검색..." class="pm-search-input">
+                  <select id="filter-done-dept" class="pm-search-select">
+                    <option value="">전체 부서</option>
+                    <option value="Mech">슬롯 1: 기계</option>
+                    <option value="Control">슬롯 2: 제어</option>
+                    <option value="Elec">슬롯 3: 전장</option>
+                    <option value="Sales">슬롯 4: 영업</option>
+                  </select>
+                </div>
+                <div class="trash-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>태그</th>
+                        <th>부서</th>
+                        <th>제목</th>
+                        <th>담당자</th>
+                        <th>로그 일시</th>
+                        <th style="text-align: center;">작업</th>
+                      </tr>
+                    </thead>
+                    <tbody id="done-logs-list-body">
+                      <!-- Loaded via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="pm-tab-content" id="tab-deleted-logs">
+                <div class="table-search-header" style="display: flex; gap: 16px; margin-bottom: 20px;">
+                  <input type="text" id="search-deleted-logs" placeholder="삭제된 상태 로그 검색..." class="pm-search-input">
+                  <select id="filter-deleted-dept" class="pm-search-select">
+                    <option value="">전체 부서</option>
+                    <option value="Mech">슬롯 1: 기계</option>
+                    <option value="Control">슬롯 2: 제어</option>
+                    <option value="Elec">슬롯 3: 전장</option>
+                    <option value="Sales">슬롯 4: 영업</option>
+                  </select>
+                </div>
+                <div class="trash-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>태그</th>
+                        <th>부서</th>
+                        <th>제목</th>
+                        <th>담당자</th>
+                        <th>로그 일시</th>
+                        <th style="text-align: center;">작업</th>
+                      </tr>
+                    </thead>
+                    <tbody id="deleted-logs-list-body">
+                      <!-- Loaded via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="pm-tab-content" id="tab-timetable">
+                <div class="timetable-layout" style="display: flex; flex-direction: column; gap: 24px;">
+                  
+                  <!-- Timetable Controls -->
+                  <div class="timetable-controls" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 16px 20px; border-radius: 16px;">
+                    <!-- Left: Navigation -->
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <button id="pm-timetable-prev" class="btn btn-sm btn-secondary" style="padding: 6px 12px;">&lt;</button>
+                      <div id="pm-timetable-current-range" style="font-weight: 700; font-size: 14px; color: var(--accent-color); min-width: 150px; text-align: center;">YYYY-MM-DD ~ YYYY-MM-DD</div>
+                      <button id="pm-timetable-next" class="btn btn-sm btn-secondary" style="padding: 6px 12px;">&gt;</button>
+                    </div>
+
+                    <!-- Right: Scale, Show Deleted, Export -->
+                    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="pm-timetable-show-deleted" style="width: 16px; height: 16px; cursor: pointer;">
+                        <label for="pm-timetable-show-deleted" style="font-size: 13px; color: var(--text-secondary); cursor: pointer;">삭제된 로그 표시</label>
+                      </div>
+                      
+                      <select id="pm-timetable-scale" class="form-select" style="width: 120px; height: 36px; padding: 6px 32px 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 10px;">
+                        <option value="weekly">주간 (Weekly)</option>
+                        <option value="monthly">월간 (Monthly)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Horizontal Timetable Gantt Container -->
+                   <div id="pm-timetable-container" class="timetable-container" style="flex: 1; min-height: 680px; max-height: none; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); border-radius: 20px; overflow: auto; position: relative; display: flex; flex-direction: column;">
+                    <!-- Rendered via JS -->
+                  </div>
+
+                  <!-- Dynamic Detail Panel for Clicked Log -->
+                  <div id="pm-timetable-log-detail" style="display: none; flex-direction: column; gap: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border); padding: 20px; border-radius: 16px; animation: fadeIn 0.2s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">
+                      <div id="pm-timetable-detail-header" style="font-weight: 700; color: var(--accent-color); font-size: 14px;">[부서] 상세 내용</div>
+                      <div style="display: flex; gap: 8px;">
+                        <button id="pm-timetable-detail-edit" class="btn btn-sm btn-secondary" style="color: var(--accent-color); font-size: 12px; padding: 4px 10px;">수정</button>
+                        <button id="pm-timetable-detail-done" class="btn btn-sm btn-secondary" style="color: #10b981; font-size: 12px; padding: 4px 10px;">완료</button>
+                        <button id="pm-timetable-detail-restore" class="btn btn-sm btn-secondary" style="color: #8b5cf6; font-size: 12px; padding: 4px 10px; display: none;">복원</button>
+                        <button id="pm-timetable-detail-delete" class="btn btn-sm btn-secondary" style="color: #f87171; font-size: 12px; padding: 4px 10px;">삭제</button>
+                        <button class="btn btn-sm btn-secondary" style="font-size: 12px; padding: 4px 10px;" onclick="document.getElementById('pm-timetable-log-detail').style.display='none'">닫기</button>
+                      </div>
+                    </div>
+                    <div id="pm-timetable-detail-content" style="white-space: pre-wrap; font-size: 13px; color: var(--text-secondary); line-height: 1.6;"></div>
+                    <div id="pm-timetable-detail-image" style="display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap;"></div>
+                  </div>
+
+                  <!-- Add Log Control Button -->
+                  <div style="display: flex; justify-content: flex-end; margin-top: 16px; margin-bottom: 12px;">
+                    <button class="btn btn-primary" id="btn-add-log"><span>+</span> 상태 로그 추가</button>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RAG View -->
+        <div class="view hidden" id="view-rag">
+          <div class="view-header" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; margin-bottom: 24px; text-align: left;">
+            <h2 style="margin: 0;">PDF & Excel 파싱</h2>
+            <p class="view-desc" style="margin: 0; text-align: left; line-height: 1.6; white-space: normal; color: var(--text-secondary);">오프라인 PDF & Excel 파일을 사용자가 원하는 텍스트기반 데이터로 추출합니다.<br>(Powered by opendataloader-pdf & calamine)</p>
+          </div>
+          
+          <div class="rag-container" style="display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1200px; margin-top: 20px;">
+            <!-- Extraction Sub-Tab Navigation -->
+            <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px;">
+              <!-- Tab Selector -->
+              <div class="view-tabs" id="rag-extraction-tabs" style="margin-bottom: 20px;">
+                <button class="view-tab active" data-rag-tab="pdf">📄 PDF파일 파싱하기</button>
+                <button class="view-tab" data-rag-tab="pdf-folder">📂 폴더 전체 파싱하기</button>
+                <button class="view-tab" data-rag-tab="excel">📊 Excel 데이터 추출</button>
+              </div>
+
+              <!-- ===== PDF Extraction Panel ===== -->
+              <div id="rag-pdf-panel" class="rag-tab-panel">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📄 PDF 파일 사양 추출 (파싱)</h3>
+                <p class="settings-desc" style="margin-bottom: 20px;">로컬 부품 사양서 PDF 카탈로그 파일을 선택하여 구조화된 사양 데이터를 자동으로 추출합니다.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <!-- File Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="rag-pdf-path" placeholder="선택된 PDF 파일 경로" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-rag-select-pdf" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📂</span> PDF 파일 선택
+                    </button>
+                  </div>
+                  
+                  <!-- Output Folder Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="rag-output-dir" placeholder="출력 폴더 경로 (선택 사항 - 기본값은 PDF 파일 디렉터리)" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-rag-select-dir" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📁</span> 출력 폴더 선택
+                    </button>
+                  </div>
+                  
+                  <!-- Options Row -->
+                  <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <label for="rag-output-format" style="font-size: 13px; color: var(--text-secondary);">출력 형식:</label>
+                      <select id="rag-output-format" class="form-select" style="width: 120px; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="json" selected>JSON</option>
+                        <option value="markdown">Markdown</option>
+                        <option value="text">일반 텍스트</option>
+                        <option value="html">HTML</option>
+                      </select>
+                    </div>
+                    
+                    <button id="btn-rag-run-parse" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 20px;">
+                      <span>⚡</span> PDF 파싱 실행
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ===== PDF Folder Extraction Panel ===== -->
+              <div id="rag-pdf-folder-panel" class="rag-tab-panel" style="display: none;">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📂 PDF 폴더 일괄 사양 추출 (일괄 파싱)</h3>
+                <p class="settings-desc" style="margin-bottom: 20px;">지정한 입력 폴더 내의 모든 PDF 파일을 탐색하여 일괄 파싱한 후, 사용자가 지정한 출력 폴더로 내보냅니다.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <!-- Source Folder Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="rag-pdf-folder-src-path" placeholder="파싱할 입력 폴더 경로" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-rag-select-pdf-folder" class="btn btn-secondary" style="height: 42px; width: 140px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📂</span> 폴더 선택
+                    </button>
+                  </div>
+                  
+                  <!-- Output Folder Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="rag-pdf-folder-out-path" placeholder="출력 폴더 경로 (기본값은 입력 폴더와 동일)" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-rag-select-pdf-folder-out" class="btn btn-secondary" style="height: 42px; width: 140px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📁</span> 출력 폴더 선택
+                    </button>
+                  </div>
+                  
+                  <!-- Options & Run Row -->
+                  <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <label for="rag-pdf-folder-format" style="font-size: 13px; color: var(--text-secondary);">출력 형식:</label>
+                      <select id="rag-pdf-folder-format" class="form-select" style="width: 120px; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="json" selected>JSON</option>
+                        <option value="markdown">Markdown</option>
+                        <option value="text">일반 텍스트</option>
+                        <option value="html">HTML</option>
+                      </select>
+                    </div>
+                    
+                    <button id="btn-rag-run-folder-parse" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 20px;">
+                      <span>⚡</span> 폴더 전체 파싱 실행
+                    </button>
+
+                    <button id="btn-rag-abort-folder-parse" class="btn" style="height: 38px; display: none; align-items: center; gap: 6px; padding: 0 20px; background-color: #ff5555; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#ff6e6e'" onmouseout="this.style.backgroundColor='#ff5555'">
+                      <span>🛑</span> 진행 중지
+                    </button>
+                  </div>
+
+                  <!-- Progress Section (수평 bar graph & %) -->
+                  <div id="rag-folder-progress-container" style="display: none; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; margin-top: 10px;">
+                    <!-- typing_3.gif 로딩 애니메이션 영역 (파싱 진행 중 활성화) -->
+                    <div id="rag-folder-progress-gif-container" style="display: none; justify-content: center; margin-bottom: 12px; align-items: center;">
+                      <img src="assets/typing_3.gif" alt="파싱 진행 중..." style="height: 90px; border-radius: 6px; opacity: 0.85; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));">
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                      <span id="rag-folder-progress-status" style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">파싱을 준비하고 있습니다...</span>
+                      <span id="rag-folder-progress-percent" style="font-size: 14px; color: var(--accent-color); font-weight: 700; font-family: 'Consolas', monospace;">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 5px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05);">
+                      <div id="rag-folder-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-color), #ff8c00); border-radius: 5px; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                    </div>
+                    <div id="rag-folder-progress-files" style="font-size: 11px; color: var(--text-secondary); opacity: 0.8; margin-top: 6px; font-family: 'Consolas', monospace;">(0 / 0 파일 완료)</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ===== Excel Extraction Panel ===== -->
+              <div id="rag-excel-panel" class="rag-tab-panel" style="display: none;">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📊 Excel 사양서 데이터 추출 (등록)</h3>
+                <p class="settings-desc" style="margin-bottom: 20px;">로컬 Excel 또는 스프레드시트 파일(.xlsx, .xls, .xlsb, .ods)을 선택하여 워크시트에서 구조화된 사양 데이터를 추출합니다.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <!-- Excel File Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="rag-excel-path" placeholder="선택된 Excel 파일 경로" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-rag-select-excel" class="btn btn-secondary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📊</span> Excel 파일 선택
+                    </button>
+                  </div>
+                  
+                  <!-- Sheet Selector & Parse Row -->
+                  <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <label for="rag-excel-sheet-select" style="font-size: 13px; color: var(--text-secondary);">워크시트:</label>
+                      <select id="rag-excel-sheet-select" class="form-select" style="min-width: 180px; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="" disabled selected>— 먼저 파일을 분석해 주세요 —</option>
+                      </select>
+                    </div>
+                    
+                    <button id="btn-rag-run-excel" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 20px;">
+                      <span>⚡</span> Excel 파싱 실행
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Parsing Result Card -->
+            <div id="rag-result-card" class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; display: flex; flex-direction: column; min-height: 400px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+              <div id="rag-result-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span id="rag-result-toggle-icon" style="font-size: 12px; color: var(--accent-color); transition: transform 0.3s ease; display: inline-block;">▼</span>
+                  <h3 style="margin: 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">📊 데이터 추출 및 분석 결과 (출력)</h3>
+                </div>
+                <div style="display: flex; gap: 8px;" onclick="event.stopPropagation();">
+                  <button id="btn-rag-index-db" class="btn btn-primary btn-sm" style="display: none; padding: 6px 12px; font-size: 12px; height: 32px; gap: 4px; align-items: center;">⚡ DB에 인덱싱</button>
+                  <button id="btn-rag-copy-output" class="btn btn-secondary btn-sm" style="display: none; padding: 6px 12px; font-size: 12px; height: 32px;">📋 결과 복사</button>
+                </div>
+              </div>
+              
+              <!-- Collapsible Body Container -->
+              <div id="rag-result-body" style="display: flex; flex-direction: column; flex: 1; gap: 16px; margin-top: 16px; overflow: hidden; transition: opacity 0.3s ease, max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+                <!-- Loading State -->
+                <div id="rag-loader" style="display: none; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 40px 0; gap: 16px;">
+                  <img src="assets/typing_3.gif" style="width: 160px; height: auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); opacity: 0.95; margin-bottom: 8px;" alt="Loading">
+                  <div style="color: var(--accent-color); font-weight: 600; font-size: 14px;">사양 분석 엔진이 실행 중입니다. 잠시만 기다려 주세요...</div>
+                  <div style="color: var(--text-secondary); font-size: 12px; max-width: 400px; text-align: center; line-height: 1.6;">(로컬 PDF 텍스트 및 표 구조를 완벽하게 분석하기 위해 opendataloader-pdf-cli.jar가 비동기 서브프로세스로 실행 중입니다.)</div>
+                </div>
+                
+                <!-- Code Output -->
+                <div id="rag-output-container" style="flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; overflow: auto; display: flex; flex-direction: column; min-height: 300px;">
+                  <pre id="rag-output-pre" style="margin: 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; color: #a9b1d6; white-space: pre-wrap; word-break: break-all; flex: 1;">(추출된 사양 정보가 여기에 표시됩니다. PDF 파일을 선택하고 'PDF 파싱 실행'을 클릭해 주세요.)</pre>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- DB Manager View -->
+        <div class="view hidden" id="view-db-manager">
+          <div class="view-header" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; margin-bottom: 24px; text-align: left;">
+            <h2 style="margin: 0;">🗄️ DB관리자</h2>
+            <p class="view-desc" style="margin: 0; text-align: left; line-height: 1.6; white-space: normal; color: var(--text-secondary);">
+              로컬 데이터베이스(SQLite WAL)에 저장된 제품 사양 데이터를 인입 및 관리하고,<br>
+              실시간 속도 및 조건 검색을 통해 최적의 스펙을 찾습니다.
+            </p>
+          </div>
+
+          <div class="rag-container" style="display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1200px; margin-top: 20px;">
+            <!-- DB Manager Tabs -->
+            <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px;">
+              <div class="view-tabs" id="db-manager-tabs" style="margin-bottom: 20px;">
+                <button class="view-tab active" data-db-tab="ingest">📥 DB 입력 (사양 데이터 인입)</button>
+                <button class="view-tab" data-db-tab="search">🔍 DB 검색 (하이브리드 시맨틱 검색)</button>
+              </div>
+
+              <!-- ===== DB Ingestion Tab ===== -->
+              <div id="db-ingest-panel" class="db-tab-panel">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 8px;">📥 제품 사양 데이터 일괄 인입 및 검토</h3>
+                <p class="settings-desc" style="margin-bottom: 20px;">파싱된 JSON 사양 파일들이 저장된 폴더를 지정하여, 데이터를 검토 및 수정한 뒤 로컬 DB에 인입합니다.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <!-- Folder Selector Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="db-ingest-folder-path" placeholder="JSON 사양 파일들이 위치한 폴더 경로" readonly style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-db-select-folder" class="btn btn-secondary" style="height: 42px; width: 140px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; padding: 0 16px;">
+                      <span>📂</span> 폴더선택
+                    </button>
+                  </div>
+
+                  <!-- Catalog name Selector Row -->
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label for="db-ingest-catalog-name" style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">카탈로그/문서 식별 명칭 <span style="color: var(--accent-color);">*</span></label>
+                    <input type="text" id="db-ingest-catalog-name" placeholder="예: 2026_servo_motor_catalog" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                  </div>
+                  
+                  <!-- Analyze and Action Row -->
+                  <div style="display: flex; gap: 16px; align-items: center;">
+                    <button id="btn-db-preview-ingest" class="btn btn-outline-accent" style="height: 42px; display: flex; align-items: center; gap: 6px; padding: 0 20px;">
+                      <span>⚡</span> 1단계: JSON 파일 분석 및 프리뷰
+                    </button>
+                  </div>
+
+                  <!-- HITL Preview Section (Initially hidden) -->
+                  <div id="db-preview-section" style="display: none; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; margin-top: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                      <h4 style="margin: 0; color: var(--text-primary); font-size: 15px; font-weight: 600;">📋 인입 대상 사양 데이터 검토 (더블클릭하여 실시간 편집 가능)</h4>
+                      <span id="db-preview-count" style="font-size: 13px; color: var(--accent-color); font-weight: 600;">검색된 항목: 0개</span>
+                    </div>
+
+                    <!-- Preview Table wrapper -->
+                    <div style="overflow-x: auto; max-height: 400px; border: 1px solid var(--card-border); border-radius: 8px; background: rgba(0, 0, 0, 0.25);">
+                      <table id="db-preview-table" class="data-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                          <tr style="border-bottom: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.03);">
+                            <th style="padding: 10px; width: 40px; text-align: center;"><input type="checkbox" id="db-preview-select-all" checked style="cursor: pointer;"></th>
+                            <th style="padding: 10px; text-align: left; width: 180px;">파트 넘버</th>
+                            <th style="padding: 10px; text-align: left; width: 120px;">제조사</th>
+                            <th style="padding: 10px; text-align: left; width: 120px;">분류</th>
+                            <th style="padding: 10px; text-align: left;">세부 스펙 (JSON 포맷)</th>
+                            <th style="padding: 10px; text-align: left; width: 150px;">원본 파일</th>
+                          </tr>
+                        </thead>
+                        <tbody id="db-preview-tbody">
+                          <!-- Loaded via JS -->
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <!-- Confirm Button Row -->
+                    <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                      <button id="btn-db-confirm-ingest" class="btn btn-primary" style="height: 42px; display: flex; align-items: center; gap: 6px; padding: 0 24px;">
+                        <span>🚀</span> 2단계: DB 인입 최종 확정 및 벡터화 실행
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Console Output & Stats Grid -->
+                  <div id="db-ingest-result-section" style="display: none; flex-direction: column; gap: 16px; margin-top: 10px;">
+                    <!-- Loading Bar -->
+                    <div id="db-ingest-loading" style="display: none; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px;">
+                      <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+                        <img src="assets/typing_3.gif" alt="인입 중..." style="height: 90px; border-radius: 6px; opacity: 0.85; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));">
+                      </div>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span id="db-ingest-progress-status" style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">임베딩 벡터를 추출하고 있습니다...</span>
+                        <span id="db-ingest-progress-percent" style="font-size: 14px; color: var(--accent-color); font-weight: 700; font-family: 'Consolas', monospace;">0%</span>
+                      </div>
+                      <div style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div id="db-ingest-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-color), #ff8c00); border-radius: 4px; transition: width 0.2s ease;"></div>
+                      </div>
+                    </div>
+
+                    <!-- Log console -->
+                    <h4 style="margin: 0; color: var(--text-primary); font-size: 14px; font-weight: 600;">실시간 실행 터미널 콘솔 로그</h4>
+                    <div id="db-ingest-console-container" style="background: rgba(0, 0, 0, 0.35); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; overflow: auto; display: flex; flex-direction: column; min-height: 180px; max-height: 250px;">
+                      <pre id="db-ingest-console-pre" style="margin: 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; color: #a9b1d6; white-space: pre-wrap; word-break: break-all; line-height: 1.5;">준비 완료.</pre>
+                    </div>
+
+                    <!-- Ingestion Stats -->
+                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                      <div class="stat-card" style="padding: 16px; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 12px; text-align: center;">
+                        <span class="stat-label" style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">총 검토 대상</span>
+                        <span class="stat-value" id="db-stat-total" style="font-size: 20px; font-weight: 700; color: var(--text-primary);">0</span>
+                      </div>
+                      <div class="stat-card" style="padding: 16px; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 12px; text-align: center;">
+                        <span class="stat-label" style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">인입 완료 (성공)</span>
+                        <span class="stat-value" id="db-stat-success" style="font-size: 20px; font-weight: 700; color: #10b981;">0</span>
+                      </div>
+                      <div class="stat-card" style="padding: 16px; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: 12px; text-align: center;">
+                        <span class="stat-label" style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">제외/실패</span>
+                        <span class="stat-value" id="db-stat-failed" style="font-size: 20px; font-weight: 700; color: #ef4444;">0</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ===== DB Search Tab ===== -->
+              <div id="db-search-panel" class="db-tab-panel" style="display: none;">
+                <h3 style="margin-top:0; color: var(--accent-color); font-size: 18px; margin-bottom: 4px;">🔍 오프라인 동적 시맨틱 하이브리드 검색</h3>
+                <p class="settings-desc" style="margin-bottom: 16px; color: var(--text-secondary);">벡터 검색을 통해 맥락적 유사도가 높은 제품군을 찾고, SQLite 메타데이터 조건을 융합 필터링합니다.</p>
+                
+                <!-- Search bar and settings -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <!-- Search Row -->
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1;">
+                      <input type="text" id="db-search-query" placeholder="질문이나 시맨틱 검색 키워드를 입력해 주세요 (예: '정격 토크 2.4 Nm' 또는 '48V 고성능 모터')" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;">
+                    </div>
+                    <button id="btn-db-search" class="btn btn-primary" style="height: 42px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 20px;">
+                      <span>🔍</span> 하이브리드 검색
+                    </button>
+                  </div>
+
+                  <!-- Hybrid Metadata Filters Grid -->
+                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; background: rgba(0, 0, 0, 0.1); border: 1px solid var(--card-border); padding: 16px; border-radius: 12px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <label for="db-search-category" style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">제품 분류</label>
+                      <select id="db-search-category" class="form-select" style="width: 100%; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="">전체 분류</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <label for="db-search-manufacturer" style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">제조사</label>
+                      <select id="db-search-manufacturer" class="form-select" style="width: 100%; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="">전체 제조사</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <label for="db-search-catalog" style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">원본 카탈로그</label>
+                      <select id="db-search-catalog" class="form-select" style="width: 100%; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="">전체 카탈로그</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <label for="db-search-limit" style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">검색 제한 개수</label>
+                      <select id="db-search-limit" class="form-select" style="width: 100%; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(255, 255, 255, 0.06); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                        <option value="5">5개 보기</option>
+                        <option value="10" selected>10개 보기</option>
+                        <option value="20">20개 보기</option>
+                        <option value="50">50개 보기</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Search Results Grid -->
+                <div style="margin-top: 24px;">
+                  <h4 style="margin: 0 0 16px 0; color: var(--text-primary); font-size: 15px; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+                    <span>📋 하이브리드 검색 결과</span>
+                    <span id="db-search-results-count" style="font-size: 13px; color: var(--accent-color); font-weight: 600;">조회된 항목: 0개</span>
+                  </h4>
+                  
+                  <div id="db-search-results" style="display: flex; flex-direction: column; gap: 16px; min-height: 200px; max-height: 600px; overflow-y: auto; padding-right: 4px;">
+                    <div style="color: var(--text-secondary); text-align: center; padding: 60px 0; border: 1px dashed var(--card-border); border-radius: 12px; background: rgba(0,0,0,0.1); font-size: 13px;">
+                      검색어 입력 후 '하이브리드 검색' 버튼을 클릭하거나, 필터 옵션을 선택해 주십시오.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order DB Manager View -->
+        <div class="view hidden" id="view-order-db">
+          <style>
+            .form-tab {
+              background: transparent;
+              border: none;
+              padding: 10px 16px;
+              color: var(--text-secondary);
+              cursor: pointer;
+              font-size: 13px;
+              font-weight: 600;
+              border-bottom: 2px solid transparent;
+              transition: all 0.2s;
+            }
+            .form-tab:hover {
+              color: var(--text-primary);
+            }
+            .form-tab.active {
+              color: var(--accent-color) !important;
+              border-bottom: 2px solid var(--accent-color) !important;
+            }
+            .form-panel {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+            }
+            /* Custom Wide Scrollable Spreadsheet styling */
+            .order-grid-th {
+              padding: 12px 10px;
+              font-weight: 600;
+              white-space: nowrap;
+              border-bottom: 1px solid var(--card-border);
+              font-size: 12.5px;
+            }
+            .order-grid-td {
+              padding: 10px 8px;
+              font-size: 12.5px;
+              white-space: nowrap;
+              text-overflow: ellipsis;
+              overflow: hidden;
+              border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            }
+          </style>
+
+          <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; text-align: left; width: 100%; max-width: 1300px;">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <h2 style="margin: 0;">💼 수주DB 관리자</h2>
+              <p class="view-desc" style="margin: 0; text-align: left; line-height: 1.6; white-space: normal; color: var(--text-secondary);">
+                로컬 수주 고립 데이터베이스(SQLite)에 신규 수주 건을 등록/수정하며, 월별 수주 및 매출 비교 차트 대시보드를 실시간 조회합니다.
+              </p>
+            </div>
+            <!-- Export / Import Control Buttons -->
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button id="btn-export-excel-template" class="btn btn-secondary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 16px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                <span>📥</span> 양식 내보내기
+              </button>
+              <button id="btn-import-excel-orders" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 16px; border-radius: 8px; background: var(--accent-color); border: none;">
+                <span>📊</span> 엑셀 가져오기
+              </button>
+            </div>
+          </div>
+
+          <!-- 1. Comparison Chart Dashboard Card -->
+          <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; margin-bottom: 24px; max-width: 1300px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+              <h3 style="margin: 0; color: var(--text-primary); font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                📊 월별 수주 및 매출 추이 비교 (차트)
+              </h3>
+              <!-- Legend & Year select -->
+              <div style="display: flex; gap: 16px; align-items: center;">
+                <div style="display: flex; gap: 12px; font-size: 11px; color: var(--text-secondary);">
+                  <span style="display: flex; align-items: center; gap: 4px;">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #bd93f9; border-radius: 2px;"></span> 수주금액
+                      <tr>
+                        <td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 24px;">결과가 존재하지 않거나 검색을 실행해 주십시오.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Panel: D3.js Knowledge Graph Visualization -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; text-align: left; display: flex; flex-direction: column; min-height: 950px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                  <h3 style="margin:0; color: var(--accent-color); font-size: 16px; display: flex; align-items: center; gap: 6px;">🌐 D3.js 프로젝트 지식 그래프 시각화</h3>
+                  <button id="btn-history-refresh-graph" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; height: 32px; font-size: 12px;">
+                    <span>🔄</span> 그래프 갱신
+                  </button>
+                </div>
+                
+                <p class="settings-desc" style="margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
+                  노드를 드래그하거나 휠을 굴려 줌인/아웃이 가능합니다. 노드를 클릭하면 연관 트리플 세부 정보를 하단에 표출합니다.
+                </p>
+
+                <!-- SVG Canvas for D3.js -->
+                <div id="history-graph-canvas" style="flex: 1; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden; position: relative; min-height: 700px;">
+                  <svg id="history-graph-svg" style="width: 100%; height: 100%; display: block;"></svg>
+                  
+                  <!-- Legend Overlay -->
+                  <div style="position: absolute; bottom: 12px; left: 12px; background: rgba(0,0,0,0.8); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; font-size: 11px; display: flex; flex-direction: column; gap: 4px; z-index: 10;">
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width:8px; height:8px; border-radius:50%; background:#ff79c6; display:inline-block;"></span> Project</div>
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width:8px; height:8px; border-radius:50%; background:#8be9fd; display:inline-block;"></span> BOM Item</div>
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width:8px; height:8px; border-radius:50%; background:#50fa7b; display:inline-block;"></span> Component</div>
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="width:8px; height:8px; border-radius:50%; background:#f1fa8c; display:inline-block;"></span> Literal</div>
+                  </div>
+                </div>
+
+                <!-- Selected Node Info Inspector -->
+                <div id="history-graph-inspector" style="margin-top: 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-height: 100px;">
+                  <h4 style="margin:0; font-size: 13px; color: var(--accent-color); display: flex; align-items: center; gap: 6px;">🔍 선택된 노드 상세 정보</h4>
+                  <div id="history-inspector-content" style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                    노드를 클릭하면 해당 노드의 세부 정보 및 연관된 트리플 목록을 확인하실 수 있습니다.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Motor Spec & Torque Calculator View (Initially Hidden) -->
+        <div class="view hidden" id="view-motor-calc">
+          <div class="view-header" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; margin-bottom: 24px; text-align: left;">
+            <h2 style="margin: 0; color: var(--accent-color); font-size: 26px; font-weight: 800;">⚙️ 모터사양 및 토크 계산기</h2>
+            <p class="view-desc" style="margin: 0; text-align: left; line-height: 1.6; color: var(--text-secondary);">
+              삼정 오토메이션 모터 토크 계산 가이드를 기반으로 한 물리 연산 웹 도구입니다.<br>
+              가속/중력 부하 및 모터 권선 스펙(B-EMF) 분석, RMS 듀티 사이클에 따른 연속 출력 파워를 즉시 모의 연산합니다.
+            </p>
+          </div>
+
+          <!-- Quick Presets Row -->
+          <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 16px 20px; border-radius: 16px; margin-bottom: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 13px; font-weight: 700; color: var(--accent-color);">📋 PDF 예제 불러오기:</span>
+            <button class="btn btn-secondary btn-sm" id="btn-preset-torque" style="font-size: 12px; padding: 6px 12px; height: auto;">가속 토크 (0.5kg·㎡ / 4rad/s²)</button>
+            <button class="btn btn-secondary btn-sm" id="btn-preset-combined" style="font-size: 12px; padding: 6px 12px; height: auto;">가속+중력 (30deg 경사 / 1kg / 1m)</button>
+            <button class="btn btn-secondary btn-sm" id="btn-preset-motor" style="font-size: 12px; padding: 6px 12px; height: auto;">모터 사양 (320V 공급 / RBE Winding C)</button>
+            <button class="btn btn-secondary btn-sm" id="btn-preset-rms" style="font-size: 12px; padding: 6px 12px; height: auto;">RMS 4초 주기 (1Nm 가속-등속-감속)</button>
+          </div>
+
+          <div class="settings-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px;">
+            <!-- Sub-Tab Navigation -->
+            <div class="view-tabs" id="motor-calc-tabs" style="margin-bottom: 24px;">
+              <button class="view-tab active" data-motor-tab="torque">🌀 회전 토크 (T = J × α)</button>
+              <button class="view-tab" data-motor-tab="inertia">🔩 관성 모멘트 (J = m × r²)</button>
+              <button class="view-tab" data-motor-tab="speed">🔄 속도/각속도 & 각가속도</button>
+              <button class="view-tab" data-motor-tab="combined">⚖️ 가속도 + 중력 합산</button>
+              <button class="view-tab" data-motor-tab="specs">⚡ 모터 사양 및 전류</button>
+              <button class="view-tab" data-motor-tab="rms">📈 RMS 토크 & 파워</button>
+            </div>
+
+            <!-- ===== 1. ROTATIONAL TORQUE PANEL ===== -->
+            <div id="panel-motor-torque" class="motor-tab-panel">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">🌀 회전 운동 토크 기본 공식</h4>
+                <div style="font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #fff;">
+                  T = J · α
+                </div>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                  <li><strong>T (토크)</strong>: 회전시키기 위해 가해야 하는 힘 (단위: <strong>Nm</strong>)</li>
+                  <li><strong>J (관성 모멘트)</strong>: 회전 운동에 저항하는 질량의 크기 (단위: <strong>kg·㎡</strong>)</li>
+                  <li><strong>α (각가속도)</strong>: 회전 속도의 초당 변화량 (단위: <strong>rad/s²</strong>)</li>
+                  <li><strong>단위 환산</strong>: 1 Nm = 100 Ncm = 10.197 kgf·cm (1 kgf·cm ≈ 0.098 Nm)</li>
+                </ul>
+              </div>
+
+              <!-- Input / Output Grid -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                <!-- Inputs Group -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border);">
+                  <h4 style="margin-top: 0; margin-bottom: 16px; font-size: 14px; color: var(--text-primary);">📥 입력값 설정</h4>
+                  <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">관성 모멘트 J (kg·m²)</label>
+                    <input type="number" id="input-torque-inertia" value="0.5" step="0.01" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px;">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">각가속도 α (rad/s²)</label>
+                    <input type="number" id="input-torque-accel" value="4" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px;">
+                  </div>
+                  <button id="btn-calc-torque" class="btn btn-primary btn-block" style="display: flex; align-items: center; justify-content: center; height: 42px;">⚡ 토크 계산하기</button>
+                </div>
+
+                <!-- Outputs Group -->
+                <div style="background: rgba(166, 227, 161, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(166, 227, 161, 0.2); height: 100%; box-sizing: border-box;">
+                  <h4 style="margin-top: 0; margin-bottom: 16px; font-size: 14px; color: var(--brand-green);">🏆 계산 결과</h4>
+                  <div style="display: flex; flex-direction: column; gap: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                      <span style="font-size: 13px; color: var(--text-secondary);">회전 토크 (Nm)</span>
+                      <span id="output-torque-nm" style="font-size: 20px; font-weight: 800; color: #fff;">2.000 Nm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                      <span style="font-size: 13px; color: var(--text-secondary);">회전 토크 (Ncm)</span>
+                      <span id="output-torque-ncm" style="font-size: 16px; font-weight: 700; color: var(--text-primary);">200.0 Ncm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px;">
+                      <span style="font-size: 13px; color: var(--text-secondary);">회전 토크 (kgf·cm)</span>
+                      <span id="output-torque-kgfcm" style="font-size: 18px; font-weight: 800; color: var(--brand-green);">20.394 kgf·cm</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 2. INERTIA PANEL ===== -->
+            <div id="panel-motor-inertia" class="motor-tab-panel" style="display: none;">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">🔩 질량 및 형상별 관성 모멘트 공식</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary); display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px;">
+                  <li><strong>1점 관성 / 얇은 링</strong>: J = m × r²</li>
+                  <li><strong>원판 / 실린더 회전축</strong>: J = 1/2 × M × R²</li>
+                  <li><strong>원통 가로축 (중심 회전)</strong>: J = 1/4 × M × R² + 1/12 × M × L²</li>
+                  <li><strong>원통 가로축 (끝단 회전)</strong>: J = 1/4 × M × R² + 1/3 × M × L²</li>
+                </ul>
+                <div style="margin-top: 8px; font-size: 12px; color: var(--brand-yellow); font-weight: 500;">
+                  ⚠️ 주의: 모든 수치(mm, g)는 계산 전 내부적으로 미터(m) 및 킬로그램(kg) 단위로 자동 변환됩니다.
+                </div>
+              </div>
+
+              <!-- Inertia Options -->
+              <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start;">
+                <!-- Selection & Config Panel -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 16px;">
+                  <h4 style="margin-top: 0; margin-bottom: 0; font-size: 14px; color: var(--text-primary);">📥 형상 및 수치 입력</h4>
+                  
+                  <div class="form-group">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">물체 형상 선택</label>
+                    <select id="select-inertia-shape" class="form-select" style="width: 100%; height: 38px; padding: 6px 12px; font-size: 13px; background-color: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid var(--card-border); color: var(--text-color);">
+                      <option value="point_mass">1점 관성 / 얇은 링 (J = m × r²)</option>
+                      <option value="disc">원판 / 실린더 회전축 (J = 1/2 × M × R²)</option>
+                      <option value="cylinder_center">원통 가로축 (중심축 회전) (J = 1/4 × M × R² + 1/12 × M × L²)</option>
+                      <option value="cylinder_end">원통 가로축 (끝단 회전) (J = 1/4 × M × R² + 1/3 × M × L²)</option>
+                      <option value="multiple_points">다중 1점 관성 합산 (Σ m_i × r_i²)</option>
+                    </select>
+                  </div>
+
+                  <!-- Shape Parameters Group -->
+                  <div id="inertia-params-basic" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div class="form-group">
+                        <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">질량 (M)</label>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                          <input type="number" id="input-inertia-mass" value="1.0" step="0.1" style="flex: 1; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px;">
+                          <select id="unit-inertia-mass" class="form-select" style="width: 60px; height: 34px; padding: 4px; font-size: 12px; border-radius: 8px;">
+                            <option value="kg" selected>kg</option>
+                            <option value="g">g</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">반지름/거리 (R)</label>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                          <input type="number" id="input-inertia-radius" value="1.0" step="0.1" style="flex: 1; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px;">
+                          <select id="unit-inertia-radius" class="form-select" style="width: 60px; height: 34px; padding: 4px; font-size: 12px; border-radius: 8px;">
+                            <option value="m" selected>m</option>
+                            <option value="cm">cm</option>
+                            <option value="mm">mm</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Cylinder length (only visible when cylinder center/end selected) -->
+                    <div class="form-group" id="group-inertia-length" style="display: none;">
+                      <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">원통 전체 길이 (L)</label>
+                      <div style="display: flex; align-items: center; gap: 4px;">
+                        <input type="number" id="input-inertia-length" value="0.5" step="0.1" style="flex: 1; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px;">
+                        <select id="unit-inertia-length" class="form-select" style="width: 60px; height: 34px; padding: 4px; font-size: 12px; border-radius: 8px;">
+                          <option value="m" selected>m</option>
+                          <option value="cm">cm</option>
+                          <option value="mm">mm</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Multiple Point Inertia Table (Only visible when selected) -->
+                  <div id="inertia-params-multiple" style="display: none; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <label style="font-size: 13px; font-weight: 700; color: var(--text-primary);">지점 목록</label>
+                      <button id="btn-inertia-add-point" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 11px;">+ 지점 추가</button>
+                    </div>
+                    <div style="max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; border: 1px solid var(--card-border);">
+                      <table style="width:100%; font-size:12px; border-collapse: collapse; text-align: left;" id="table-inertia-points">
+                        <thead>
+                          <tr style="border-bottom: 1px solid var(--card-border); color: var(--text-secondary);">
+                            <th style="padding: 4px;">무게</th>
+                            <th style="padding: 4px;">축과의 거리</th>
+                            <th style="padding: 4px; text-align: right;">삭제</th>
+                          </tr>
+                        </thead>
+                        <tbody id="tbody-inertia-points">
+                          <!-- JS dynamic insertion -->
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <button id="btn-calc-inertia" class="btn btn-primary btn-block" style="display: flex; align-items: center; justify-content: center; height: 42px;">⚡ 관성 모멘트 계산</button>
+                </div>
+
+                <!-- Result Display Panel -->
+                <div style="background: rgba(166, 227, 161, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(166, 227, 161, 0.2); height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+                  <h4 style="margin-top: 0; margin-bottom: 0; font-size: 14px; color: var(--brand-green);">🏆 관성 모멘트 결과</h4>
+                  <div style="text-align: center; padding: 20px 10px; background: rgba(0,0,0,0.15); border-radius: 10px; border: 1px solid var(--card-border);">
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">계산된 관성치 J</div>
+                    <div id="output-inertia-value" style="font-size: 26px; font-weight: 800; color: var(--brand-green);">1.0000 kg·m²</div>
+                    <div id="output-inertia-detail" style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">질량: 1.00 kg | 거리: 1.00 m</div>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--text-secondary); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;">
+                    <div style="display: flex; justify-content: space-between;">
+                      <span>단위 환산 J (kg·cm²):</span>
+                      <span id="output-inertia-kgcm" style="font-weight: bold; color: #fff;">10,000.00 kg·cm²</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                      <span>단위 환산 J (g·cm²):</span>
+                      <span id="output-inertia-gcm" style="font-weight: bold; color: #fff;">10,000,000.00 g·cm²</span>
+                    </div>
+                  </div>
+                  <button id="btn-inertia-apply" class="btn btn-secondary btn-sm btn-block" style="margin-top: auto; font-size: 12px; height: 34px;">이 관성치를 [1번 탭(회전 토크)] 입력에 적용</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 3. SPEED & ANGULAR ACCELERATION PANEL ===== -->
+            <div id="panel-motor-speed" class="motor-tab-panel" style="display: none;">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">🔄 속도/각속도 환산 및 각가속도 기본 공식</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                  <li><strong>각속도 (ω)</strong>: 회전 각 변화 비율. ω = Δθ / Δt (단위: <strong>rad/s</strong>)</li>
+                  <li><strong>RPM ⇄ rad/sec 환산</strong>: 1 rad/sec ≈ 9.55 rpm (1 rpm ≈ 0.105 rad/sec)</li>
+                  <li><strong>deg/sec ⇄ rad/sec 환산</strong>: 1 rad/sec ≈ 57.3 deg/sec (1 deg/sec ≈ 0.0175 rad/sec)</li>
+                  <li><strong>각가속도 (α)</strong>: 각속도의 변화율. α = (ω_final - ω_initial) / Δt (단위: <strong>rad/s²</strong>)</li>
+                </ul>
+              </div>
+
+              <!-- Speed converters and Acceleration solver side-by-side -->
+              <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; align-items: start;">
+                <!-- Speed Converter Block -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 14px;">
+                  <h4 style="margin-top: 0; margin-bottom: 4px; font-size: 14px; color: var(--text-primary);">🔀 각속도 단위 간편 변환</h4>
+                  <div class="form-group">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary);">변환할 수치 입력</label>
+                    <div style="display: flex; gap: 8px;">
+                      <input type="number" id="input-conv-val" value="1.0" step="0.1" style="flex: 1; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 10px; border-radius: 8px;">
+                      <select id="select-conv-from" class="form-select" style="width: 100px; height: 42px;">
+                        <option value="rads" selected>rad/sec</option>
+                        <option value="rpm">rpm</option>
+                        <option value="degs">deg/sec</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 16px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--card-border); margin-top: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">rad/sec</span>
+                      <span id="output-speed-rads" style="font-weight: bold; color: #fff;">1.000 rad/sec</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">rpm</span>
+                      <span id="output-speed-rpm" style="font-weight: bold; color: #fff;">9.549 rpm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">deg/sec</span>
+                      <span id="output-speed-degs" style="font-weight: bold; color: #fff;">57.296 deg/sec</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Angular Acceleration Solver Block -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 12px;">
+                  <h4 style="margin-top: 0; margin-bottom: 4px; font-size: 14px; color: var(--text-primary);">🧮 각가속도 (α) 계산기</h4>
+                  
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">속도 단위</label>
+                      <select id="select-accelsolver-unit" class="form-select" style="width: 100%; height: 34px; padding: 4px; font-size: 12px;">
+                        <option value="rads" selected>rad/sec</option>
+                        <option value="rpm">rpm</option>
+                        <option value="degs">deg/sec</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">가속 시간 (초)</label>
+                      <input type="number" id="input-accelsolver-time" value="1.0" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 7px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">초기 회전속도 (ω₀)</label>
+                      <input type="number" id="input-accelsolver-v0" value="0.0" step="1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 7px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">최종 회전속도 (ωₜ)</label>
+                      <input type="number" id="input-accelsolver-vt" value="4.0" step="1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 7px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                  </div>
+
+                  <!-- Solver Results Display -->
+                  <div style="background: rgba(166, 227, 161, 0.05); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(166, 227, 161, 0.2); display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-size: 12px; color: var(--text-secondary);">도출된 각가속도 α</span>
+                      <span id="output-accelsolver-val" style="font-size: 16px; font-weight: 800; color: var(--brand-green);">4.000 rad/s²</span>
+                    </div>
+                  </div>
+
+                  <button id="btn-accelsolver-apply" class="btn btn-secondary btn-sm btn-block" style="font-size: 11px; height: 32px;">이 각가속도를 [1번 탭(회전 토크)] 입력에 적용</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 4. COMBINED ACCEL & GRAVITY PANEL ===== -->
+            <div id="panel-motor-combined" class="motor-tab-panel" style="display: none;">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">⚖️ 가속 부하와 중력 부하 합산 공식</h4>
+                <div style="font-family: 'Courier New', monospace; font-size: 15px; font-weight: bold; margin-bottom: 8px; color: #fff;">
+                  T_total = T_a + T_g
+                </div>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                  <li><strong>가속 토크 (T_a)</strong>: J × α = (m × d²) × α (회전축에 매달린 링크를 가속하는 데 필요한 회전력)</li>
+                  <li><strong>중력 토크 (T_g)</strong>: m × g × d × cos(θ) (암의 중력 하중 토크, g = 9.8 m/s²)</li>
+                  <li><strong>각도 (θ)</strong>: 지면 수평면 기준 회전 암 각도 (0°가 완전 수평, 90°는 완전 수직)</li>
+                </ul>
+              </div>
+
+              <!-- Input / Output Grid -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                <!-- Inputs Group -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 14px;">
+                  <h4 style="margin-top: 0; margin-bottom: 4px; font-size: 14px; color: var(--text-primary);">📥 암 스펙 설정</h4>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">끝단 질량 (m - kg)</label>
+                      <input type="number" id="input-comb-mass" value="1.0" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">암 회전 길이 (d - m)</label>
+                      <input type="number" id="input-comb-length" value="1.0" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">수평 기준 각도 (deg)</label>
+                      <input type="number" id="input-comb-angle" value="0" step="5" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">각가속도 (rad/s²)</label>
+                      <input type="number" id="input-comb-accel" value="1.0" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                    </div>
+                  </div>
+                  <button id="btn-calc-combined" class="btn btn-primary btn-block" style="display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px;">⚡ 가속 및 중력 토크 합산하기</button>
+                </div>
+
+                <!-- Outputs Group -->
+                <div style="background: rgba(166, 227, 161, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(166, 227, 161, 0.2); height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+                  <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; color: var(--brand-green);">🏆 합산 및 성분별 토크</h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">관성 가속 토크 (T_a)</span>
+                      <span id="output-comb-ta" style="font-weight: 700; color: #fff;">1.00 Nm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">중력 정하중 토크 (T_g)</span>
+                      <span id="output-comb-tg" style="font-weight: 700; color: #fff;">9.80 Nm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 4px; font-size: 14px; align-items: center;">
+                      <span style="font-weight: 700; color: var(--text-primary);">전체 합산 토크 (T_total)</span>
+                      <span id="output-comb-total" style="font-size: 22px; font-weight: 800; color: var(--brand-green);">10.80 Nm</span>
+                    </div>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; margin-top: 12px;">
+                    💡 암을 수평에서 위 방향으로 회전시킬 때 필요한 토크입니다. 암 질량과 중력 가속도가 가속 시 합쳐져 회전축에 높은 토크를 요구하게 됩니다.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 5. MOTOR SPECS & CURRENT PANEL ===== -->
+            <div id="panel-motor-specs" class="motor-tab-panel" style="display: none;">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">⚡ 모터 역기전력 및 필요 전류 물리 공식</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                  <li><strong>무부하 한계 최대 속도</strong>: Max Speed (rpm) = [ Vin / Kb (V/kRPM) ] × 1000</li>
+                  <li><strong>실무 구동 추천 마진 (70%)</strong>: Safe Speed = Max Speed × 70% (70% 이내 작동 권장)</li>
+                  <li><strong>토크 감도 환산 (Kt)</strong>: Kt (Nm/A) = [ Kb (V/kRPM) / 1000 ] × 9.55</li>
+                  <li><strong>필요 구동 전류</strong>: Required Current (A) = Required Torque (Nm) / Kt (Nm/A)</li>
+                </ul>
+              </div>
+
+              <!-- Input / Output Grid -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                <!-- Inputs Group -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 14px;">
+                  <h4 style="margin-top: 0; margin-bottom: 4px; font-size: 14px; color: var(--text-primary);">📥 공급 전원 및 모터 파라미터</h4>
+                  <div class="form-group">
+                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">모터 드라이버 공급 전압 Vin (Vdc)</label>
+                    <input type="number" id="input-specs-vin" value="320" step="10" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                  </div>
+                  <div class="form-group">
+                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">역기전력 상수 Kb (V/kRPM)</label>
+                    <input type="number" id="input-specs-kb" value="90.9" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                  </div>
+                  <div class="form-group">
+                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">요구 부하 토크 T_required (Nm)</label>
+                    <input type="number" id="input-specs-tr" value="3.0" step="0.1" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px; border-radius: 8px; font-size: 13px;">
+                  </div>
+                  <button id="btn-calc-specs" class="btn btn-primary btn-block" style="display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px;">⚡ 모터 특성 및 필요 전류 연산</button>
+                </div>
+
+                <!-- Outputs Group -->
+                <div style="background: rgba(166, 227, 161, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(166, 227, 161, 0.2); height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+                  <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; color: var(--brand-green);">🏆 특성 및 전하량 분석</h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">환산된 토크 감도 (Kt)</span>
+                      <span id="output-specs-kt" style="font-weight: 700; color: #fff;">0.868 Nm/Amp</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">한계 무부하 최대 속도</span>
+                      <span id="output-specs-maxspd" style="font-weight: 700; color: #fff;">3,520 rpm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">안전 실제 권장 속도 (70%)</span>
+                      <span id="output-specs-safespd" style="font-weight: 700; color: var(--brand-blue);">2,464 rpm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 4px; font-size: 14px; align-items: center;">
+                      <span style="font-weight: 700; color: var(--text-primary);">부하 요구 전류 (I_req)</span>
+                      <span id="output-specs-current" style="font-size: 22px; font-weight: 800; color: var(--brand-green);">3.46 A</span>
+                    </div>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; margin-top: 12px;">
+                    ℹ️ 모터 드라이버가 공급 전압 320V 조건에서 역기전력을 극복하고 3.0 Nm 하중 토크를 생성하기 위해 소모하는 연속 전류는 <strong>3.46 A</strong>입니다.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 6. RMS TORQUE & POWER PANEL ===== -->
+            <div id="panel-motor-rms" class="motor-tab-panel" style="display: none;">
+              <!-- Formula Block -->
+              <div class="formula-box" style="background: rgba(137, 180, 250, 0.05); border-left: 4px solid var(--brand-blue); padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; color: var(--text-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--brand-blue); font-size: 14px; font-weight: 700;">📈 구동 주기(Cycle)별 실효 RMS 토크 및 연속 파워</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                  <li><strong>RMS 실효 토크</strong>: RMS Torque = √[ Σ(t_i × τ_i²) / t_total ]</li>
+                  <li><strong>평균 구동 속도 (RPM)</strong>: Speed_avg = Σ(t_i × |Speed_i|) / t_total</li>
+                  <li><strong>평균 각속도 환산 (rad/sec)</strong>: Speed_avg_rad = Speed_avg × 2π / 60</li>
+                  <li><strong>연속 출력 파워 (W)</strong>: Continuous Power (W) = RMS Torque × Speed_avg_rad</li>
+                </ul>
+              </div>
+
+              <!-- Cycle Stages Grid & Results -->
+              <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start;">
+                <!-- Stages Editor Block -->
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h4 style="margin: 0; font-size: 14px; color: var(--text-primary);">📋 속도/토크 구간 프로파일 편집</h4>
+                    <button id="btn-rms-add-stage" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 11px;">+ 구간 추가</button>
+                  </div>
+                  
+                  <div style="max-height: 220px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; border: 1px solid var(--card-border);">
+                    <table style="width:100%; font-size:12px; border-collapse: collapse; text-align: left;" id="table-rms-stages">
+                      <thead>
+                        <tr style="border-bottom: 1px solid var(--card-border); color: var(--text-secondary);">
+                          <th style="padding: 6px 4px;">구간 번호</th>
+                          <th style="padding: 6px 4px;">지속시간 (s)</th>
+                          <th style="padding: 6px 4px;">구간 토크 (Nm)</th>
+                          <th style="padding: 6px 4px;">평균속도 (rpm)</th>
+                          <th style="padding: 6px 4px; text-align: right;">삭제</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbody-rms-stages">
+                        <!-- JS dynamic insertion -->
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Dynamic SVG Graph Container -->
+                  <div id="rms-graph-container" style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px; margin-bottom: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-secondary);">
+                      <span>📊 실시간 구동 프로파일 (파랑: 속도 RPM, 주황: 토크 Nm)</span>
+                    </div>
+                    <svg id="svg-rms-profile" viewBox="0 0 450 160" style="width: 100%; height: 160px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 10px; padding: 10px 15px; box-sizing: border-box; overflow: visible;"></svg>
+                  </div>
+
+                  <button id="btn-calc-rms" class="btn btn-primary btn-block" style="display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px;">⚡ RMS 실효 토크 및 요구 파워 연산</button>
+                </div>
+
+                <!-- Results display -->
+                <div style="background: rgba(166, 227, 161, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(166, 227, 161, 0.2); height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+                  <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; color: var(--brand-green);">🏆 구동 주기 실효 결과</h4>
+                  
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">구동 주기 전체 소요 시간</span>
+                      <span id="output-rms-time" style="font-weight: 700; color: #fff;">4.00 초</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">실효 RMS 평균 토크</span>
+                      <span id="output-rms-torque" style="font-weight: 700; color: #fff;">0.707 Nm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; font-size: 13px;">
+                      <span style="color: var(--text-secondary);">주기 내 가중 평균 속도</span>
+                      <span id="output-rms-speed" style="font-weight: 700; color: #fff;">7.16 rpm</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 4px; font-size: 14px; align-items: center;">
+                      <span style="font-weight: 700; color: var(--text-primary);">정격 연속 출력 파워 (W)</span>
+                      <span id="output-rms-power" style="font-size: 22px; font-weight: 800; color: var(--brand-green);">0.530 W</span>
+                    </div>
+                  </div>
+
+                  <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; margin-top: 12px;">
+                    💡 계산된 RMS 토크가 모터의 연속 정격 토크 허용 한계보다 낮고, 연속 출력 파워(Watt)가 모터 정격 사양을 초과하지 않아야 장비 장기 안정성이 확보됩니다.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Trash View (Initially Hidden) -->
+        <div class="view hidden" id="view-trash">
+          <div class="view-header">
+            <h2>삭제된 업무 목록 (휴지통)</h2>
+            <button class="btn btn-secondary" id="btn-back-kanban">업무 관리자로 돌아가기</button>
+          </div>
+          <div class="trash-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>태그</th>
+                  <th>제목</th>
+                  <th>원래 상태</th>
+                  <th>담당자</th>
+                  <th>삭제 일시</th>
+                  <th>검토 정보</th>
+                  <th>작업</th>
+                </tr>
+              </thead>
+              <tbody id="trash-list-body">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Minutes Trash View -->
+        <div class="view hidden" id="view-minutes-trash">
+          <div class="view-header">
+            <h2>삭제된 회의록 목록 (휴지통)</h2>
+            <button class="btn btn-secondary" id="btn-back-minutes">회의록 관리자로 돌아가기</button>
+          </div>
+          <div class="trash-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>태그</th>
+                  <th>제목</th>
+                  <th>일시</th>
+                  <th>장소</th>
+                  <th>참석자</th>
+                  <th>작업</th>
+                </tr>
+              </thead>
+              <tbody id="minutes-trash-list-body">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Project Trash View -->
+        <div class="view hidden" id="view-project-trash">
+          <div class="view-header">
+            <h2>삭제된 프로젝트 목록 (휴지통)</h2>
+            <button class="btn btn-secondary" id="btn-back-project">프로젝트 관리자로 돌아가기</button>
+          </div>
+          <div class="trash-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>태그</th>
+                  <th>프로젝트명</th>
+                  <th>설명</th>
+                  <th>담당자</th>
+                  <th>고객사</th>
+                  <th>작업</th>
+                </tr>
+              </thead>
+              <tbody id="project-trash-list-body">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Project Completed View -->
+        <div class="view hidden" id="view-project-completed">
+          <div class="view-header">
+            <h2>완료된 프로젝트 목록</h2>
+            <button class="btn btn-secondary" id="btn-back-project-completed">프로젝트 관리자로 돌아가기</button>
+          </div>
+          <div class="trash-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>태그</th>
+                  <th>프로젝트명</th>
+                  <th>완료 일자</th>
+                  <th>완료 메모 / 피드백</th>
+                  <th>담당자</th>
+                  <th>고객사</th>
+                  <th>작업</th>
+                </tr>
+              </thead>
+              <tbody id="project-completed-list-body">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Task Modal -->
+  <div class="modal hidden" id="modal-task">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="header-with-tag">
+          <h2 id="task-modal-title">새 업무 등록</h2>
+          <span id="task-tag-display" class="task-tag-badge"></span>
+        </div>
+        <button class="btn-close" id="btn-close-modal">&times;</button>
+      </div>
+      <form id="form-task">
+        <input type="hidden" id="task-id">
+        <div class="form-row">
+          <div class="form-group" id="task-status-group" style="flex: 0 0 150px;">
+            <label>현재 상태</label>
+            <div id="task-status-info" class="status-badge-inline">Note</div>
+          </div>
+          <div class="form-group">
+            <label for="task-title">제목 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 50자)</span></label>
+            <input type="text" id="task-title" placeholder="수행할 업무를 입력하세요." maxlength="50" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="task-content">내용 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 500자)</span></label>
+          <textarea id="task-content" rows="4" placeholder="상세 업무 내용을 설명해 주세요..." maxlength="500"></textarea>
+        </div>
+        <div class="form-group hidden" id="task-review-group">
+          <label>검토 피드백</label>
+          <div id="task-review-display" class="review-display-box"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="task-manager">담당자 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 50자)</span></label>
+            <input type="text" id="task-manager" placeholder="배정된 담당자" maxlength="50">
+          </div>
+          <div class="form-group">
+            <label>우선순위</label>
+            <div class="checkbox-wrapper">
+              <label for="task-urgent" class="checkbox-label">
+                <input type="checkbox" id="task-urgent">
+                긴급 업무
+                <span class="custom-checkbox"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="task-start">시작일</label>
+            <input type="date" id="task-start">
+          </div>
+          <div class="form-group">
+            <label for="task-due">마감일</label>
+            <input type="date" id="task-due">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-task-modal">업무 삭제</button>
+          <div class="footer-right">
+            <button type="button" class="btn btn-ghost" id="btn-cancel-task">취소</button>
+            <button type="submit" class="btn btn-primary">업무 등록</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="modal-settings" class="modal hidden">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h2>설정</h2>
+        <button class="btn-close" id="btn-close-settings">&times;</button>
+      </div>
+      
+      <div class="modal-body-scroll">
+
+        <!-- Database Management Section -->
+        <div class="settings-section">
+          <h3>데이터베이스 관리</h3>
+          <p class="settings-desc">수동 백업, 가져오기 또는 전체 초기화를 통해 데이터를 관리합니다.</p>
+          
+          <!-- SQLite RDBMS Group -->
+          <div style="margin-bottom: 24px;">
+            <!-- SQLite RDBMS Information Card -->
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 16px; margin: 12px 0 10px 0; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px; margin-bottom: 10px;">
+                <span style="font-weight: 600; color: var(--accent-color); font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                  <span>🗄️</span> SQLite (RDBMS WAL Engine) - Main Storage
+                </span>
+                <span style="font-size: 11px; background: rgba(80, 250, 123, 0.15); color: #50fa7b; padding: 3px 8px; border-radius: 6px; font-weight: 500; font-family: monospace;">
+                  최근 업데이트: <span id="db-last-modified-time">로딩 중...</span>
+                </span>
+              </div>
+              <div style="margin-bottom: 8px;">
+                <strong style="color: var(--text-primary);">• 역할:</strong> 통합 애플리케이션 파일 스토리지 (SQLite WAL Main Engine)
+              </div>
+              <div style="margin-bottom: 8px;">
+                <strong style="color: var(--text-primary);">• 설명:</strong> 프로젝트 관리, 칸반 보드 업무, 회의록 자산, 모터 사양/토크 계산 및 사용자 설정을 단일 스토리지 파일로 안정적으로 관리합니다.
+              </div>
+              <div>
+                <strong style="color: var(--text-primary);">• 타겟 데이터:</strong> 프로젝트 목록 및 이정표, 회의록/칸반 태스크, 부서별 상태 로그, 모터 연산 데이터, 사용자 계정 정보
+              </div>
+            </div>
+            
+            <div class="settings-actions-grid" style="margin-top: 10px;">
+              <button id="btn-manual-backup" class="btn btn-secondary">
+                <span>💾</span> 수동 백업
+              </button>
+              <button id="btn-import-db" class="btn btn-secondary">
+                <span>📥</span> 백업 가져오기
+              </button>
+              <button id="btn-open-backup-dir" class="btn btn-secondary">
+                <span>📂</span> 백업 폴더 열기
+              </button>
+              <button id="btn-initialize-db" class="btn btn-danger-outline">
+                <span>⚠️</span> 데이터 초기화
+              </button>
+            </div>
+          </div>
+        </div>
+
+
+
+
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" id="btn-close-settings-ok">닫기</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal hidden" id="modal-meeting">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h2 id="meeting-modal-title">회의록 관리</h2>
+          <span id="meeting-tag-display" class="tag-badge hidden"></span>
+        </div>
+        <button class="btn-close" id="btn-close-meeting">&times;</button>
+      </div>
+      <form id="form-meeting">
+        <input type="hidden" id="meeting-id">
+        <input type="hidden" id="meeting-tag">
+        <div class="form-group">
+          <label for="meeting-title">회의 제목 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 40자)</span></label>
+          <input type="text" id="meeting-title" placeholder="회의 주제는 무엇이었나요?" maxlength="40" required>
+        </div>
+        <div class="form-row meeting-meta">
+          <div class="form-group" style="flex: 2">
+            <label for="meeting-category">카테고리</label>
+            <select id="meeting-category">
+              <option value="">미분류</option>
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <div class="form-group" style="flex: 2">
+            <label for="meeting-date">일자</label>
+            <input type="date" id="meeting-date">
+          </div>
+          <div class="form-group" style="flex: 1">
+            <label for="meeting-time">시간</label>
+            <input type="time" id="meeting-time">
+          </div>
+          <div class="form-group" style="flex: 2">
+            <label for="meeting-location">장소 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 30자)</span></label>
+            <input type="text" id="meeting-location" placeholder="대회의실 A" maxlength="30">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="meeting-participants">참석자 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 50자)</span></label>
+          <input type="text" id="meeting-participants" placeholder="홍길동, 이순신, ..." maxlength="50">
+        </div>
+        <div class="form-group">
+          <label for="meeting-memo">의제 / 안건 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 3000자)</span></label>
+          <textarea id="meeting-memo" rows="4" placeholder="회의 목표와 핵심 주제..." maxlength="3000"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="meeting-decisions">결정 사항 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 3000자)</span></label>
+          <textarea id="meeting-decisions" rows="3" placeholder="회의 중 내린 주요 결정 사항..." maxlength="3000"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="meeting-actions">수행 과제 (Action Items) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 3000자)</span></label>
+          <textarea id="meeting-actions" rows="3" placeholder="누가 언제까지 무엇을 수행할 것인가요?" maxlength="3000"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-export-md">MD로 내보내기</button>
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-meeting-modal" style="margin-left: 8px;">회의록 삭제</button>
+          <div style="flex: 1"></div>
+          <button type="button" class="btn btn-ghost" id="btn-cancel-meeting">취소</button>
+          <button type="submit" class="btn btn-primary">회의록 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div id="modal-review" class="modal hidden">
+    <div class="modal-content">
+      <h2>검토 및 완료</h2>
+      <form id="form-review">
+        <input type="hidden" id="review-task-id">
+        <div class="form-group">
+          <label>검토자 이름</label>
+          <input type="text" id="reviewer-name" required placeholder="이름을 입력하세요">
+        </div>
+        <div class="form-group">
+          <label>검토 의견</label>
+          <textarea id="review-comment" required placeholder="검토 의견을 입력하세요"></textarea>
+        </div>
+        <div class="modal-footer">
+          <div class="footer-right">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-review">취소</button>
+            <button type="submit" class="btn btn-primary">승인 및 보관</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Signup Modal -->
+  <div id="modal-signup" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>새 계정 생성</h2>
+        <button class="btn-close" id="btn-close-signup">&times;</button>
+      </div>
+      <form id="form-signup">
+        <div class="form-group">
+          <label>사용자 ID</label>
+          <input type="text" id="signup-id" placeholder="새 ID 입력" required>
+        </div>
+        <div class="form-group">
+          <label>비밀번호</label>
+          <input type="password" id="signup-pw" placeholder="안전한 비밀번호 입력" required>
+        </div>
+        <div class="form-group">
+          <label>비밀번호 힌트</label>
+          <input type="text" id="signup-hint" placeholder="비밀번호 기억용 힌트 입력" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-signup">취소</button>
+          <button type="submit" class="btn btn-primary">계정 생성</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Hint Modal -->
+  <div id="modal-hint" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>비밀번호 힌트 찾기</h2>
+        <button class="btn-close" id="btn-close-hint-modal">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>아이디 입력</label>
+        <input type="text" id="hint-query-id" placeholder="사용자 ID" required>
+      </div>
+      <div id="hint-display" class="hint-result hidden">
+        <p class="hint-label">비밀번호 힌트:</p>
+        <p id="hint-text" class="hint-content"></p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="btn-close-hint-ok">닫기</button>
+        <button type="button" class="btn btn-primary" id="btn-get-hint-submit">힌트 확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change PW Modal -->
+  <div id="modal-change-pw" class="modal hidden">
+    <div class="modal-content">
+      <h2>비밀번호 변경</h2>
+      <form id="form-change-pw">
+        <div class="form-group">
+          <label>사용자 ID</label>
+          <input type="text" id="change-pw-id" required>
+        </div>
+        <div class="form-group">
+          <label>현재 비밀번호</label>
+          <input type="password" id="change-pw-old" required>
+        </div>
+        <div class="form-group">
+          <label>새 비밀번호</label>
+          <input type="password" id="change-new-pw" placeholder="새 비밀번호 입력" required>
+        </div>
+        <div class="form-group">
+          <label>새 비밀번호 힌트</label>
+          <input type="text" id="change-pw-hint" placeholder="새 비밀번호 힌트 입력" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-change-pw">취소</button>
+          <button type="submit" class="btn btn-primary">비밀번호 변경</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Project Modal -->
+  <div id="modal-project" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="project-modal-title">프로젝트 등록 및 수정</h2>
+        <button class="btn-close" id="btn-close-project">&times;</button>
+      </div>
+      <form id="form-project">
+        <input type="hidden" id="project-id">
+        <div class="form-group">
+          <label for="project-name">프로젝트명 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 40자)</span></label>
+          <input type="text" id="project-name" placeholder="프로젝트명을 입력하세요 (예: SJ-Gimbal-01)" maxlength="40" required>
+        </div>
+        <div class="form-group">
+          <label for="project-client">고객사 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 50자)</span></label>
+          <input type="text" id="project-client" placeholder="고객사명을 입력하세요" maxlength="50">
+        </div>
+        <div class="form-group">
+          <label for="project-manager">프로젝트 매니저(PM) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 50자)</span></label>
+          <input type="text" id="project-manager" placeholder="PM 이름을 입력하세요" maxlength="50">
+        </div>
+        <div class="form-group">
+          <label for="project-start-date">프로젝트 시작일</label>
+          <input type="date" id="project-start-date">
+        </div>
+        <div class="form-group">
+          <label for="project-desc">상세 설명 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 1000자)</span></label>
+          <textarea id="project-desc" rows="3" placeholder="프로젝트 개요 및 상세 설명..." maxlength="1000"></textarea>
+        </div>
+        <div class="settings-section">
+          <h3>부서 / 슬롯명 설정 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(각 최대 30자)</span></h3>
+          <div class="settings-actions-grid" style="grid-template-columns: 1fr 1fr; gap: 16px; max-height: 250px; overflow-y: auto; padding-right: 8px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept1" placeholder="슬롯 1 (예: 기계)" value="SALES" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept2" placeholder="슬롯 2 (예: 제어)" value="DESIGN" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept3" placeholder="슬롯 3 (예: 전장)" value="PROCUREMENT" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept4" placeholder="슬롯 4 (예: 영업)" value="ASSEMBLY" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept5" placeholder="슬롯 5 (예: R&D)" value="R&D" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept6" placeholder="슬롯 6 (예: 디자인)" value="DESIGN" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept7" placeholder="슬롯 7 (예: 생산)" value="PRODUCTION" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept8" placeholder="슬롯 8 (예: 품질)" value="QC" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept9" placeholder="슬롯 9 (예: 구매)" value="PURCHASING" maxlength="30">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" id="project-dept10" placeholder="슬롯 10 (예: 지원)" value="SUPPORT" maxlength="30">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-project-modal">프로젝트 삭제</button>
+          <div class="footer-right">
+            <button type="button" class="btn btn-ghost" id="btn-cancel-project">취소</button>
+            <button type="submit" class="btn btn-primary">프로젝트 생성</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Project Completion Modal -->
+  <div id="modal-complete-project" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>프로젝트 완료 처리</h2>
+        <button class="btn-close" id="btn-close-complete-project">&times;</button>
+      </div>
+      <form id="form-complete-project">
+        <input type="hidden" id="complete-project-id">
+        <div class="form-group">
+          <label for="complete-project-date">완료 처리일 <span style="color: var(--text-secondary); font-weight: normal;">*</span></label>
+          <input type="date" id="complete-project-date" required>
+        </div>
+        <div class="form-group">
+          <label for="complete-project-memo">완료 피드백 및 상세 설명 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 200자)</span></label>
+          <textarea id="complete-project-memo" rows="4" placeholder="프로젝트 완료 피드백 또는 상세 내용을 입력해 주세요." maxlength="200"></textarea>
+        </div>
+        <div class="modal-footer">
+          <div class="footer-right">
+            <button type="button" class="btn btn-ghost" id="btn-cancel-complete-project">취소</button>
+            <button type="submit" class="btn btn-primary">저장</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Milestone Edit Modal -->
+  <div id="modal-milestone" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>이정표(Milestone) 수정 <span id="ms-slot-num"></span></h2>
+        <button class="btn-close" id="btn-close-ms-modal">&times;</button>
+      </div>
+      <form id="form-milestone">
+        <input type="hidden" id="ms-id">
+        <input type="hidden" id="ms-project-id">
+        <input type="hidden" id="ms-slot-number">
+        <div class="form-group">
+          <label>이정표 이름 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 15자)</span></label>
+          <input type="text" id="ms-name" placeholder="예: 설계 완료" maxlength="15" required>
+        </div>
+        <div class="form-group">
+          <label>마감일</label>
+          <input type="date" id="ms-deadline" required>
+        </div>
+        <div class="form-group">
+          <label>상세 내용 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 100자)</span></label>
+          <textarea id="ms-content" rows="3" placeholder="추가 설명 및 메모..." maxlength="100"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>상태</label>
+            <div class="checkbox-wrapper">
+              <label class="checkbox-label">
+                <input type="checkbox" id="ms-is-done">
+                완료 처리
+                <span class="custom-checkbox"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="footer-right">
+            <button type="button" class="btn btn-ghost" id="btn-cancel-ms">취소</button>
+            <button type="submit" class="btn btn-primary">이정표 저장</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Status Log Add Modal -->
+  <div id="modal-log" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="log-modal-title">상태 로그 등록</h2>
+        <button class="btn-close" id="btn-close-log-modal">&times;</button>
+      </div>
+      <form id="form-log">
+        <input type="hidden" id="log-project-id">
+        <input type="hidden" id="log-id">
+        <div class="form-group">
+          <label>부서 / 슬롯 선택</label>
+          <select id="log-department" class="form-select">
+            <!-- Dynamic slots -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label>상태 업데이트 (제목) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 20자)</span></label>
+          <input type="text" id="log-title" placeholder="간단한 상태 업데이트 (예: 원자재 발주 완료)" maxlength="20" required>
+        </div>
+        <div class="form-group">
+          <label>상세 내용 <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 500자)</span></label>
+          <textarea id="log-content" rows="4" placeholder="상세 업데이트 내용..." maxlength="500"></textarea>
+        </div>
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>시작일 (선택)</label>
+            <input type="date" id="log-start-date" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>마감일 (선택)</label>
+            <input type="date" id="log-due-date" style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); color: var(--text-color); padding: 8px 12px; border-radius: 8px; font-family: inherit;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>담당자 (선택) <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 6px;">(최대 15자)</span></label>
+          <input type="text" id="log-manager" placeholder="담당자 이름" maxlength="15">
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div class="footer-left" style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-success-outline hidden" id="btn-done-log-modal">완료</button>
+            <button type="button" class="btn btn-danger-outline hidden" id="btn-delete-log-modal">로그 삭제</button>
+          </div>
+          <div class="footer-right">
+            <button type="button" class="btn btn-ghost" id="btn-cancel-log">취소</button>
+            <button type="submit" class="btn btn-primary" id="btn-submit-log">로그 등록</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Read-only Done Log Detail Modal -->
+  <div id="modal-done-log-detail" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="done-log-detail-modal-title">Completed Status Log Details</h2>
+        <button class="btn-close" id="btn-close-done-log-detail-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 0; max-height: 480px; overflow-y: auto;">
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Tag / ID</label>
+          <div id="done-log-detail-tag" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; font-weight: 700; color: var(--accent-color); font-size: 13px;"></div>
+        </div>
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Department</label>
+          <div id="done-log-detail-department" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; font-weight: 600; color: #fff; font-size: 13px;"></div>
+        </div>
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Update Status (Title)</label>
+          <div id="done-log-detail-title" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; font-weight: 600; color: #fff; font-size: 13px;"></div>
+        </div>
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Content / Details</label>
+          <div id="done-log-detail-content" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 12px; border-radius: 8px; min-height: 80px; color: var(--text-color); font-size: 13px; line-height: 1.6; white-space: pre-wrap;"></div>
+        </div>
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Start Date</label>
+            <div id="done-log-detail-start-date" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; color: var(--text-color); font-size: 13px;"></div>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Due Date</label>
+            <div id="done-log-detail-due-date" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; color: var(--text-color); font-size: 13px;"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Manager in Charge</label>
+          <div id="done-log-detail-manager" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; color: var(--text-color); font-size: 13px;"></div>
+        </div>
+        <div class="form-group">
+          <label style="color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.5px;">Completed Log Time</label>
+          <div id="done-log-detail-time" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; color: var(--text-color); font-size: 13px;"></div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; width: 100%; border-top: 1px solid var(--card-border); padding-top: 14px;">
+        <button type="button" class="btn btn-primary" id="btn-close-done-log-detail" style="padding: 8px 20px; font-size: 13px;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- About Modal -->
+  <div id="modal-about" class="modal hidden">
+    <div class="modal-content about-card">
+      <img src="assets/title_3.jpg" class="about-banner" alt="WorkAssist">
+      <div class="about-main">
+        <h2 class="brand-title">About WorkAssist</h2>
+        <div class="about-info">
+          <div class="info-row">
+            <span class="info-label">Author</span>
+            <span class="info-value">Wonseup Shin</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Organization</span>
+            <span class="info-value">Samjeong Automation</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Website</span>
+            <span class="info-value"><a href="https://github.com/wshin2000-SJman/WorkAssist/" target="_blank">github.com/wshin2000-SJman/WorkAssist</a></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Version</span>
+            <span class="info-value accent-text">v3.0.0 (Tauri)</span>
+          </div>
+        </div>
+      </div>
+      <div class="about-footer">
+        <button id="btn-close-about" class="btn btn-primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Privacy Policy Modal -->
+  <div id="modal-privacy" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>개인정보 처리방침</h2>
+        <button class="btn-close" id="btn-close-privacy">&times;</button>
+      </div>
+      <div class="legal-content">
+        <p><strong>최종 수정일: 2026년 5월</strong></p>
+        <br>
+        <h3>1. 수집하는 정보의 범위</h3>
+        <p>WorkAssist v3.0.0은 모든 프로젝트 관련 데이터를 사용자의 로컬 환경 내에서만 처리합니다. 당사는 사용자가 명시적으로 동기화 설정을 수행하지 않는 한, 개인정보나 프로젝트 데이터를 외부 서버로 절대 전송하지 않습니다.</p>
+        <br>
+        <h3>2. 데이터 보안 및 로컬 저장 원칙</h3>
+        <p>작성하신 회의록, 태스크, 프로젝트 진행 상태 등 모든 비즈니스 데이터는 사용자의 PC 로컬 데이터베이스 내에만 안전하게 보관됩니다. 데이터 유실을 방지하기 위해 설정 메뉴를 통한 주기적인 수동 백업 수행을 강력히 권장합니다.</p>
+        <br>
+        <h3>3. 정보 주체의 권리</h3>
+        <p>귀하는 본인의 데이터에 대해 완벽한 통제권을 행사할 수 있습니다. 시스템 설정 메뉴를 사용하여 언제든지 생성한 계정과 관련된 모든 데이터를 영구적으로 초기화하거나 제거할 수 있습니다.</p>
+        <br>
+        <h3>4. 문의사항 및 관리자 신원</h3>
+        <p>개인정보 보호 관련 문의사항이 있거나 권리 행사가 필요한 경우, 시스템 개발자 신원섭 (wsshin@sjautomation.com) 앞으로 연락해 주시기 바랍니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terms of Use Modal -->
+  <div id="modal-terms" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>이용 약관</h2>
+        <button class="btn-close" id="btn-close-terms">&times;</button>
+      </div>
+      <div class="legal-content">
+        <p><strong>최종 수정일: 2026년 5월</strong></p>
+        <br>
+        <h3>1. 약관의 동의 및 적용 범위</h3>
+        <p>WorkAssist v3.0.0 서비스를 이용함으로써 귀하는 본 약관에 동의하는 것으로 간주됩니다. 본 소프트웨어는 '있는 그대로(AS IS)' 제공되며, 명시적 또는 묵시적인 어떠한 형태의 보증도 제공하지 않습니다.</p>
+        <br>
+        <h3>2. 로컬 데이터 관리 책임 소재</h3>
+        <p>WorkAssist는 로컬 우선(Local-first) 업무 관리 도구입니다. 사용자 본인이 데이터베이스 파일의 관리, 보안 유지 및 백업에 대한 전적인 책임과 의무를 집니다.</p>
+        <br>
+        <h3>3. 지식 재산권 및 라이선스</h3>
+        <p>소프트웨어의 UI 디자인, 소스 코드, 이미지 에셋을 포함하여 제공되는 모든 기능적 자산은 삼정오토메이션 신원섭 개발자에게 귀속되는 고유한 지식 재산입니다.</p>
+        <br>
+        <h3>4. 책임의 한계 조항</h3>
+        <p>본 소프트웨어의 사용 과정에서 발생하는 예기치 못한 데이터 유실, 손실 또는 제반 업무 장애에 대해 개발자 및 삼정오토메이션은 어떠한 민형사상 법적 책임도 지지 않습니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact Us Modal -->
+  <div id="modal-contact" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>문의하기</h2>
+        <button class="btn-close" id="btn-close-contact">&times;</button>
+      </div>
+      <div class="legal-content">
+        <p>시스템 이용 중 발생하는 버그 제보, 기능 건의사항 또는 기타 비즈니스 협업 관련 제안이 있으실 경우 아래 경로를 통해 연락해 주시기 바랍니다.</p>
+        <br>
+        <div class="contact-method">
+          <span class="info-label">이메일 문의</span>
+          <p><a href="mailto:wsshin@sjautomation.com" class="accent-text">wsshin@sjautomation.com</a></p>
+        </div>
+        <br>
+        <div class="contact-method">
+          <span class="info-label">공식 GitHub 저장소</span>
+          <p><a href="https://github.com/wshin2000-SJman/WorkAssist/" target="_blank" class="accent-text">github.com/wshin2000-SJman/WorkAssist</a></p>
+        </div>
+        <br>
+        <p class="text-muted">보내주신 의견에는 보통 영업일 기준 24~48시간 이내에 답변을 드리고자 노력하고 있습니다. WorkAssist를 사용해 주셔서 대단히 감사합니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Management Modal -->
+  <div id="modal-categories" class="modal hidden">
+    <div class="modal-content medium" style="max-width: 500px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h2>카테고리 관리</h2>
+          <span id="category-count-badge" class="tag-badge" style="background: var(--accent); padding: 2px 8px; border-radius: 12px; font-size: 11px;">0 / 50</span>
+        </div>
+        <button class="btn-close" id="btn-close-categories">&times;</button>
+      </div>
+      
+      <!-- New Category Form -->
+      <div class="category-add-form" style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center;">
+        <input type="text" id="new-category-name" placeholder="새 카테고리 이름 (최대 15자)" maxlength="15" style="flex: 1; height: 38px; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); color: var(--text-primary); padding: 0 10px;">
+        
+        <input type="color" id="new-category-color" value="#3b82f6" style="width: 38px; height: 38px; padding: 0; border: none; border-radius: 50%; cursor: pointer; background: transparent;">
+        
+        <button id="btn-add-category" class="btn btn-primary" style="height: 38px; padding: 0 16px; border-radius: 8px; font-weight: 500;">+ 추가</button>
+      </div>
+
+      <!-- Categories List Scrollable Container -->
+      <div class="categories-list-container" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; background: rgba(0, 0, 0, 0.15);">
+        <div id="categories-list-items" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="margin-top: 20px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" id="btn-close-categories-footer">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Active Projects List -->
+  <div id="modal-active-projects" class="modal hidden">
+    <div class="modal-content medium" style="max-width: 600px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h2>📁 진행 중인 프로젝트 목록</h2>
+          <span id="active-projects-count-badge" class="tag-badge" style="background: var(--accent); padding: 2px 8px; border-radius: 12px; font-size: 11px;">0개</span>
+        </div>
+        <button class="btn-close" id="btn-close-active-projects">&times;</button>
+      </div>
+      
+      <div class="project-list-container" style="max-height: 420px; overflow-y: auto; padding: 4px; margin-top: 12px;">
+        <div class="project-list" id="project-list" style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Project cards rendered dynamically -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="margin-top: 20px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" id="btn-close-active-projects-footer">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Project Overview -->
+  <div id="modal-project-overview" class="modal hidden">
+    <div class="modal-content medium" style="max-width: 600px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">📄</span>
+          <h2 id="overview-modal-project-name">프로젝트 개요</h2>
+        </div>
+        <button class="btn-close" id="btn-close-project-overview">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 0;">
+        <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px;">
+          <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 12px;" id="overview-modal-project-meta">고객사: - | 담당자: - | 시작일: -</div>
+          <h4 style="margin: 0 0 8px 0; color: var(--accent-color); font-size: 14px; font-weight: 700;">프로젝트 상세 설명</h4>
+          <p id="overview-modal-project-desc" style="white-space: pre-line; margin: 0; line-height: 1.6; color: var(--text-primary); font-size: 13.5px;">선택된 프로젝트가 없습니다.</p>
+        </div>
+      </div>
+      <div class="modal-footer" style="margin-top: 20px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" id="btn-close-project-overview-footer">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-knowledge-detail" class="modal hidden" style="z-index: 10000;">
+    <div class="modal-content large" style="max-width: 1380px !important; width: 95% !important; padding: 30px 24px !important; background: rgba(18, 22, 28, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 20px 40px rgba(0,0,0,0.5); border-radius: 16px;">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">🔍</span>
+          <h2 id="knowledge-detail-title" style="font-size: 18px; font-weight: 600; color: var(--accent-color); margin: 0;">지식 DB 부품 상세 정보</h2>
+        </div>
+        <button class="btn-close" id="btn-close-knowledge-detail" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; transition: color 0.2s;">&times;</button>
+      </div>
+      
+      <div class="modal-body-scroll" style="max-height: 450px; overflow-y: auto; padding: 0 0 20px 0;">
+        <div id="knowledge-detail-content" style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Dynamically populated detail items -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn btn-secondary" id="btn-export-knowledge-md" style="padding: 8px 16px; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 6px; background: rgba(255, 121, 198, 0.1); color: #ff79c6; border: 1px solid rgba(255, 121, 198, 0.2); transition: all 0.2s;" onmouseover="this.style.background='rgba(255, 121, 198, 0.2)'" onmouseout="this.style.background='rgba(255, 121, 198, 0.1)'">
+            <span>📝</span> MD파일로 내보내기
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-export-knowledge-csv" style="padding: 8px 16px; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 6px; background: rgba(80, 250, 123, 0.1); color: #50fa7b; border: 1px solid rgba(80, 250, 123, 0.2); transition: all 0.2s;" onmouseover="this.style.background='rgba(80, 250, 123, 0.2)'" onmouseout="this.style.background='rgba(80, 250, 123, 0.1)'">
+            <span>📊</span> csv파일로 내보내기
+          </button>
+        </div>
+        <button type="button" class="btn btn-secondary" id="btn-close-knowledge-detail-footer" style="padding: 8px 20px; border-radius: 8px; font-weight: 500;">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="global-timetable-tooltip" class="timetable-tooltip"></div>
+  <div id="chart-tooltip"></div>
+  <script src="assets/d3.v7.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
