@@ -550,7 +550,7 @@ body {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 24px;
 }
 
@@ -590,8 +590,8 @@ body {
 .kanban-board {
   display: flex;
   gap: 20px;
-  height: calc(100vh - 200px);
-  max-height: calc(100vh - 200px);
+  flex: 1;
+  min-height: 0;
   overflow-x: auto;
   padding-bottom: 20px;
 }
@@ -1397,8 +1397,8 @@ textarea:focus,
 .pm-container {
   display: flex;
   gap: 32px;
-  height: calc(100vh - 160px);
-  max-height: calc(100vh - 160px);
+  flex: 1;
+  min-height: 0;
 }
 
 .pm-sidebar {
@@ -2638,8 +2638,8 @@ tr:has(.status-review) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 200px);
-  max-height: calc(100vh - 200px);
+  flex: 1;
+  min-height: 0;
 }
 
 .schedule-nav-header {
@@ -2791,8 +2791,8 @@ tr:has(.status-review) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 200px);
-  max-height: calc(100vh - 200px);
+  flex: 1;
+  min-height: 0;
 }
 
 .calendar-header {
@@ -4317,4 +4317,42 @@ tr:has(.status-review) {
 .status-grid::-webkit-scrollbar-thumb:hover,
 .col-list-wrapper::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
+}
+
+/* Responsive / Compact Viewport rules for Laptop / High DPI scaling environments */
+@media (max-width: 1280px), (max-height: 750px) {
+  .sidebar {
+    width: 230px;
+    padding: 20px 16px;
+  }
+
+  .main-content {
+    padding: 20px 24px;
+  }
+
+  .top-bar {
+    margin-bottom: 24px;
+  }
+
+  .top-bar h1 {
+    font-size: 24px;
+  }
+
+  .welcome-card {
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .welcome-card h2 {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
 }

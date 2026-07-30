@@ -13,8 +13,11 @@
       {
         "label": "main",
         "title": "WorkAssist v3.0.0",
-        "width": 1200,
-        "height": 800,
+        "width": 1000,
+        "height": 640,
+        "minWidth": 900,
+        "minHeight": 580,
+        "center": true,
         "resizable": true,
         "visible": false,
         "transparent": false,
