@@ -1,0 +1,32 @@
+[package]
+name = "workassist-v4"
+version = "4.0.0"
+edition = "2021"
+
+[[bin]]
+name = "workassist-v4"
+path = "src/main.rs"
+
+[dependencies]
+# Web Server
+axum = { version = "0.7", features = ["macros"] }
+tokio = { version = "1.37", features = ["full"] }
+tower-http = { version = "0.5", features = ["fs", "cors"] }
+open = "5.1"
+dirs = "5.0"
+
+# Database
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Serialization & Data
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+regex = "1.10"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
