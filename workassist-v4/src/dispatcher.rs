@@ -144,7 +144,7 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
 
         // --- Kanban Commands ---
         "plugin:kanban|get_tasks" => {
-            let owner_id = args.get("owner_id").and_then(|v| v.as_i64()).unwrap_or(1);
+            let owner_id = args.get("owner_id").or_else(|| args.get("ownerId")).and_then(|v| v.as_i64()).unwrap_or(1);
             match api.kanban().get_all_tasks(owner_id) {
                 Ok(tasks) => InvokeResponse::ok(tasks),
                 Err(e) => InvokeResponse::err(e.to_string()),
@@ -164,8 +164,8 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
             }
         }
         "plugin:kanban|update_task_status" => {
-            let task_id = args.get("task_id").and_then(|v| v.as_i64()).unwrap_or(0);
-            let new_status = args.get("new_status").and_then(|v| v.as_str()).unwrap_or_default();
+            let task_id = args.get("task_id").or_else(|| args.get("taskId")).and_then(|v| v.as_i64()).unwrap_or(0);
+            let new_status = args.get("new_status").or_else(|| args.get("newStatus")).and_then(|v| v.as_str()).unwrap_or_default();
             match api.kanban().update_status(task_id, new_status) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
@@ -185,28 +185,28 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
             }
         }
         "plugin:kanban|delete_task" => {
-            let task_id = args.get("task_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let task_id = args.get("task_id").or_else(|| args.get("taskId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.kanban().delete_task(task_id) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:kanban|get_deleted_tasks" => {
-            let owner_id = args.get("owner_id").and_then(|v| v.as_i64()).unwrap_or(1);
+            let owner_id = args.get("owner_id").or_else(|| args.get("ownerId")).and_then(|v| v.as_i64()).unwrap_or(1);
             match api.kanban().get_deleted_tasks(owner_id) {
                 Ok(tasks) => InvokeResponse::ok(tasks),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:kanban|restore_task" => {
-            let task_id = args.get("task_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let task_id = args.get("task_id").or_else(|| args.get("taskId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.kanban().restore_task(task_id) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:kanban|hard_delete_task_cmd" => {
-            let task_id = args.get("task_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let task_id = args.get("task_id").or_else(|| args.get("taskId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.kanban().hard_delete_task(task_id) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
@@ -215,14 +215,14 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
 
         // --- Minutes Commands ---
         "plugin:minutes|get_meetings" => {
-            let owner_id = args.get("owner_id").and_then(|v| v.as_i64()).unwrap_or(1);
+            let owner_id = args.get("owner_id").or_else(|| args.get("ownerId")).and_then(|v| v.as_i64()).unwrap_or(1);
             match api.minutes().get_all_meetings(owner_id) {
                 Ok(meetings) => InvokeResponse::ok(meetings),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:minutes|get_meeting_count" => {
-            let owner_id = args.get("owner_id").and_then(|v| v.as_i64()).unwrap_or(1);
+            let owner_id = args.get("owner_id").or_else(|| args.get("ownerId")).and_then(|v| v.as_i64()).unwrap_or(1);
             match api.minutes().get_all_meetings(owner_id) {
                 Ok(meetings) => InvokeResponse::ok(meetings.len()),
                 Err(e) => InvokeResponse::err(e.to_string()),
@@ -242,35 +242,35 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
             }
         }
         "plugin:minutes|delete_meeting" => {
-            let id = args.get("meeting_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let id = args.get("meeting_id").or_else(|| args.get("meetingId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.minutes().delete_meeting(id) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:minutes|get_deleted_meetings" => {
-            let owner_id = args.get("owner_id").and_then(|v| v.as_i64()).unwrap_or(1);
+            let owner_id = args.get("owner_id").or_else(|| args.get("ownerId")).and_then(|v| v.as_i64()).unwrap_or(1);
             match api.minutes().get_deleted_meetings(owner_id) {
                 Ok(meetings) => InvokeResponse::ok(meetings),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:minutes|restore_meeting" => {
-            let id = args.get("meeting_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let id = args.get("meeting_id").or_else(|| args.get("meetingId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.minutes().restore_meeting(id) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:minutes|hard_delete_meeting_cmd" => {
-            let id = args.get("meeting_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let id = args.get("meeting_id").or_else(|| args.get("meetingId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.minutes().hard_delete_meeting(id) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:minutes|get_categories" => {
-            let owner_id = args.get("owner_id").and_then(|v| v.as_i64()).unwrap_or(1);
+            let owner_id = args.get("owner_id").or_else(|| args.get("ownerId")).and_then(|v| v.as_i64()).unwrap_or(1);
             match api.minutes().get_categories(owner_id) {
                 Ok(cats) => InvokeResponse::ok(cats),
                 Err(e) => InvokeResponse::err(e.to_string()),
@@ -290,7 +290,7 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
             }
         }
         "plugin:minutes|delete_category" => {
-            let id = args.get("category_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let id = args.get("category_id").or_else(|| args.get("categoryId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.minutes().delete_category(id) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
@@ -325,7 +325,7 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
             }
         }
         "plugin:motor|calculate_inertia" => {
-            let shape_type = args.get("shape_type").and_then(|v| v.as_str()).unwrap_or_default();
+            let shape_type = args.get("shape_type").or_else(|| args.get("shapeType")).and_then(|v| v.as_str()).unwrap_or_default();
             let mass = args.get("mass").and_then(|v| v.as_f64()).unwrap_or(0.0);
             let radius = args.get("radius").and_then(|v| v.as_f64()).unwrap_or(0.0);
             let length = args.get("length").and_then(|v| v.as_f64()).unwrap_or(0.0);
@@ -336,16 +336,16 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
         }
         "plugin:motor|convert_speed" => {
             let value = args.get("value").and_then(|v| v.as_f64()).unwrap_or(0.0);
-            let from_unit = args.get("from_unit").and_then(|v| v.as_str()).unwrap_or_default();
-            let to_unit = args.get("to_unit").and_then(|v| v.as_str()).unwrap_or_default();
+            let from_unit = args.get("from_unit").or_else(|| args.get("fromUnit")).and_then(|v| v.as_str()).unwrap_or_default();
+            let to_unit = args.get("to_unit").or_else(|| args.get("toUnit")).and_then(|v| v.as_str()).unwrap_or_default();
             match api.motor().convert_speed(value, from_unit, to_unit) {
                 Ok(res) => InvokeResponse::ok(res),
                 Err(e) => InvokeResponse::err(e),
             }
         }
         "plugin:motor|calculate_angular_acceleration" => {
-            let initial_speed = args.get("initial_speed").and_then(|v| v.as_f64()).unwrap_or(0.0);
-            let final_speed = args.get("final_speed").and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let initial_speed = args.get("initial_speed").or_else(|| args.get("initialSpeed")).and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let final_speed = args.get("final_speed").or_else(|| args.get("finalSpeed")).and_then(|v| v.as_f64()).unwrap_or(0.0);
             let time = args.get("time").and_then(|v| v.as_f64()).unwrap_or(0.0);
             let unit = args.get("unit").and_then(|v| v.as_str()).unwrap_or_default();
             match api.motor().calculate_angular_acceleration(initial_speed, final_speed, time, unit) {
@@ -355,8 +355,8 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
         }
         "plugin:motor|calculate_combined_torque" => {
             let mass = args.get("mass").and_then(|v| v.as_f64()).unwrap_or(0.0);
-            let arm_length = args.get("arm_length").and_then(|v| v.as_f64()).unwrap_or(0.0);
-            let angle_deg = args.get("angle_deg").and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let arm_length = args.get("arm_length").or_else(|| args.get("armLength")).and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let angle_deg = args.get("angle_deg").or_else(|| args.get("angleDeg")).and_then(|v| v.as_f64()).unwrap_or(0.0);
             let acceleration = args.get("acceleration").and_then(|v| v.as_f64()).unwrap_or(0.0);
             match api.motor().calculate_combined_torque(mass, arm_length, angle_deg, acceleration) {
                 Ok(res) => InvokeResponse::ok(res),
@@ -364,9 +364,9 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
             }
         }
         "plugin:motor|calculate_motor_specs" => {
-            let voltage_in = args.get("voltageIn").and_then(|v| v.as_f64()).unwrap_or(0.0);
-            let kb_v_krpm = args.get("kbVKrpm").and_then(|v| v.as_f64()).unwrap_or(0.0);
-            let torque_required = args.get("torqueRequired").and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let voltage_in = args.get("voltageIn").or_else(|| args.get("voltage_in")).and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let kb_v_krpm = args.get("kbVKrpm").or_else(|| args.get("kb_v_krpm")).and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let torque_required = args.get("torqueRequired").or_else(|| args.get("torque_required")).and_then(|v| v.as_f64()).unwrap_or(0.0);
             match api.motor().calculate_motor_specs(voltage_in, kb_v_krpm, torque_required) {
                 Ok(res) => InvokeResponse::ok(res),
                 Err(e) => InvokeResponse::err(e),
@@ -388,14 +388,14 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
 
         // --- PM Commands ---
         "plugin:pm|get_projects" => {
-            let owner_id = args.get("owner_id").and_then(|v| v.as_i64()).unwrap_or(1);
+            let owner_id = args.get("owner_id").or_else(|| args.get("ownerId")).and_then(|v| v.as_i64()).unwrap_or(1);
             match api.pm().get_active_projects(owner_id) {
                 Ok(projects) => InvokeResponse::ok(projects),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:pm|get_project_count" => {
-            let owner_id = args.get("owner_id").and_then(|v| v.as_i64()).unwrap_or(1);
+            let owner_id = args.get("owner_id").or_else(|| args.get("ownerId")).and_then(|v| v.as_i64()).unwrap_or(1);
             match api.pm().get_active_projects(owner_id) {
                 Ok(projects) => InvokeResponse::ok(projects.len()),
                 Err(e) => InvokeResponse::err(e.to_string()),
@@ -415,35 +415,35 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
             }
         }
         "plugin:pm|delete_project" => {
-            let id = args.get("project_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let id = args.get("project_id").or_else(|| args.get("projectId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.pm().delete_project(id) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:pm|get_deleted_projects" => {
-            let owner_id = args.get("owner_id").and_then(|v| v.as_i64()).unwrap_or(1);
+            let owner_id = args.get("owner_id").or_else(|| args.get("ownerId")).and_then(|v| v.as_i64()).unwrap_or(1);
             match api.pm().get_deleted_projects(owner_id) {
                 Ok(projects) => InvokeResponse::ok(projects),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:pm|restore_project" => {
-            let id = args.get("project_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let id = args.get("project_id").or_else(|| args.get("projectId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.pm().restore_project(id) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:pm|hard_delete_project_cmd" => {
-            let id = args.get("project_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let id = args.get("project_id").or_else(|| args.get("projectId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.pm().hard_delete_project(id) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:pm|get_status_logs" => {
-            let project_id = args.get("project_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let project_id = args.get("project_id").or_else(|| args.get("projectId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.pm().get_status_logs(project_id) {
                 Ok(logs) => InvokeResponse::ok(logs),
                 Err(e) => InvokeResponse::err(e.to_string()),
@@ -476,14 +476,14 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
             }
         }
         "plugin:pm|delete_status_log_permanent" => {
-            let log_id = args.get("log_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let log_id = args.get("log_id").or_else(|| args.get("logId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.pm().delete_status_log_permanent(log_id) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:pm|update_status_log_status" => {
-            let log_id = args.get("log_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let log_id = args.get("log_id").or_else(|| args.get("logId")).and_then(|v| v.as_i64()).unwrap_or(0);
             let status = args.get("status").and_then(|v| v.as_str()).unwrap_or_default();
             match api.pm().update_status_log_status(log_id, status.to_string()) {
                 Ok(_) => InvokeResponse::ok(()),
@@ -491,15 +491,15 @@ pub fn dispatch_command(api: &Api, payload: InvokePayload) -> InvokeResponse {
             }
         }
         "plugin:pm|update_status_log_deleted" => {
-            let log_id = args.get("log_id").and_then(|v| v.as_i64()).unwrap_or(0);
-            let is_deleted = args.get("is_deleted").and_then(|v| v.as_bool()).unwrap_or(false);
+            let log_id = args.get("log_id").or_else(|| args.get("logId")).and_then(|v| v.as_i64()).unwrap_or(0);
+            let is_deleted = args.get("is_deleted").or_else(|| args.get("isDeleted")).and_then(|v| v.as_bool()).unwrap_or(false);
             match api.pm().update_status_log_deleted(log_id, is_deleted) {
                 Ok(_) => InvokeResponse::ok(()),
                 Err(e) => InvokeResponse::err(e.to_string()),
             }
         }
         "plugin:pm|get_milestones" => {
-            let project_id = args.get("project_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            let project_id = args.get("project_id").or_else(|| args.get("projectId")).and_then(|v| v.as_i64()).unwrap_or(0);
             match api.pm().get_milestones(project_id) {
                 Ok(milestones) => InvokeResponse::ok(milestones),
                 Err(e) => InvokeResponse::err(e.to_string()),
